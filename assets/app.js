@@ -668,8 +668,14 @@
         const txt = await res.text();
         const parsed = normalizeCoachPayload(parseJsonFromText(txt) || txt);
 
-        if(modalMist) modalMist.innerHTML = `<ul class="tips__list">${(parsed.mistakes||[]).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('')}</ul>`;
-        if(modalFix) modalFix.innerHTML = `<ul class="tips__list">${(parsed.fixes||[]).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('')}</ul>`;
+        const cleanList = (arr)=> (arr||[])
+          .map(x=>String(x ?? '').trim())
+          .filter(Boolean)
+          .slice(0, 3);
+        const mList = cleanList(parsed.mistakes);
+        const fList = cleanList(parsed.fixes);
+        if(modalMist) modalMist.innerHTML = `<ul class="tips__list">${(mList.length?mList:["—"]).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('')}</ul>`;
+        if(modalFix) modalFix.innerHTML = `<ul class="tips__list">${(fList.length?fList:["—"]).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('')}</ul>`;
         if(modalMeta) modalMeta.textContent = parsed.metaPrompt;
 
         setModalStatus("Done ✅");

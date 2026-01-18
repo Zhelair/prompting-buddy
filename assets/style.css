@@ -2,6 +2,110 @@
 :root{--pb-bg:#efe9de;--pb-panel:#fff;--pb-text:#1b1b1b;--pb-muted:#666;--pb-accent:#ff8a3d;}
 body{background:var(--pb-bg);color:var(--pb-text);}
 
+/* ===== Modal “paper card” look (Oddly Useful vibe) ===== */
+.modal_backdrop{backdrop-filter:saturate(120%) blur(2px);}
+.modal{
+  background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(255,255,255,.92));
+  border:1px solid rgba(0,0,0,.08);
+}
+.modal h2,.modal h3{margin:10px 0 8px;}
+.modal h2{font-size:18px;}
+.modal h3{font-size:15px;color:#2b2b2b;}
+.modal ul{margin:8px 0 12px 18px;}
+.modal li{margin:6px 0;line-height:1.35;}
+
+.modal button{
+  appearance:none;
+  border:1px solid rgba(0,0,0,.22);
+  background:#fff;
+  color:#222;
+  padding:5px 10px;
+  border-radius:10px;
+  cursor:pointer;
+}
+.modal button:hover{filter:brightness(0.98);}
+
+/* Golden prompt should read like a “paper note”, not a code block */
+#pcModalGolden{
+  white-space:pre-wrap;
+  font-family:inherit;
+  font-size:14px;
+  line-height:1.45;
+  background:#fbf6ec;
+  border:1px solid rgba(0,0,0,.10);
+  border-radius:14px;
+  padding:12px 14px;
+  box-shadow:0 10px 22px rgba(0,0,0,.08);
+}
+
+/* Meta prompt is allowed to look more “technical”, but still comfy */
+#coachModalMeta{
+  white-space:pre-wrap;
+  font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size:12px;
+  line-height:1.45;
+  background:rgba(0,0,0,.03);
+  border:1px solid rgba(0,0,0,.08);
+  border-radius:12px;
+  padding:10px 12px;
+}
+
 .modal_backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:24px;z-index:9999;}
-.modal{width:min(920px,calc(100vw - 32px));max-height:calc(100vh - 64px);overflow:auto;background:var(--pb-panel);color:var(--pb-text);border-radius:16px;box-shadow:0 18px 70px rgba(0,0,0,.45);padding:18px 18px 14px;}
-.modal pre{white-space:pre-wrap;word-break:break-word;background:rgba(0,0,0,.04);border:1px solid rgba(0,0,0,.08);border-radius:12px;padding:10px;color:var(--pb-text);}
+.modal{
+  width:min(980px,calc(100vw - 32px));
+  max-height:calc(100vh - 64px);
+  overflow:auto;
+  color:var(--pb-text);
+  border-radius:20px;
+  box-shadow:0 18px 70px rgba(0,0,0,.45);
+  padding:18px 18px 14px;
+
+  /* “paper card” vibe (Oddly Useful-style) */
+  background:
+    radial-gradient(1200px 500px at 50% 0%, rgba(255,255,255,.95), rgba(255,255,255,.88) 40%, rgba(255,255,255,.82) 100%),
+    linear-gradient(180deg, rgba(255,255,255,.92), rgba(255,255,255,.86));
+  border:1px solid rgba(0,0,0,.10);
+}
+
+/* modal header (title + close) */
+.modal h2{font-size:18px;margin:6px 0 14px;display:flex;align-items:center;gap:10px;}
+.modal h3{font-size:16px;margin:18px 0 8px;}
+.modal p{color:var(--pb-muted);}
+
+/* button polish (no “sausage casing”) */
+.modal button{
+  appearance:none;
+  border:1px solid rgba(0,0,0,.18);
+  background:rgba(255,255,255,.75);
+  color:var(--pb-text);
+  border-radius:10px;
+  padding:6px 10px;
+  cursor:pointer;
+}
+.modal button:hover{background:rgba(255,255,255,.92);}
+.modal button:active{transform:translateY(1px);}
+
+/* list spacing */
+.modal ul{margin:0; padding-left:20px;}
+.modal li{margin:6px 0; line-height:1.35;}
+
+/* default <pre> inside modal should look like a neat paper block */
+.modal pre{
+  white-space:pre-wrap;
+  word-break:break-word;
+  background:rgba(250,244,233,.9);
+  border:1px solid rgba(0,0,0,.10);
+  border-radius:14px;
+  padding:12px 14px;
+  color:var(--pb-text);
+  font-family:inherit;
+  font-size:14px;
+  line-height:1.45;
+}
+
+/* Golden Prompt gets extra readability */
+#pcModalGolden{
+  font-size:15px;
+  line-height:1.55;
+  background:rgba(255,250,240,.95);
+}
