@@ -1,244 +1,24 @@
 // Prompting Buddy — House Proxy (Cloudflare Worker)
-// - Passphrase unlock -> signed token
-// - Prompt Check endpoint (brain stays here)
-// - Coach last 5 endpoint (brain stays here)
-// - Daily limits reset at 00:00 Europe/Sofia
+// Keeps your provider API key + Buddy logic private.
+//
+// Required secrets:
+//  - DEEPSEEK_API_KEY
+//  - ALLOWED_PASSPHRASES (comma or newline-separated)
+//  - TOKEN_SECRET (32+ chars)
+//
+// Optional vars/secrets:
+//  - ALLOWED_ORIGINS (comma-separated)
+//  - DEFAULT_ORIGIN (fallback)
+//  - TIMEZONE (default Europe/Sofia)
+//  - DAILY_PROMPT_LIMIT (default 30)
+//  - DAILY_COACH_LIMIT (default 5)
+//  - PROMPT_MAX_CHARS (default 5000)
+//  - COACH_MAX_CHARS (default 8000)
+//  - TOKEN_TTL_DAYS (default 30)
+//
+// Expected binding:
+//  - env.LIMITS (Durable Object namespace: LimitsDO)
 
-function parseAllowed(raw) {
-  const s = String(raw || "").trim();
-  if (!s) return [];
-  if (s.startsWith("[")) {
-    try {
-      const arr = JSON.parse(s);
-      return Array.isArray(arr) ? arr.map(x => String(x).trim()).filter(Boolean) : [];
-    } catch {
-      return [];
-    }
-  }
-  return s.split(/[\n,]+/g).map(x => x.trim()).filter(Boolean);
-}
-
-function base64urlEncode(str) {
-  const bytes = new TextEncoder().encode(str);
-  let bin = "";
-  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
-}
-
-function base64urlDecode(b64url) {
-  const b64 = String(b64url || "").replace(/-/g, "+").replace(/_/g, "/");
-  const padded = b64 + "===".slice((b64.length % 4) || 4);
-  const bin = atob(padded);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return new TextDecoder().decode(bytes);
-}
-
-async function hmacSign(secret, msg) {
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
-  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(msg));
-  const bytes = new Uint8Array(sig);
-  let bin = "";
-  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
-}
-
-async function hmacVerify(secret, msg, signatureB64url) {
-  const expected = await hmacSign(secret, msg);
-  // constant-ish time compare
-  if (expected.length !== signatureB64url.length) return false;
-  let ok = 0;
-  for (let i = 0; i < expected.length; i++) ok |= (expected.charCodeAt(i) ^ signatureB64url.charCodeAt(i));
-  return ok === 0;
-}
-
-function getSofiaDayKey(timeZone) {
-  const tz = timeZone || "Europe/Sofia";
-  const fmt = new Intl.DateTimeFormat("en-CA", {
-    timeZone: tz,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
-  });
-  // en-CA yields YYYY-MM-DD
-  return fmt.format(new Date());
-}
-
-function getAllowedOrigin(req, env) {
-  const origin = req.headers.get("Origin") || "";
-  const defaultOrigin = String(env.DEFAULT_ORIGIN || "https://zhelair.github.io");
-  const raw = env.ALLOWED_ORIGINS;
-  const list = raw ? parseAllowed(raw) : [defaultOrigin];
-  const set = new Set(list.map(String));
-  return set.has(origin) ? origin : defaultOrigin;
-}
-
-function corsHeaders(req, env) {
-  const allowOrigin = getAllowedOrigin(req, env);
-  const reqHdrs = req.headers.get("Access-Control-Request-Headers") || "";
-  return {
-    "Access-Control-Allow-Origin": allowOrigin,
-    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-    "Access-Control-Allow-Headers": reqHdrs || "Content-Type, Authorization, X-OU-PASS",
-    "Access-Control-Max-Age": "86400",
-    "Vary": "Origin"
-  };
-}
-
-function withCors(req, env, res) {
-  const h = new Headers(res.headers);
-  const cors = corsHeaders(req, env);
-  for (const [k, v] of Object.entries(cors)) h.set(k, v);
-  return new Response(res.body, { status: res.status, headers: h });
-}
-
-function json(req, env, status, obj) {
-  return withCors(
-    req,
-    env,
-    new Response(JSON.stringify(obj), {
-      status,
-      headers: { "Content-Type": "application/json; charset=utf-8" }
-    })
-  );
-}
-
-function text(req, env, status, body) {
-  return withCors(req, env, new Response(body, { status }));
-}
-
-async function sha256Hex(str) {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
-  const bytes = new Uint8Array(digest);
-  return Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join("");
-}
-
-function getBearer(req) {
-  const h = req.headers.get("Authorization") || "";
-  const m = h.match(/^Bearer\s+(.+)$/i);
-  return m ? m[1].trim() : "";
-}
-
-async function issueToken(env, passphrase) {
-  const secret = String(env.TOKEN_SECRET || "").trim();
-  if (!secret) throw new Error("TOKEN_SECRET is not set");
-
-  const ttlDays = Number(env.TOKEN_TTL_DAYS || "30");
-  const exp = Date.now() + Math.max(1, ttlDays) * 24 * 60 * 60 * 1000;
-  const sub = (await sha256Hex(passphrase)).slice(0, 32);
-
-  const payload = { sub, exp };
-  const payloadStr = JSON.stringify(payload);
-  const payloadB64 = base64urlEncode(payloadStr);
-  const sig = await hmacSign(secret, payloadB64);
-  return {
-    token: `${payloadB64}.${sig}`,
-    expiresAt: new Date(exp).toISOString(),
-    sub
-  };
-}
-
-async function verifyToken(env, token) {
-  const secret = String(env.TOKEN_SECRET || "").trim();
-  if (!secret) return { ok: false, error: "server_misconfig" };
-  const parts = String(token || "").split(".");
-  if (parts.length !== 2) return { ok: false, error: "bad_token" };
-  const [payloadB64, sig] = parts;
-  const ok = await hmacVerify(secret, payloadB64, sig);
-  if (!ok) return { ok: false, error: "bad_token" };
-  let payload;
-  try {
-    payload = JSON.parse(base64urlDecode(payloadB64));
-  } catch {
-    return { ok: false, error: "bad_token" };
-  }
-  if (!payload || !payload.sub || !payload.exp) return { ok: false, error: "bad_token" };
-  if (Date.now() > Number(payload.exp)) return { ok: false, error: "expired" };
-  return { ok: true, sub: String(payload.sub), exp: Number(payload.exp) };
-}
-
-// --- System prompts (kept private server-side)
-const SYSTEM_PROMPT_CHECK = `You are an expert AI prompt reviewer and strict-but-kind teacher.
-
-Your task is NOT to execute the user's request.
-Your task is to analyze the quality of the prompt itself.
-
-Tone:
-- Calm
-- Direct
-- Teacher-like
-- Respectful
-
-Follow this process:
-1) Diagnosis: how an AI will interpret the prompt, where it will fail.
-2) What's missing: only what is truly needed to remove ambiguity.
-3) Suggested improvements: concrete actions.
-4) Golden Prompt: a single revised prompt, preserving intent.
-
-Output JSON ONLY, no markdown, no extra text.
-Schema:
-{
-  "diagnosis": ["..."],
-  "missing": ["..."],
-  "improvements": ["..."],
-  "golden": "..."
-}`;
-
-const SYSTEM_COACH = `You are Prompting Buddy Coach.
-
-You will receive up to the user's last 5 prompts (and sometimes pasted AI replies).
-Find repeating issues and patterns.
-
-Return JSON ONLY.
-Schema:
-{
-  "mistakes": ["...", "...", "..."],
-  "fixes": ["...", "...", "..."],
-  "metaPrompt": "A reusable meta-prompt the user can paste before writing prompts"
-}
-
-Constraints:
-- Exactly 3 mistakes and 3 fixes.
-- Keep metaPrompt concise and reusable.`;
-
-async function deepseekChat(env, { system, user, max_tokens }) {
-  const apiKey = String(env.DEEPSEEK_API_KEY || "").trim();
-  if (!apiKey) throw new Error("DEEPSEEK_API_KEY is not set");
-
-  const url = "https://api.deepseek.com/chat/completions";
-  const payload = {
-    model: "deepseek-chat",
-    messages: [
-      { role: "system", content: system },
-      { role: "user", content: user }
-    ],
-    temperature: 0.2,
-    max_tokens: max_tokens || 900
-  };
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${apiKey}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
-
-  const txt = await res.text();
-  if (!res.ok) throw new Error(`DeepSeek error ${res.status}: ${txt.slice(0, 400)}`);
-  const j = JSON.parse(txt);
-  const out = j?.choices?.[0]?.message?.content || "";
-  return String(out);
-}
-
-// Durable Object: per-user per-day counters
 export class LimitsDO {
   constructor(state, env) {
     this.state = state;
@@ -247,172 +27,414 @@ export class LimitsDO {
 
   async fetch(request) {
     const url = new URL(request.url);
-    if (url.pathname !== "/get" && url.pathname !== "/inc") {
-      return new Response("Not found", { status: 404 });
-    }
+    if (request.method !== 'POST') return new Response('use_post', { status: 405 });
+    let body = {};
+    try { body = await request.json(); } catch { body = {}; }
 
-    const dayKey = url.searchParams.get("day") || "";
-    const kind = url.searchParams.get("kind") || "";
-    const limit = Number(url.searchParams.get("limit") || "0");
+    const key = String(body.key || '').trim();
+    const limit = Number(body.limit || 0);
+    const incr = Boolean(body.incr);
 
-    const key = `${dayKey}:${kind}`;
-    const data = (await this.state.storage.get(key)) || { used: 0 };
+    if (!key) return jsonRaw(400, { error: 'missing_key' });
+    if (!Number.isFinite(limit) || limit < 0) return jsonRaw(400, { error: 'bad_limit' });
 
-    if (url.pathname === "/inc") {
-      data.used += 1;
-      await this.state.storage.put(key, data);
-    }
+    const used = (await this.state.storage.get(key)) || 0;
+    const next = incr ? (used + 1) : used;
+    if (incr) await this.state.storage.put(key, next);
 
-    const used = Number(data.used || 0);
-    const left = Math.max(0, limit - used);
-    return new Response(JSON.stringify({ used, limit, left }), {
-      headers: { "Content-Type": "application/json; charset=utf-8" }
-    });
+    return jsonRaw(200, { used: next, limit });
   }
-}
-
-async function getCounter(env, sub, dayKey, kind, limit, inc=false) {
-  const id = env.LIMITS.idFromName(`u:${sub}`);
-  const stub = env.LIMITS.get(id);
-  const path = inc ? "/inc" : "/get";
-  const url = `https://do${path}?day=${encodeURIComponent(dayKey)}&kind=${encodeURIComponent(kind)}&limit=${encodeURIComponent(String(limit))}`;
-  const res = await stub.fetch(url);
-  return await res.json();
 }
 
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    if (request.method === "OPTIONS") {
-      return withCors(request, env, new Response(null, { status: 204 }));
-    }
+    // CORS preflight
+    if (request.method === 'OPTIONS') return corsPreflight(request, env);
 
-    if (request.method === "GET" && (url.pathname === "/" || url.pathname === "/health")) {
-      return json(request, env, 200, { ok: true });
+    // Health
+    if (url.pathname === '/' && request.method === 'GET') {
+      return corsJson(request, env, 200, {
+        ok: true,
+        service: 'prompting-buddy-house',
+        time: new Date().toISOString()
+      });
     }
-
-    const timeZone = String(env.TIMEZONE || "Europe/Sofia");
-    const dayKey = getSofiaDayKey(timeZone);
 
     // --- /unlock
-    if (url.pathname === "/unlock") {
-      if (request.method !== "POST") return json(request, env, 405, { error: "use_post" });
-      const pass = String(request.headers.get("X-OU-PASS") || "").trim();
-      if (!pass) return json(request, env, 400, { error: "missing_passphrase" });
+    if (url.pathname === '/unlock') {
+      if (request.method !== 'POST') return corsJson(request, env, 405, { error: 'use_post' });
 
-      const allowed = parseAllowed(env.ALLOWED_PASSPHRASES);
-      const ok = allowed.length ? allowed.includes(pass) : false;
-      if (!ok) return json(request, env, 401, { error: "invalid_passphrase" });
-
-      const issued = await issueToken(env, pass);
-      return json(request, env, 200, { token: issued.token, expiresAt: issued.expiresAt });
-    }
-
-    // Everything below requires token
-    const token = getBearer(request);
-    const vt = await verifyToken(env, token);
-    if (!vt.ok) return json(request, env, 401, { error: vt.error || "unauthorized" });
-
-    const sub = vt.sub;
-
-    // --- /status
-    if (url.pathname === "/status") {
-      if (request.method !== "GET") return json(request, env, 405, { error: "use_get" });
-      const pLimit = Number(env.DAILY_PROMPT_LIMIT || "30");
-      const cLimit = Number(env.DAILY_COACH_LIMIT || "5");
-      const prompt = await getCounter(env, sub, dayKey, "prompt", pLimit, false);
-      const coach = await getCounter(env, sub, dayKey, "coach", cLimit, false);
-      return json(request, env, 200, { dayKey, prompt, coach });
-    }
-
-    // --- /prompt-check
-    if (url.pathname === "/prompt-check") {
-      if (request.method !== "POST") return json(request, env, 405, { error: "use_post" });
+      const origin = request.headers.get('Origin') || '';
+      if (!originAllowed(origin, env)) return corsJson(request, env, 403, { error: 'origin_not_allowed' });
 
       let body = {};
       try { body = await request.json(); } catch { body = {}; }
-      const prompt = String(body.prompt || "").trim();
-      if (!prompt) return json(request, env, 200, { diagnosis: [], missing: [], improvements: [], golden: "" });
+      const passphrase = String(body.passphrase || '').trim();
+      if (!passphrase) return corsJson(request, env, 400, { error: 'missing_passphrase' });
 
-      const maxChars = Number(env.PROMPT_MAX_CHARS || "5000");
-      if (prompt.length > maxChars) return json(request, env, 400, { error: "prompt_too_long" });
-
-      const pLimit = Number(env.DAILY_PROMPT_LIMIT || "30");
-      const p = await getCounter(env, sub, dayKey, "prompt", pLimit, true);
-      if (p.used > p.limit) return json(request, env, 429, { error: "daily_prompt_limit" });
-
-      const out = await deepseekChat(env, {
-        system: SYSTEM_PROMPT_CHECK,
-        user: prompt,
-        max_tokens: 900
-      });
-
-      // Expect JSON-only output. If model misbehaves, wrap it.
-      let parsed;
-      try { parsed = JSON.parse(out); } catch { parsed = null; }
-      if (!parsed || typeof parsed !== "object") {
-        parsed = { diagnosis: ["Model output was not valid JSON."], missing: [], improvements: [], golden: out };
+      const allowed = getAllowedPassphrases(env);
+      if (!allowed.length || !allowed.includes(passphrase)) {
+        return corsJson(request, env, 401, { error: 'invalid_passphrase' });
       }
 
-      return json(request, env, 200, {
-        diagnosis: Array.isArray(parsed.diagnosis) ? parsed.diagnosis : [],
-        missing: Array.isArray(parsed.missing) ? parsed.missing : [],
-        improvements: Array.isArray(parsed.improvements) ? parsed.improvements : [],
-        golden: typeof parsed.golden === "string" ? parsed.golden : ""
-      });
+      const sub = await getSubFromRequest(request);
+      const ttlDays = Number(env.TOKEN_TTL_DAYS || 30);
+      const exp = Date.now() + Math.max(1, ttlDays) * 24 * 60 * 60 * 1000;
+      const token = await signToken({ sub, exp }, env.TOKEN_SECRET || '');
+
+      return corsJson(request, env, 200, { token, exp });
     }
 
-    // --- /coach-last5
-    if (url.pathname === "/coach-last5") {
-      if (request.method !== "POST") return json(request, env, 405, { error: "use_post" });
+    // Premium endpoints require token
+    if (url.pathname === '/prompt-check' || url.pathname === '/coach-last5') {
+      const tok = getBearerToken(request);
+      if (!tok) return corsJson(request, env, 401, { error: 'missing_token' });
 
-      let body = {};
-      try { body = await request.json(); } catch { body = {}; }
-      const items = Array.isArray(body.items) ? body.items : [];
-      const last = items.slice(0, 5);
-      if (!last.length) return json(request, env, 400, { error: "missing_items" });
+      const payload = await verifyToken(tok, env.TOKEN_SECRET || '');
+      if (!payload?.sub) return corsJson(request, env, 401, { error: 'bad_token' });
+      if (payload.exp && Date.now() > Number(payload.exp)) return corsJson(request, env, 401, { error: 'token_expired' });
 
-      const maxChars = Number(env.COACH_MAX_CHARS || "8000");
-      const chunks = [];
-      for (let i = 0; i < last.length; i++) {
-        const p = String(last[i]?.prompt || "").trim();
-        const r = String(last[i]?.aiReply || "").trim();
-        if (!p) continue;
-        chunks.push(`PROMPT ${i+1}:\n${p}`);
-        if (r) chunks.push(`AI REPLY ${i+1}:\n${r}`);
+      const sub = String(payload.sub);
+      const tz = String(env.TIMEZONE || 'Europe/Sofia');
+      const dayKey = dayKeyForTz(tz);
+
+      // --- /prompt-check
+      if (url.pathname === '/prompt-check') {
+        if (request.method !== 'POST') return corsJson(request, env, 405, { error: 'use_post' });
+
+        let body = {};
+        try { body = await request.json(); } catch { body = {}; }
+        const prompt = String(body.prompt || '').trim();
+        if (!prompt) return corsJson(request, env, 400, { error: 'missing_prompt' });
+
+        const maxChars = Number(env.PROMPT_MAX_CHARS || 5000);
+        const clipped = prompt.length > maxChars ? prompt.slice(0, maxChars) : prompt;
+
+        const pLimit = Number(env.DAILY_PROMPT_LIMIT || 30);
+        const pc = await getCounter(env, sub, dayKey, 'prompt', pLimit, true);
+        if (pc.used > pc.limit) return corsJson(request, env, 429, { error: 'daily_prompt_limit' });
+
+        const out = await deepseekChat(env, {
+          system: SYSTEM_PROMPT_CHECK,
+          user: clipped,
+          max_tokens: 800
+        });
+
+        const parsed = normalizePromptCheckPayload(parseJsonFromText(out) || out);
+        return corsJson(request, env, 200, parsed);
       }
-      let combined = chunks.join("\n\n---\n\n");
-      if (combined.length > maxChars) combined = combined.slice(0, maxChars);
 
-      const cLimit = Number(env.DAILY_COACH_LIMIT || "5");
-      const c = await getCounter(env, sub, dayKey, "coach", cLimit, true);
-      if (c.used > c.limit) return json(request, env, 429, { error: "daily_coach_limit" });
+      // --- /coach-last5
+      if (url.pathname === '/coach-last5') {
+        if (request.method !== 'POST') return corsJson(request, env, 405, { error: 'use_post' });
 
-      const out = await deepseekChat(env, {
-        system: SYSTEM_COACH,
-        user: combined,
-        max_tokens: 700
-      });
+        let body = {};
+        try { body = await request.json(); } catch { body = {}; }
+        const items = Array.isArray(body.items) ? body.items : [];
+        const last = items.slice(0, 5);
+        if (!last.length) return corsJson(request, env, 400, { error: 'missing_items' });
 
-      let parsed;
-      try { parsed = JSON.parse(out); } catch { parsed = null; }
-      if (!parsed || typeof parsed !== "object") {
-        parsed = { mistakes: ["Model output was not valid JSON."], fixes: [], metaPrompt: out };
+        const maxChars = Number(env.COACH_MAX_CHARS || 8000);
+        const chunks = [];
+        for (let i = 0; i < last.length; i++) {
+          const p = String(last[i]?.prompt || '').trim();
+          const r = String(last[i]?.aiReply || '').trim();
+          if (!p) continue;
+          chunks.push(`PROMPT ${i + 1}:\n${p}`);
+          if (r) chunks.push(`AI REPLY ${i + 1}:\n${r}`);
+        }
+        let combined = chunks.join('\n\n---\n\n');
+        if (combined.length > maxChars) combined = combined.slice(0, maxChars);
+
+        const cLimit = Number(env.DAILY_COACH_LIMIT || 5);
+        const cc = await getCounter(env, sub, dayKey, 'coach', cLimit, true);
+        if (cc.used > cc.limit) return corsJson(request, env, 429, { error: 'daily_coach_limit' });
+
+        const out = await deepseekChat(env, {
+          system: SYSTEM_COACH,
+          user: combined,
+          max_tokens: 700
+        });
+
+        // IMPORTANT: parse JSON even if the model wraps it in code fences or adds text.
+        const parsedObj = parseJsonFromText(out);
+        let parsed = parsedObj && typeof parsedObj === 'object' ? parsedObj : null;
+        if (!parsed) {
+          parsed = { mistakes: ['Model output was not valid JSON.'], fixes: [], metaPrompt: out };
+        }
+
+        const mistakes = Array.isArray(parsed.mistakes) ? parsed.mistakes.slice(0, 3) : [];
+        const fixes = Array.isArray(parsed.fixes) ? parsed.fixes.slice(0, 3) : [];
+        while (mistakes.length < 3) mistakes.push('');
+        while (fixes.length < 3) fixes.push('');
+
+        return corsJson(request, env, 200, {
+          mistakes,
+          fixes,
+          metaPrompt: typeof parsed.metaPrompt === 'string' ? parsed.metaPrompt : ''
+        });
       }
-
-      const mistakes = Array.isArray(parsed.mistakes) ? parsed.mistakes.slice(0, 3) : [];
-      const fixes = Array.isArray(parsed.fixes) ? parsed.fixes.slice(0, 3) : [];
-      while (mistakes.length < 3) mistakes.push("");
-      while (fixes.length < 3) fixes.push("");
-
-      return json(request, env, 200, {
-        mistakes,
-        fixes,
-        metaPrompt: typeof parsed.metaPrompt === "string" ? parsed.metaPrompt : ""
-      });
     }
 
-    return text(request, env, 404, "Not found");
+    return corsText(request, env, 404, 'Not found');
   }
 };
+
+// ----------------------------
+// System prompts
+// ----------------------------
+
+const SYSTEM_PROMPT_CHECK = `You are Prompting Buddy. Your job is to REVIEW a user's prompt (not to execute it).
+Return ONLY valid JSON, no markdown, no code fences.
+Schema:
+{
+  "diagnosis": ["..."],
+  "missing": ["..."],
+  "improvements": ["..."],
+  "golden": "..."
+}
+Rules:
+- Keep diagnosis/missing/improvements concise bullets.
+- Golden prompt should be a rewritten version that adds missing details and structure.
+- Never add extra keys.`;
+
+const SYSTEM_COACH = `You are Prompting Buddy Coach. You will analyze the last 5 prompt-check runs.
+Return ONLY valid JSON, no markdown, no code fences.
+Schema:
+{
+  "mistakes": ["...", "...", "..."],
+  "fixes": ["...", "...", "..."],
+  "metaPrompt": "A reusable prompt template the user can copy"
+}
+Rules:
+- EXACTLY 3 mistakes and 3 fixes (strings). If unsure, use empty string "".
+- metaPrompt must be plain text (no markdown fences).
+- Do not include any other keys or commentary.`;
+
+// ----------------------------
+// Helpers
+// ----------------------------
+
+function corsHeaders(request, env) {
+  const origin = request.headers.get('Origin') || '';
+  const allowOrigin = originAllowed(origin, env) ? origin : '*';
+  return {
+    'Access-Control-Allow-Origin': allowOrigin,
+    'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+    'Vary': 'Origin'
+  };
+}
+
+function corsPreflight(request, env) {
+  return new Response(null, { status: 204, headers: corsHeaders(request, env) });
+}
+
+function corsJson(request, env, status, obj) {
+  return new Response(JSON.stringify(obj), {
+    status,
+    headers: {
+      ...corsHeaders(request, env),
+      'Content-Type': 'application/json; charset=utf-8'
+    }
+  });
+}
+
+function corsText(request, env, status, txt) {
+  return new Response(String(txt), {
+    status,
+    headers: { ...corsHeaders(request, env), 'Content-Type': 'text/plain; charset=utf-8' }
+  });
+}
+
+function jsonRaw(status, obj) {
+  return new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json; charset=utf-8' } });
+}
+
+function originAllowed(origin, env) {
+  if (!origin) return false;
+  const list = String(env.ALLOWED_ORIGINS || env.DEFAULT_ORIGIN || '').split(',').map(s => s.trim()).filter(Boolean);
+  if (!list.length) return true; // permissive if not configured
+  return list.includes(origin);
+}
+
+function getAllowedPassphrases(env) {
+  const raw = String(env.ALLOWED_PASSPHRASES || '').trim();
+  if (!raw) return [];
+  // allow commas OR newlines (user sometimes pastes multi-line)
+  return raw
+    .split(/[,\n\r]+/g)
+    .map(s => s.trim())
+    .filter(Boolean);
+}
+
+async function getSubFromRequest(request) {
+  // We purposely avoid IP-based identity; just create a stable-ish fingerprint per browser.
+  // Caller can send X-Client-Id; otherwise fall back to a hash of user-agent.
+  const hinted = request.headers.get('X-Client-Id');
+  const ua = request.headers.get('User-Agent') || '';
+  const base = String(hinted || ua || 'anon');
+  return await sha256Hex(base);
+}
+
+function getBearerToken(request) {
+  const h = request.headers.get('Authorization') || '';
+  const m = h.match(/^Bearer\s+(.+)$/i);
+  return m ? m[1].trim() : '';
+}
+
+function dayKeyForTz(timeZone) {
+  // YYYY-MM-DD in given TZ
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(new Date());
+  const y = parts.find(p => p.type === 'year')?.value || '1970';
+  const m = parts.find(p => p.type === 'month')?.value || '01';
+  const d = parts.find(p => p.type === 'day')?.value || '01';
+  return `${y}-${m}-${d}`;
+}
+
+async function getCounter(env, sub, dayKey, kind, limit, incr) {
+  if (!env.LIMITS) return { used: incr ? 1 : 0, limit };
+  const id = env.LIMITS.idFromName(sub);
+  const stub = env.LIMITS.get(id);
+  const key = `${dayKey}:${kind}`;
+  const res = await stub.fetch('https://do/counter', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ key, limit, incr })
+  });
+  const j = await res.json();
+  return { used: Number(j.used || 0), limit: Number(j.limit || limit) };
+}
+
+async function deepseekChat(env, { system, user, max_tokens }) {
+  const apiKey = String(env.DEEPSEEK_API_KEY || '').trim();
+  if (!apiKey) throw new Error('missing_deepseek_api_key');
+
+  const res = await fetch('https://api.deepseek.com/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: 'deepseek-chat',
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: user }
+      ],
+      temperature: 0.2,
+      max_tokens: max_tokens || 800
+    })
+  });
+
+  if (!res.ok) {
+    const t = await res.text().catch(() => '');
+    throw new Error(t || `deepseek_http_${res.status}`);
+  }
+
+  const data = await res.json();
+  const txt = data?.choices?.[0]?.message?.content;
+  return String(txt || '').trim();
+}
+
+function parseJsonFromText(txt) {
+  if (!txt) return null;
+  const s = String(txt).trim();
+
+  // Strip a single pair of ``` fences if present
+  const noFence = s
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/```\s*$/i, '')
+    .trim();
+
+  // Try direct JSON
+  try { return JSON.parse(noFence); } catch {}
+
+  // Try first {...} block
+  const m = noFence.match(/\{[\s\S]*\}/);
+  if (!m) return null;
+  try { return JSON.parse(m[0]); } catch { return null; }
+}
+
+function normalizePromptCheckPayload(maybe) {
+  const unwrap = (x) => {
+    if (x && typeof x === 'object' && x.result && typeof x.result === 'object') return x.result;
+    return x;
+  };
+  let obj = unwrap(maybe);
+  if (typeof obj === 'string') obj = parseJsonFromText(obj) || { golden: obj };
+  if (!obj || typeof obj !== 'object') obj = {};
+
+  const toList = (v) => {
+    if (Array.isArray(v)) return v.map(x => String(x)).filter(Boolean);
+    if (typeof v === 'string' && v.trim()) return [v.trim()];
+    return [];
+  };
+
+  return {
+    diagnosis: toList(obj.diagnosis || obj.mistakes || obj.notes),
+    missing: toList(obj.missing),
+    improvements: toList(obj.improvements || obj.fixes || obj.suggestions),
+    golden: String(obj.golden || obj.goldenPrompt || obj.prompt || '').trim()
+  };
+}
+
+async function sha256Hex(str) {
+  const data = new TextEncoder().encode(str);
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  const bytes = Array.from(new Uint8Array(digest));
+  return bytes.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function hmacSha256(secret, msg) {
+  const keyData = new TextEncoder().encode(secret);
+  const key = await crypto.subtle.importKey(
+    'raw',
+    keyData,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign', 'verify']
+  );
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(msg));
+  const bytes = Array.from(new Uint8Array(sig));
+  return bytes.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function signToken(payload, secret) {
+  if (!secret || secret.length < 16) throw new Error('token_secret_too_short');
+  const json = JSON.stringify(payload);
+  const b64 = btoa(unescape(encodeURIComponent(json)));
+  const sig = await hmacSha256(secret, b64);
+  return `${b64}.${sig}`;
+}
+
+async function verifyToken(token, secret) {
+  if (!token || !secret) return null;
+  const parts = String(token).split('.');
+  if (parts.length !== 2) return null;
+  const [b64, sig] = parts;
+  const expected = await hmacSha256(secret, b64);
+  if (!timingSafeEqual(sig, expected)) return null;
+  try {
+    const json = decodeURIComponent(escape(atob(b64)));
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}
+
+function timingSafeEqual(a, b) {
+  const x = String(a);
+  const y = String(b);
+  if (x.length !== y.length) return false;
+  let out = 0;
+  for (let i = 0; i < x.length; i++) out |= x.charCodeAt(i) ^ y.charCodeAt(i);
+  return out === 0;
+}
