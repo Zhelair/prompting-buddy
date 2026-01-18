@@ -161,20 +161,22 @@ export default {
         // IMPORTANT: parse JSON even if the model wraps it in code fences or adds text.
         const parsedObj = parseJsonFromText(out);
         let parsed = parsedObj && typeof parsedObj === 'object' ? parsedObj : null;
-        if (!parsed) {
-          parsed = { mistakes: ['Model output was not valid JSON.'], fixes: [], metaPrompt: out };
+
+        // Some models nest the real JSON inside metaPrompt as a string (or use other key names).
+        if (parsed && typeof parsed.metaPrompt === 'string') {
+          const inner = parseJsonFromText(parsed.metaPrompt);
+          if (inner && typeof inner === 'object') parsed = { ...parsed, ...inner };
         }
 
-        const mistakes = Array.isArray(parsed.mistakes) ? parsed.mistakes.slice(0, 3) : [];
-        const fixes = Array.isArray(parsed.fixes) ? parsed.fixes.slice(0, 3) : [];
-        while (mistakes.length < 3) mistakes.push('');
-        while (fixes.length < 3) fixes.push('');
+        if (!parsed) parsed = { mistakes: ['Model output was not valid JSON.'], fixes: [], metaPrompt: out };
 
-        return corsJson(request, env, 200, {
-          mistakes,
-          fixes,
-          metaPrompt: typeof parsed.metaPrompt === 'string' ? parsed.metaPrompt : ''
-        });
+        const mistakesRaw = parsed.mistakes ?? parsed.errors ?? parsed.problem ?? parsed.notes;
+        const fixesRaw = parsed.fixes ?? parsed.suggestions ?? parsed.improvements;
+        const mistakes = Array.isArray(mistakesRaw) ? mistakesRaw.map(x => String(x)).filter(Boolean).slice(0, 3) : [];
+        const fixes = Array.isArray(fixesRaw) ? fixesRaw.map(x => String(x)).filter(Boolean).slice(0, 3) : [];
+        const metaPrompt = String(parsed.metaPrompt ?? parsed.meta ?? '').trim();
+
+        return corsJson(request, env, 200, { mistakes, fixes, metaPrompt });
       }
     }
 
@@ -200,18 +202,20 @@ Rules:
 - Golden prompt should be a rewritten version that adds missing details and structure.
 - Never add extra keys.`;
 
-const SYSTEM_COACH = `You are Prompting Buddy Coach. You will analyze the last 5 prompt-check runs.
-Return ONLY valid JSON, no markdown, no code fences.
+const SYSTEM_COACH = `You are Prompting Buddy Coach.
+You will be given up to 5 prior prompt-check runs (prompts and optional pasted AI replies).
+
+Return ONLY valid JSON (no markdown, no code fences, no extra text).
 Schema:
 {
-  "mistakes": ["...", "...", "..."],
-  "fixes": ["...", "...", "..."],
+  "mistakes": ["..."],
+  "fixes": ["..."],
   "metaPrompt": "A reusable prompt template the user can copy"
 }
 Rules:
-- EXACTLY 3 mistakes and 3 fixes (strings). If unsure, use empty string "".
+- Provide up to 3 mistakes and up to 3 fixes (short bullets; each under ~90 chars).
 - metaPrompt must be plain text (no markdown fences).
-- Do not include any other keys or commentary.`;
+- Do not include any other keys.`;
 
 // ----------------------------
 // Helpers
@@ -354,13 +358,31 @@ function parseJsonFromText(txt) {
     .replace(/```\s*$/i, '')
     .trim();
 
-  // Try direct JSON
-  try { return JSON.parse(noFence); } catch {}
+  const clean = (str) => {
+    // Remove common JSON-breaking patterns from model output
+    let t = String(str || '').trim();
+    // Convert “smart quotes” to normal quotes (rare, but happens)
+    t = t.replace(/[\u201C\u201D]/g, '"').replace(/[\u2018\u2019]/g, "'");
+    // Remove trailing commas before } or ]
+    t = t.replace(/,\s*([}\]])/g, '$1');
+    return t;
+  };
 
-  // Try first {...} block
+  // Try direct JSON
+  try { return JSON.parse(clean(noFence)); } catch {}
+
+  // Try substring between first { and last }
+  const a = noFence.indexOf('{');
+  const b = noFence.lastIndexOf('}');
+  if (a !== -1 && b !== -1 && b > a) {
+    const slice = noFence.slice(a, b + 1);
+    try { return JSON.parse(clean(slice)); } catch {}
+  }
+
+  // Try any {...} block
   const m = noFence.match(/\{[\s\S]*\}/);
   if (!m) return null;
-  try { return JSON.parse(m[0]); } catch { return null; }
+  try { return JSON.parse(clean(m[0])); } catch { return null; }
 }
 
 function normalizePromptCheckPayload(maybe) {

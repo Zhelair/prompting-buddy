@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="assets/style.css" />
   <title>Prompting Buddy</title>
   <link rel="stylesheet" href="assets/style.css" />
 </head>
@@ -181,6 +182,39 @@
     </div>
   </div>
 </template>
+
+  <template id="tpl-pcmodal">
+    <div class="modal_backdrop" id="pcBackdrop" role="dialog" aria-modal="true" hidden>
+      <div class="modal">
+        <div class="modal__head">
+          <strong>Prompt Check result</strong>
+          <button class="btn" id="pcClose" type="button">Close</button>
+        </div>
+        <div class="modal__body">
+          <div class="tips">
+            <h3>Diagnosis</h3>
+            <div id="pcModalDiagnosis"></div>
+          </div>
+
+          <div class="tips">
+            <h3>What’s missing</h3>
+            <div id="pcModalMissing"></div>
+          </div>
+
+          <div class="tips">
+            <h3>Suggested improvements</h3>
+            <div id="pcModalImprovements"></div>
+          </div>
+
+          <div class="tips">
+            <h3>Golden Prompt</h3>
+            <button class="btn" id="pcCopy" type="button">Copy</button>
+            <pre class="pre" id="pcModalGolden"></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
 
 <script src="assets/data.js"></script>
 <script src="assets/app.js"></script>
