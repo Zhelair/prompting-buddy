@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Prompting Buddy</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body data-theme="modern" data-variant="default">
+
+<header class="topbar">
+  <div class="topbar__inner">
+    <div class="topbar__left">
+      <div class="topbar__logo" aria-hidden="true">PB</div>
+      <div class="topbar__title" id="brandName">Prompting Buddy</div>
+    </div>
+
+    <nav class="topbar__nav" aria-label="Primary">
+      <button class="chip is-active" data-route="buddy" type="button">Buddy</button>
+      <button class="chip" data-route="vault" type="button">Vault</button>
+      <button class="chip" data-route="about" type="button">About</button>
+    </nav>
+
+    <div class="topbar__right">
+      <div class="pill" id="pillPrompts" hidden>Prompts: <span id="promptsLeft">0</span>/<span id="promptsLimit">0</span></div>
+      <div class="pill" id="pillCoach" hidden>Coach: <span id="coachLeft">0</span>/<span id="coachLimit">0</span></div>
+      <button class="btn btn--mini" id="unlockBtn" type="button">Unlock</button>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <section class="shell">
+    <div class="screen">
+      <section class="screen__content" id="app"></section>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <span>© <span id="year"></span> Prompting Buddy</span>
+  <span class="footer__sep">·</span>
+  <a class="footer__link" id="footerSupport" href="#" target="_blank" rel="noopener">Support ☕</a>
+</footer>
+
+<!-- Templates -->
+<template id="tpl-buddy">
+  <div class="buddy">
+    <article class="card">
+      <div class="card__body">
+        <h2 class="card__title">Prompt Check (Beta)</h2>
+        <p class="card__desc">Improve your prompt <em>before</em> you run it. This reviews clarity — it does not execute the task.</p>
+
+        <label class="field">
+          <span class="field__label">Your prompt</span>
+          <textarea class="field__textarea" id="pcPrompt" rows="10" placeholder="Paste your prompt here..."></textarea>
+          <div class="field__hint">
+            <span id="pcChar">0</span>/<span id="pcCharMax">5000</span> characters
+            <span class="muted">·</span>
+            <span class="muted">Daily reset: 00:00 Sofia time</span>
+          </div>
+        </label>
+
+        <div class="panel__actions">
+          <button class="btn btn--primary" id="pcRun" type="button">Run Prompt Check</button>
+          <button class="btn" id="pcClear" type="button">Clear</button>
+        </div>
+
+        <div class="settings__status" id="pcStatus" aria-live="polite"></div>
+
+        <div class="pc" id="pcOut" hidden>
+          <div class="pc__row">
+            <h3 class="pc__h">Diagnosis</h3>
+            <div class="pc__box" id="pcDiagnosis"></div>
+          </div>
+          <div class="pc__row">
+            <h3 class="pc__h">What’s missing</h3>
+            <div class="pc__box" id="pcMissing"></div>
+          </div>
+          <div class="pc__row">
+            <h3 class="pc__h">Suggested improvements</h3>
+            <div class="pc__box" id="pcImprovements"></div>
+          </div>
+          <div class="pc__row">
+            <div class="pc__head">
+              <h3 class="pc__h">Golden Prompt</h3>
+              <button class="btn btn--mini" id="pcCopyGolden" type="button">Copy</button>
+            </div>
+            <pre class="pc__golden" id="pcGolden"></pre>
+          </div>
+        </div>
+
+        <p class="panel__note">Prompt Check cap: <strong>5,000 characters</strong> per check.</p>
+      </div>
+    </article>
+  </div>
+</template>
+
+<template id="tpl-vault">
+  <div class="vault">
+    <article class="card">
+      <div class="card__body">
+        <div class="card__head">
+          <h2 class="card__title">Vault</h2>
+          <div class="card__headActions">
+            <button class="btn btn--mini" id="vaultReset" type="button">Reset Vault</button>
+          </div>
+        </div>
+        <p class="card__desc">Saves your last <strong>10</strong> Prompt Checks locally (in your browser). No accounts.</p>
+
+        <div class="panel__actions">
+          <button class="btn btn--primary" id="vaultCoach" type="button">Coach last 5 (8,000 chars max)</button>
+        </div>
+        <div class="settings__status" id="vaultStatus" aria-live="polite"></div>
+
+        <div class="vault__list" id="vaultList"></div>
+      </div>
+    </article>
+  </div>
+</template>
+
+<template id="tpl-about">
+  <div class="about">
+    <article class="card">
+      <div class="card__body" id="aboutBody"></div>
+    </article>
+  </div>
+</template>
+
+<template id="tpl-unlock">
+  <div class="modal__backdrop" id="unlockBackdrop" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div class="modal__head">
+        <h3 class="modal__title">Unlock Prompting Buddy</h3>
+        <button class="btn btn--mini" id="unlockClose" type="button">Close</button>
+      </div>
+      <div class="modal__body">
+        <label class="field">
+          <span class="field__label">Passphrase</span>
+          <input class="field__input" id="unlockPass" type="text" placeholder="Enter passphrase" autocomplete="off" />
+        </label>
+        <div class="panel__actions">
+          <button class="btn btn--primary" id="unlockDo" type="button">Unlock</button>
+        </div>
+        <div class="settings__status" id="unlockStatus" aria-live="polite"></div>
+        <p class="panel__note">Your passphrase is verified by the backend. Only a token is stored locally.</p>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
