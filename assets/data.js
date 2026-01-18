@@ -4,7 +4,7 @@ window.PB_DATA = {
 
   // Cloudflare Worker base URL (set this after you deploy the worker)
   house: {
-    endpoint: "https://your-worker-name.your-subdomain.workers.dev",
+    endpoint: "https://prompting-buddy-house.nik-sales-737.workers.dev",
     timezone: "Europe/Sofia",
     dailyPromptLimit: 30,
     dailyCoachLimit: 5,
