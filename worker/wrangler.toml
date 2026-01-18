@@ -16,9 +16,6 @@ TOKEN_TTL_DAYS = "30"
 name = "LIMITS"
 class_name = "LimitsDO"
 
-[[migrations]]
-tag = "v1"
-new_classes = ["LimitsDO"]
 
 [[migrations]]
 tag = "v1"
