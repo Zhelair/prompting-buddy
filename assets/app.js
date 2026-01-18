@@ -23,9 +23,17 @@
     token: "pb_token",
     tokenExp: "pb_token_exp",
     vault: "pb_vault_v1",
+    draftPrompt: "pb_draft_prompt_v1",
     theme: "pb_theme",
     variant: (t)=>`pb_theme_variant_${t}`
   };
+
+  function setDraftPrompt(v){
+    try{ localStorage.setItem(LS.draftPrompt, String(v||"")); }catch{}
+  }
+  function getDraftPrompt(){
+    try{ return String(localStorage.getItem(LS.draftPrompt) || ""); }catch{ return ""; }
+  }
 
   function nowYear(){ try{ return new Date().getFullYear(); }catch{ return ""; } }
   if(year) year.textContent = String(nowYear());
@@ -249,7 +257,16 @@
       if(ch) ch.textContent = String(n);
       return n;
     }
-    prompt?.addEventListener('input', countChars);
+    // Restore draft so switching Buddy/Vault/About doesn't erase what you're typing
+    if(prompt && !prompt.value){
+      const draft = getDraftPrompt();
+      if(draft) prompt.value = draft;
+    }
+
+    prompt?.addEventListener('input', ()=>{
+      countChars();
+      setDraftPrompt(prompt?.value||"");
+    });
     countChars();
 
     function renderLines(el, arr){
@@ -269,6 +286,7 @@
 
     clear?.addEventListener('click', ()=>{
       if(prompt) prompt.value = "";
+      setDraftPrompt("");
       countChars();
       out.hidden = true;
       setStatus("");
@@ -327,17 +345,71 @@
     const list = document.getElementById('vaultList');
     const reset = document.getElementById('vaultReset');
     const coachBtn = document.getElementById('vaultCoach');
-    const coachStatus = document.getElementById('vaultCoachStatus') || document.getElementById('vaultStatus');
-    const coachOut = document.getElementById('vaultCoachOut');
-    const coachMist = document.getElementById('vaultCoachMistakes');
-    const coachFix = document.getElementById('vaultCoachFixes');
-    const coachMeta = document.getElementById('vaultCoachMeta');
-    const coachCopy = document.getElementById('vaultCoachCopy');
     const coachCap = document.getElementById('vaultCoachCap');
 
     if(coachCap) coachCap.textContent = String(COACH_MAX_CHARS);
 
-    function setCoachStatus(msg){ if(coachStatus) coachStatus.textContent = msg||""; }
+    function setCoachStatus(msg){
+      const s = document.getElementById('vaultStatus');
+      if(s) s.textContent = msg||"";
+    }
+
+    function createCoachModal(){
+      const tpl = document.getElementById('tpl-coach');
+      if(!tpl) return null;
+      const node = tpl.content.firstElementChild.cloneNode(true);
+
+      // close helpers
+      const closeBtn = node.querySelector('#coachClose');
+      function close(){ node.remove(); }
+      closeBtn?.addEventListener('click', close);
+      node.addEventListener('click', (e)=>{ if(e.target===node) close(); });
+      document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') close(); }, { once:true });
+
+      document.body.appendChild(node);
+      return node;
+    }
+
+    function tryParseJSONFromText(text){
+      if(!text) return null;
+      let t = String(text).trim();
+      // strip ``` fences if present
+      t = t.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '');
+      // best-effort: extract the first {...} block
+      const m = t.match(/\{[\s\S]*\}/);
+      if(!m) return null;
+      try{ return JSON.parse(m[0]); }catch{ return null; }
+    }
+
+    function normalizeCoachPayload(payload){
+      // payload can be an object or raw text
+      let obj = payload;
+      if(typeof payload === 'string'){
+        // try parse whole text as JSON, then try extract
+        try{ obj = JSON.parse(payload); }catch{ obj = tryParseJSONFromText(payload); }
+      }
+
+      // Some models return JSON inside a string
+      if(obj && typeof obj === 'object'){
+        if(typeof obj.mistakes === 'string' && (obj.mistakes.includes('{') && obj.mistakes.includes('"mistakes"'))){
+          const inner = tryParseJSONFromText(obj.mistakes);
+          if(inner) obj = inner;
+        }
+        if(typeof obj.text === 'string' && obj.text.includes('{')){
+          const inner = tryParseJSONFromText(obj.text);
+          if(inner) obj = inner;
+        }
+        if(typeof obj.raw === 'string' && obj.raw.includes('{')){
+          const inner = tryParseJSONFromText(obj.raw);
+          if(inner) obj = inner;
+        }
+      }
+
+      const mistakes = Array.isArray(obj?.mistakes) ? obj.mistakes : [];
+      const fixes = Array.isArray(obj?.fixes) ? obj.fixes : [];
+      const metaPrompt = typeof obj?.metaPrompt === 'string' ? obj.metaPrompt : (typeof obj?.meta === 'string' ? obj.meta : '');
+      return { mistakes, fixes, metaPrompt, raw: obj };
+    }
 
     function renderVault(){
       const v = loadVault();
@@ -417,17 +489,60 @@
       setTimeout(()=>setCoachStatus(""), 900);
     });
 
-    coachCopy?.addEventListener('click', async ()=>{
-      const txt = String(coachMeta?.textContent||"").trim();
-      if(!txt) return;
-      try{ await navigator.clipboard.writeText(txt); setCoachStatus("Meta-prompt copied ✅"); }
-      catch{ setCoachStatus("Copy failed."); }
-      setTimeout(()=>setCoachStatus(""), 900);
-    });
+    function parseJsonFromText(txt){
+      if(!txt) return null;
+      const s = String(txt).trim();
+      // Strip common code fences
+      const noFence = s
+        .replace(/^```(?:json)?\s*/i, "")
+        .replace(/```\s*$/i, "");
+      // Try direct JSON first
+      try{ return JSON.parse(noFence); }catch{}
+      // Otherwise, extract the first {...} block
+      const m = noFence.match(/\{[\s\S]*\}/);
+      if(!m) return null;
+      try{ return JSON.parse(m[0]); }catch{ return null; }
+    }
+
+    function normalizeCoachPayload(maybe){
+      // Accept object or string; try to end up with {mistakes:[], fixes:[], metaPrompt:""}
+      let obj = maybe;
+      if(typeof obj === 'string') obj = parseJsonFromText(obj) || { metaPrompt: obj };
+      if(obj && typeof obj === 'object'){
+        // If the model returned a big blob in metaPrompt, try to parse it
+        if((!Array.isArray(obj.mistakes) || !Array.isArray(obj.fixes)) && typeof obj.metaPrompt === 'string'){
+          const parsed = parseJsonFromText(obj.metaPrompt);
+          if(parsed && typeof parsed === 'object') obj = { ...obj, ...parsed };
+        }
+        const mistakes = Array.isArray(obj.mistakes) ? obj.mistakes : [];
+        const fixes = Array.isArray(obj.fixes) ? obj.fixes : [];
+        const metaPrompt = String(obj.metaPrompt || obj.meta || obj.raw || "").trim();
+        return { mistakes, fixes, metaPrompt, _raw: obj };
+      }
+      return { mistakes: [], fixes: [], metaPrompt: String(maybe||"") };
+    }
+
+    function openCoachModal(){
+      const tpl = document.getElementById('tpl-coach');
+      if(!tpl) return null;
+      const node = tpl.content.firstElementChild.cloneNode(true);
+      document.body.appendChild(node);
+
+      const close = node.querySelector('#coachClose');
+      const backdrop = node.querySelector('#coachBackdrop') || node;
+      const onClose = ()=>{ try{ node.remove(); }catch{} };
+      close?.addEventListener('click', onClose);
+      node.addEventListener('click', (e)=>{ if(e.target === backdrop) onClose(); });
+
+      // Esc to close
+      const onKey = (e)=>{ if(e.key === 'Escape') { onClose(); document.removeEventListener('keydown', onKey); } };
+      document.addEventListener('keydown', onKey);
+
+      return node;
+    }
 
     coachBtn?.addEventListener('click', async ()=>{
       setCoachStatus("");
-      if(coachOut) coachOut.hidden = true;
 
       const tok = getToken();
       if(!tok){ setCoachStatus("🔒 Unlock to use Coaching."); return; }
@@ -447,27 +562,55 @@
       }).join("\n\n");
       const clipped = combined.slice(0, COACH_MAX_CHARS);
 
+      const modal = openCoachModal();
+      if(!modal){ setCoachStatus("Modal template missing."); return; }
+
+      const modalStatus = modal.querySelector('#coachStatus');
+      const modalMist = modal.querySelector('#coachMistakes');
+      const modalFix = modal.querySelector('#coachFixes');
+      const modalMeta = modal.querySelector('#coachMeta');
+      const modalCopy = modal.querySelector('#coachCopy');
+
+      const setModalStatus = (m)=>{ if(modalStatus) modalStatus.textContent = m||""; };
+
+      modalCopy?.addEventListener('click', async ()=>{
+        const txt = String(modalMeta?.textContent||"").trim();
+        if(!txt) return;
+        try{ await navigator.clipboard.writeText(txt); setModalStatus("Meta-prompt copied ✅"); }
+        catch{ setModalStatus("Copy failed."); }
+        setTimeout(()=>setModalStatus(""), 900);
+      });
+
       coachBtn.disabled = true;
-      setCoachStatus("Coaching... (last 5, max 8,000 chars)");
+      setModalStatus("Coaching... (last 5, max 8,000 chars)");
       try {
-        const j = await api("/coach-last5", {
+        // We deliberately read as text first so we can recover if the model returns non-JSON.
+        const res = await fetch(`${ENDPOINT.replace(/\/+$/,'')}/coach-last5`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${tok}`
           },
-          body: { text: clipped, items }
+          body: JSON.stringify({ text: clipped, items })
         });
+        if(!res.ok){
+          const t = await res.text().catch(()=>"");
+          throw new Error(t || `HTTP ${res.status}`);
+        }
+        const txt = await res.text();
+        const parsed = normalizeCoachPayload(parseJsonFromText(txt) || txt);
 
-        if(coachOut) coachOut.hidden = false;
-        if(coachMist) coachMist.innerHTML = `<ul class="tips__list">${(j?.mistakes||[]).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('')}</ul>`;
-        if(coachFix) coachFix.innerHTML = `<ul class="tips__list">${(j?.fixes||[]).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('')}</ul>`;
-        if(coachMeta) coachMeta.textContent = String(j?.metaPrompt||"").trim();
+        if(modalMist) modalMist.innerHTML = `<ul class="tips__list">${(parsed.mistakes||[]).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('')}</ul>`;
+        if(modalFix) modalFix.innerHTML = `<ul class="tips__list">${(parsed.fixes||[]).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('')}</ul>`;
+        if(modalMeta) modalMeta.textContent = parsed.metaPrompt;
 
+        setModalStatus("Done ✅");
         setCoachStatus("Done ✅");
         await refreshStatus();
       } catch (err){
-        setCoachStatus(String(err?.message || err));
+        const msg = String(err?.message || err);
+        setModalStatus(msg);
+        setCoachStatus(msg);
       } finally {
         coachBtn.disabled = false;
       }
