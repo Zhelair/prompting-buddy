@@ -4,7 +4,7 @@ window.PB_DATA = {
 
   // Cloudflare Worker base URL (set this after you deploy the worker)
   house: {
-    endpoint: "",
+    endpoint: "https://your-worker-name.your-subdomain.workers.dev",
     timezone: "Europe/Sofia",
     dailyPromptLimit: 30,
     dailyCoachLimit: 5,
