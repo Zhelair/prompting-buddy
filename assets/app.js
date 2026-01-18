@@ -28,6 +28,12 @@
     variant: (t)=>`pb_theme_variant_${t}`
   };
 
+  // last-run caches (for persistence when navigating Buddy/Vault/About)
+  const LS_LAST = {
+    pc: "pb_last_promptcheck_v1",
+    coach: "pb_last_coach_v1"
+  };
+
   function setDraftPrompt(v){
     try{ localStorage.setItem(LS.draftPrompt, String(v||"")); }catch{}
   }
@@ -734,6 +740,59 @@
       .replace(/>/g,"&gt;")
       .replace(/\"/g,"&quot;")
       .replace(/'/g,"&#39;");
+  }
+
+  // -------- Shared parsers (must be top-level so Buddy + Vault can both use them) --------
+  function parseJsonFromText(txt){
+    if(!txt) return null;
+    const s = String(txt).trim();
+    const noFence = s
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/```\s*$/i, "");
+    try{ return JSON.parse(noFence); }catch{}
+    const m = noFence.match(/\{[\s\S]*\}/);
+    if(!m) return null;
+    try{ return JSON.parse(m[0]); }catch{ return null; }
+  }
+
+  function normalizePromptCheckPayload(maybe){
+    const unwrap = (x)=>{
+      if(x && typeof x === 'object' && x.result && typeof x.result === 'object') return x.result;
+      return x;
+    };
+    let obj = unwrap(maybe);
+    if(typeof obj === 'string') obj = parseJsonFromText(obj) || { golden: obj };
+    if(!obj || typeof obj !== 'object') obj = {};
+
+    const toList = (v)=>{
+      if(Array.isArray(v)) return v.map(x=>String(x)).filter(Boolean);
+      if(typeof v === 'string' && v.trim()) return [v.trim()];
+      return [];
+    };
+
+    return {
+      diagnosis: toList(obj.diagnosis || obj.mistakes || obj.notes),
+      missing: toList(obj.missing),
+      improvements: toList(obj.improvements || obj.fixes || obj.suggestions),
+      golden: String(obj.golden || obj.goldenPrompt || obj.prompt || "").trim()
+    };
+  }
+
+  function normalizeCoachPayload(maybe){
+    let obj = maybe;
+    if(typeof obj === 'string') obj = parseJsonFromText(obj) || { metaPrompt: obj };
+    if(obj && typeof obj === 'object'){
+      if(obj.result && typeof obj.result === 'object') obj = obj.result;
+      if((!Array.isArray(obj.mistakes) || !Array.isArray(obj.fixes)) && typeof obj.metaPrompt === 'string'){
+        const parsed = parseJsonFromText(obj.metaPrompt);
+        if(parsed && typeof parsed === 'object') obj = { ...obj, ...parsed };
+      }
+      const mistakes = Array.isArray(obj.mistakes) ? obj.mistakes : [];
+      const fixes = Array.isArray(obj.fixes) ? obj.fixes : [];
+      const metaPrompt = String(obj.metaPrompt || obj.meta || obj.raw || "").trim();
+      return { mistakes, fixes, metaPrompt, _raw: obj };
+    }
+    return { mistakes: [], fixes: [], metaPrompt: String(maybe||"") };
   }
 
   // nav wiring
