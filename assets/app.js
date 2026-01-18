@@ -168,16 +168,20 @@
 
   // --- Unlock modal
   function openUnlock(){
+    // Remove any existing unlock modal (prevents stacked panels)
+    const existing = document.getElementById('unlockBackdrop');
+    if(existing) existing.remove();
+
     const frag = tpl("tpl-unlock");
-    const modal = frag.querySelector('.modal');
+    const backdrop = frag.querySelector('#unlockBackdrop');
     const input = frag.querySelector('#unlockPass');
-    const btn = frag.querySelector('#unlockGo');
-    const close = frag.querySelector('[data-close]');
+    const btn = frag.querySelector('#unlockDo');
+    const close = frag.querySelector('#unlockClose');
     const status = frag.querySelector('#unlockStatus');
 
-    function cleanup(){ modal?.remove(); }
+    function cleanup(){ backdrop?.remove(); }
     close?.addEventListener('click', cleanup);
-    modal?.addEventListener('click', (e)=>{ if(e.target===modal) cleanup(); });
+    backdrop?.addEventListener('click', (e)=>{ if(e.target===backdrop) cleanup(); });
 
     btn?.addEventListener('click', async ()=>{
       const pass = String(input?.value || "").trim();
@@ -231,7 +235,7 @@
     const out = document.getElementById('pcOut');
     const diag = document.getElementById('pcDiagnosis');
     const miss = document.getElementById('pcMissing');
-    const sugg = document.getElementById('pcSuggest');
+    const sugg = document.getElementById('pcImprovements');
     const gold = document.getElementById('pcGolden');
     const copy = document.getElementById('pcCopyGolden');
     const ch = document.getElementById('pcChar');
@@ -323,7 +327,7 @@
     const list = document.getElementById('vaultList');
     const reset = document.getElementById('vaultReset');
     const coachBtn = document.getElementById('vaultCoach');
-    const coachStatus = document.getElementById('vaultCoachStatus');
+    const coachStatus = document.getElementById('vaultCoachStatus') || document.getElementById('vaultStatus');
     const coachOut = document.getElementById('vaultCoachOut');
     const coachMist = document.getElementById('vaultCoachMistakes');
     const coachFix = document.getElementById('vaultCoachFixes');
@@ -423,7 +427,7 @@
 
     coachBtn?.addEventListener('click', async ()=>{
       setCoachStatus("");
-      coachOut.hidden = true;
+      if(coachOut) coachOut.hidden = true;
 
       const tok = getToken();
       if(!tok){ setCoachStatus("🔒 Unlock to use Coaching."); return; }
@@ -455,10 +459,10 @@
           body: { text: clipped, items }
         });
 
-        coachOut.hidden = false;
-        coachMist.innerHTML = `<ul class="tips__list">${(j?.mistakes||[]).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('')}</ul>`;
-        coachFix.innerHTML = `<ul class="tips__list">${(j?.fixes||[]).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('')}</ul>`;
-        coachMeta.textContent = String(j?.metaPrompt||"").trim();
+        if(coachOut) coachOut.hidden = false;
+        if(coachMist) coachMist.innerHTML = `<ul class="tips__list">${(j?.mistakes||[]).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('')}</ul>`;
+        if(coachFix) coachFix.innerHTML = `<ul class="tips__list">${(j?.fixes||[]).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('')}</ul>`;
+        if(coachMeta) coachMeta.textContent = String(j?.metaPrompt||"").trim();
 
         setCoachStatus("Done ✅");
         await refreshStatus();
@@ -473,7 +477,7 @@
   }
 
   function initAbout(){
-    const box = document.getElementById('aboutBox');
+    const box = document.getElementById('aboutBody');
     if(box) box.innerHTML = data.aboutHtml || "";
   }
 

@@ -112,6 +112,26 @@
           <button class="btn btn--primary" id="vaultCoach" type="button">Coach last 5 (8,000 chars max)</button>
         </div>
         <div class="settings__status" id="vaultStatus" aria-live="polite"></div>
+        <div class="settings__status" id="vaultCoachStatus" aria-live="polite"></div>
+
+        <div class="vault__coach" id="vaultCoachOut" hidden>
+          <div class="pc__row">
+            <h3 class="pc__h">Coach: mistakes</h3>
+            <div class="pc__box" id="vaultCoachMistakes"></div>
+          </div>
+          <div class="pc__row">
+            <h3 class="pc__h">Coach: fixes</h3>
+            <div class="pc__box" id="vaultCoachFixes"></div>
+          </div>
+          <div class="pc__row">
+            <div class="pc__head">
+              <h3 class="pc__h">Meta-prompt</h3>
+              <button class="btn btn--mini" id="vaultCoachCopy" type="button">Copy</button>
+            </div>
+            <pre class="pc__golden" id="vaultCoachMeta"></pre>
+            <p class="panel__note">Coach cap: <strong><span id="vaultCoachCap">8000</span></strong> characters (combined).</p>
+          </div>
+        </div>
 
         <div class="vault__list" id="vaultList"></div>
       </div>
