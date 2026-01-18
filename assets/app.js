@@ -327,6 +327,7 @@
       setTimeout(()=>setStatus(""), 1200);
     });
 
+    const openGoldenWin = document.getElementById('pcOpenGolden');
     openGoldenWin?.addEventListener('click', ()=>{
       const t = String(gold?.textContent||"").trim();
       if(!t) return;
