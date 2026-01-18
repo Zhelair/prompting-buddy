@@ -1,0 +1,21 @@
+name = "prompting-buddy-house"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+# Optional: set your allowed GitHub Pages origin(s) here, or override via env var.
+[vars]
+DEFAULT_ORIGIN = "https://zhelair.github.io"
+TIMEZONE = "Europe/Sofia"
+DAILY_PROMPT_LIMIT = "30"
+DAILY_COACH_LIMIT = "5"
+PROMPT_MAX_CHARS = "5000"
+COACH_MAX_CHARS = "8000"
+TOKEN_TTL_DAYS = "30"
+
+[[durable_objects.bindings]]
+name = "LIMITS"
+class_name = "LimitsDO"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["LimitsDO"]
