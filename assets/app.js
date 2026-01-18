@@ -277,13 +277,12 @@
         const obj = JSON.parse(last);
         const norm = normalizePromptCheckPayload(obj);
         if((norm.diagnosis?.length || norm.missing?.length || norm.improvements?.length || norm.golden) && out){
-          // Re-render and auto-open modal when returning to Buddy.
+          // Re-render only (do not auto-open any modal when returning to Buddy).
           out.hidden = false;
           renderLines(diag, norm.diagnosis);
           renderLines(miss, norm.missing);
           renderLines(sugg, norm.improvements);
           if(gold) gold.textContent = String(norm.golden || "");
-          openPromptCheckModal(norm);
         }
       }
     } catch {}
@@ -310,7 +309,6 @@
       if(gold) gold.textContent = String(norm.golden||"").trim();
       // Persist
       try{ localStorage.setItem(LS_LAST.pc, JSON.stringify(norm._raw || norm)); }catch{}
-      openPromptCheckModal(norm);
     }
 
     clear?.addEventListener('click', ()=>{
@@ -327,6 +325,12 @@
       try{ await navigator.clipboard.writeText(txt); setStatus("Golden Prompt copied ✅"); }
       catch{ setStatus("Copy failed — select and copy manually."); }
       setTimeout(()=>setStatus(""), 1200);
+    });
+
+    openGoldenWin?.addEventListener('click', ()=>{
+      const t = String(gold?.textContent||"").trim();
+      if(!t) return;
+      openGoldenModal(t);
     });
 
     run?.addEventListener('click', async ()=>{
@@ -704,32 +708,74 @@
     closeAllModals();
     const tpl = document.getElementById('tpl-pcmodal');
     if(!tpl) return null;
+
     const node = tpl.content.firstElementChild.cloneNode(true);
     document.body.appendChild(node);
 
-    const backdrop = node.querySelector('#pcBackdrop') || node;
     const closeBtn = node.querySelector('#pcClose');
-    const onClose = ()=>{ try{ node.remove(); }catch{} };
-    closeBtn?.addEventListener('click', onClose);
-    node.addEventListener('click', (e)=>{ if(e.target === backdrop) onClose(); });
-
     const diag = node.querySelector('#pcDiag');
-    const miss = node.querySelector('#pcMissing');
+    const missing = node.querySelector('#pcMissing');
     const impr = node.querySelector('#pcImpr');
-    const golden = node.querySelector('#pcGolden');
-    const copy = node.querySelector('#pcCopy');
+    const openGoldenBtn = node.querySelector('#pcOpenGolden');
 
-    const list = (arr)=>`<ul class="tips__list">${(arr||[]).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('')}</ul>`;
-    if(diag) diag.innerHTML = list(norm?.diagnosis);
-    if(miss) miss.innerHTML = list(norm?.missing);
-    if(impr) impr.innerHTML = list(norm?.improvements);
-    if(golden) golden.textContent = String(norm?.golden||"").trim();
+    const goldenText = String(norm?.golden||'').trim();
+
+    if(diag) renderLines(diag, norm?.diagnosis);
+    if(missing) renderLines(missing, norm?.missing);
+    if(impr) renderLines(impr, norm?.improvements);
+
+    openGoldenBtn?.addEventListener('click', ()=>{
+      if(!goldenText) return;
+      openGoldenModal(goldenText);
+    });
+
+    closeBtn?.addEventListener('click', closeAllModals);
+    node.addEventListener('click', (e)=>{
+      if(e.target===node) closeAllModals();
+    });
+    document.addEventListener('keydown', (e)=>{
+      if(e.key==='Escape') closeAllModals();
+    }, {once:true});
+
+    return node;
+  }
+
+  function openGoldenModal(text){
+    closeAllModals();
+    const tpl = document.getElementById('tpl-goldmodal');
+    if(!tpl) return null;
+
+    const node = tpl.content.firstElementChild.cloneNode(true);
+    document.body.appendChild(node);
+
+    const closeBtn = node.querySelector('[data-close="goldModal"]');
+    const pre = node.querySelector('#goldText');
+    const copy = node.querySelector('#goldCopyBtn');
+
+    const val = String(text||'').trim();
+    if(pre) pre.textContent = val;
 
     copy?.addEventListener('click', async ()=>{
-      const txt = String(golden?.textContent||"").trim();
-      if(!txt) return;
-      try{ await navigator.clipboard.writeText(txt); }catch{}
+      const txt = val;
+      try{
+        await navigator.clipboard.writeText(txt);
+        toast('Copied ✅');
+      } catch {
+        // Fallback
+        const ta = document.createElement('textarea');
+        ta.value = txt;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try{ document.execCommand('copy'); toast('Copied ✅'); }catch{}
+        ta.remove();
+      }
     });
+
+    closeBtn?.addEventListener('click', closeAllModals);
+    node.addEventListener('click', (e)=>{ if(e.target===node) closeAllModals(); });
+    document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeAllModals(); }, {once:true});
 
     return node;
   }

@@ -109,3 +109,13 @@ body{background:var(--pb-bg);color:var(--pb-text);}
   line-height:1.55;
   background:rgba(255,250,240,.95);
 }
+
+/* Prompt Check: make Golden Prompt readable (wrap long lines) */
+.pc__golden,
+#goldText,
+#pcModalGolden,
+#pcGolden {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}

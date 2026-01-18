@@ -208,14 +208,44 @@
 
           <div class="tips">
             <h3>Golden Prompt</h3>
-            <button class="btn" id="pcCopy" type="button">Copy</button>
-            <pre class="pre" id="pcModalGolden"></pre>
+            <p class="muted">Open in its own window for a clean, readable prompt.</p>
+            <button class="btn" id="pcOpenGolden" type="button">Open Golden</button>
           </div>
         </div>
       </div>
     </div>
   </template>
 
+  <template id="tpl-goldmodal">
+    <div id="goldModal" class="modal_backdrop" hidden>
+      <div class="modal">
+        <div class="modal__head">
+          <h2>Golden Prompt</h2>
+          <button class="btn" data-close="goldModal" type="button">Close</button>
+        </div>
+        <div class="tips">
+          <button class="btn" id="goldCopyBtn" type="button">Copy</button>
+          <pre class="pre" id="goldText"></pre>
+        </div>
+      </div>
+    </div>
+  </template>
+
+
+  <template id="tpl-goldmodal">
+    <div id="goldModal" class="modal_backdrop" hidden>
+      <div class="modal">
+        <div class="modal__head">
+          <h2>Golden Prompt</h2>
+          <button class="btn" data-close="goldModal" type="button">Close</button>
+        </div>
+        <div class="tips">
+          <button class="btn" id="goldCopyBtn" type="button">Copy</button>
+          <pre id="goldText" class="pre"></pre>
+        </div>
+      </div>
+    </div>
+  </template>
 <!-- Cache-bust scripts so GitHub Pages / browser doesn't serve an older app.js -->
 <script src="assets/data.js?v=20260118b"></script>
 <script src="assets/app.js?v=20260118b"></script>
