@@ -19,3 +19,7 @@ class_name = "LimitsDO"
 [[migrations]]
 tag = "v1"
 new_classes = ["LimitsDO"]
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["LimitsDO"]
