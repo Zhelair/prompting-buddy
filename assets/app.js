@@ -263,22 +263,6 @@
       if(draft) prompt.value = draft;
     }
 
-    // Restore last Prompt Check output so switching tabs doesn't wipe results
-    try {
-      const last = localStorage.getItem(LS_LAST.pc);
-      if(last){
-        const obj = JSON.parse(last);
-        const norm = normalizePromptCheckPayload(obj);
-        if((norm.diagnosis?.length || norm.missing?.length || norm.improvements?.length || norm.golden) && out){
-          out.hidden = false;
-          renderLines(diag, norm.diagnosis);
-          renderLines(miss, norm.missing);
-          renderLines(sugg, norm.improvements);
-          if(gold) gold.textContent = String(norm.golden || "");
-        }
-      }
-    } catch {}
-
     prompt?.addEventListener('input', ()=>{
       countChars();
       setDraftPrompt(prompt?.value||"");
@@ -293,14 +277,11 @@
     }
 
     function renderResult(j){
-      const norm = normalizePromptCheckPayload(j);
       out.hidden = false;
-      renderLines(diag, norm.diagnosis);
-      renderLines(miss, norm.missing);
-      renderLines(sugg, norm.improvements);
-      if(gold) gold.textContent = String(norm.golden||"").trim();
-      // Persist
-      try{ localStorage.setItem(LS_LAST.pc, JSON.stringify(norm._raw || norm)); }catch{}
+      renderLines(diag, j.diagnosis);
+      renderLines(miss, j.missing);
+      renderLines(sugg, j.improvements);
+      if(gold) gold.textContent = String(j.golden||"").trim();
     }
 
     clear?.addEventListener('click', ()=>{
@@ -339,16 +320,15 @@
           },
           body: { prompt: text }
         });
-        const norm = normalizePromptCheckPayload(j || {});
-        renderResult(norm);
-        try{ localStorage.setItem(LS_LAST.pc, JSON.stringify(norm)); }catch{}
+        const payload = normalizePromptCheckPayload(j || {});
+        renderResult(payload || {});
         addVaultItem({
           t: Date.now(),
           prompt: text,
-          golden: String(norm.golden || "").trim(),
-          diagnosis: norm.diagnosis || [],
-          missing: norm.missing || [],
-          improvements: norm.improvements || [],
+          golden: String((payload && payload.golden) || "").trim(),
+          diagnosis: payload?.diagnosis || [],
+          missing: payload?.missing || [],
+          improvements: payload?.improvements || [],
           aiReply: ""
         });
         setStatus("Done ✅ Saved to Vault.");
@@ -517,23 +497,37 @@
       const noFence = s
         .replace(/^```(?:json)?\s*/i, "")
         .replace(/```\s*$/i, "");
-      // Try direct JSON first (with a tiny bit of leniency)
-      const tryParse = (str) => {
-        const repaired = String(str)
-          // remove trailing commas before } or ]
-          .replace(/,\s*([}\]])/g, "$1")
-          // normalize smart quotes (rare, but happens)
-          .replace(/[“”]/g, '"')
-          .replace(/[‘’]/g, "'")
-          .trim();
-        try { return JSON.parse(repaired); } catch { return null; }
-      };
-      const direct = tryParse(noFence);
-      if(direct) return direct;
+      // Try direct JSON first
+      try{ return JSON.parse(noFence); }catch{}
       // Otherwise, extract the first {...} block
       const m = noFence.match(/\{[\s\S]*\}/);
       if(!m) return null;
-      return tryParse(m[0]);
+      try{ return JSON.parse(m[0]); }catch{ return null; }
+    }
+
+    function normalizePromptCheckPayload(maybe){
+      // Worker returns { ok:true, result:{...}, remaining:{...} }
+      // but older code expects {diagnosis, missing, improvements, golden}
+      const unwrap = (x)=>{
+        if(x && typeof x === 'object' && x.result && typeof x.result === 'object') return x.result;
+        return x;
+      };
+      let obj = unwrap(maybe);
+      if(typeof obj === 'string') obj = parseJsonFromText(obj) || { golden: obj };
+      if(!obj || typeof obj !== 'object') obj = {};
+
+      const toList = (v)=>{
+        if(Array.isArray(v)) return v.map(x=>String(x)).filter(Boolean);
+        if(typeof v === 'string' && v.trim()) return [v.trim()];
+        return [];
+      };
+
+      const diagnosis = toList(obj.diagnosis || obj.mistakes || obj.notes);
+      const missing = toList(obj.missing);
+      const improvements = toList(obj.improvements || obj.fixes || obj.suggestions);
+      const golden = String(obj.golden || obj.goldenPrompt || obj.prompt || "").trim();
+
+      return { diagnosis, missing, improvements, golden };
     }
 
     function normalizeCoachPayload(maybe){
@@ -541,6 +535,8 @@
       let obj = maybe;
       if(typeof obj === 'string') obj = parseJsonFromText(obj) || { metaPrompt: obj };
       if(obj && typeof obj === 'object'){
+        // Worker may wrap as { ok:true, result:{...} }
+        if(obj.result && typeof obj.result === 'object') obj = obj.result;
         // If the model returned a big blob in metaPrompt, try to parse it
         if((!Array.isArray(obj.mistakes) || !Array.isArray(obj.fixes)) && typeof obj.metaPrompt === 'string'){
           const parsed = parseJsonFromText(obj.metaPrompt);
@@ -552,32 +548,6 @@
         return { mistakes, fixes, metaPrompt, _raw: obj };
       }
       return { mistakes: [], fixes: [], metaPrompt: String(maybe||"") };
-    }
-
-    function normalizePromptCheckPayload(maybe){
-      // Accept:
-      // 1) {diagnosis:[], missing:[], improvements:[], golden:""}
-      // 2) {text:"```json {...}```"} or {raw:"..."}
-      // 3) a raw string
-      let obj = maybe;
-      if(obj && typeof obj === 'object'){
-        // If the worker wraps the model output as text, try to parse that.
-        if((!obj.diagnosis && !obj.golden) && typeof obj.text === 'string'){
-          const parsed = parseJsonFromText(obj.text);
-          if(parsed && typeof parsed === 'object') obj = parsed;
-        }
-        if((!obj.diagnosis && !obj.golden) && typeof obj.raw === 'string'){
-          const parsed = parseJsonFromText(obj.raw);
-          if(parsed && typeof parsed === 'object') obj = parsed;
-        }
-      }
-      if(typeof obj === 'string') obj = parseJsonFromText(obj) || { diagnosis: [obj] };
-
-      const diagnosis = Array.isArray(obj?.diagnosis) ? obj.diagnosis : (obj?.diagnosis ? [String(obj.diagnosis)] : []);
-      const missing = Array.isArray(obj?.missing) ? obj.missing : (obj?.missing ? [String(obj.missing)] : []);
-      const improvements = Array.isArray(obj?.improvements) ? obj.improvements : (obj?.improvements ? [String(obj.improvements)] : []);
-      const golden = typeof obj?.golden === 'string' ? obj.golden : (typeof obj?.goldenPrompt === 'string' ? obj.goldenPrompt : '');
-      return { diagnosis, missing, improvements, golden, _raw: obj };
     }
 
     function openCoachModal(){
@@ -675,6 +645,59 @@
     });
 
     renderVault();
+  }
+
+  // -------- Shared parsers (must be top-level so Buddy + Vault can both use them) --------
+  function parseJsonFromText(txt){
+    if(!txt) return null;
+    const s = String(txt).trim();
+    const noFence = s
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/```\s*$/i, "");
+    try{ return JSON.parse(noFence); }catch{}
+    const m = noFence.match(/\{[\s\S]*\}/);
+    if(!m) return null;
+    try{ return JSON.parse(m[0]); }catch{ return null; }
+  }
+
+  function normalizePromptCheckPayload(maybe){
+    const unwrap = (x)=>{
+      if(x && typeof x === 'object' && x.result && typeof x.result === 'object') return x.result;
+      return x;
+    };
+    let obj = unwrap(maybe);
+    if(typeof obj === 'string') obj = parseJsonFromText(obj) || { golden: obj };
+    if(!obj || typeof obj !== 'object') obj = {};
+
+    const toList = (v)=>{
+      if(Array.isArray(v)) return v.map(x=>String(x)).filter(Boolean);
+      if(typeof v === 'string' && v.trim()) return [v.trim()];
+      return [];
+    };
+
+    return {
+      diagnosis: toList(obj.diagnosis || obj.mistakes || obj.notes),
+      missing: toList(obj.missing),
+      improvements: toList(obj.improvements || obj.fixes || obj.suggestions),
+      golden: String(obj.golden || obj.goldenPrompt || obj.prompt || "").trim()
+    };
+  }
+
+  function normalizeCoachPayload(maybe){
+    let obj = maybe;
+    if(typeof obj === 'string') obj = parseJsonFromText(obj) || { metaPrompt: obj };
+    if(obj && typeof obj === 'object'){
+      if(obj.result && typeof obj.result === 'object') obj = obj.result;
+      if((!Array.isArray(obj.mistakes) || !Array.isArray(obj.fixes)) && typeof obj.metaPrompt === 'string'){
+        const parsed = parseJsonFromText(obj.metaPrompt);
+        if(parsed && typeof parsed === 'object') obj = { ...obj, ...parsed };
+      }
+      const mistakes = Array.isArray(obj.mistakes) ? obj.mistakes : [];
+      const fixes = Array.isArray(obj.fixes) ? obj.fixes : [];
+      const metaPrompt = String(obj.metaPrompt || obj.meta || obj.raw || "").trim();
+      return { mistakes, fixes, metaPrompt, _raw: obj };
+    }
+    return { mistakes: [], fixes: [], metaPrompt: String(maybe||"") };
   }
 
   function initAbout(){
