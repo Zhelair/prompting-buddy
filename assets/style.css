@@ -454,3 +454,13 @@ body[data-theme="nostalgia"][data-variant="magnetic-tape"] .output:focus{
   border-color: rgba(122,252,255,.45);
 }
 
+
+/* Prompting Buddy Phase 0.5: internal scroll areas for result cards */
+.pb__scroll{
+  max-height:240px;
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+}
+@media (max-width: 720px){
+  .pb__scroll{max-height:220px}
+}

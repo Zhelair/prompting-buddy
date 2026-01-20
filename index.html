@@ -3,37 +3,62 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="assets/style.css" />
   <title>Prompting Buddy</title>
   <link rel="stylesheet" href="assets/style.css" />
 </head>
 <body data-theme="modern" data-variant="default">
 
 <header class="topbar">
-  <div class="topbar__inner">
-    <div class="topbar__left">
-      <div class="topbar__logo" aria-hidden="true">PB</div>
-      <div class="topbar__title" id="brandName">Prompting Buddy</div>
+  <div class="brand" aria-label="Prompting Buddy">
+    <div class="brand__badge" aria-hidden="true">PB</div>
+    <div>
+      <div class="brand__name" id="brandName">Prompting Buddy</div>
+      <div class="brand__tag">Prompt Check + Vault</div>
     </div>
+  </div>
 
-    <nav class="topbar__nav" aria-label="Primary">
-      <button class="chip is-active" data-route="buddy" type="button">Buddy</button>
-      <button class="chip" data-route="vault" type="button">Vault</button>
-      <button class="chip" data-route="about" type="button">About</button>
-    </nav>
+  <nav class="topnav" aria-label="Primary">
+    <a class="navbtn" href="#buddy">Buddy</a>
+    <a class="navbtn" href="#vault">Vault</a>
+    <a class="navbtn" href="#about">About</a>
+  </nav>
 
-    <div class="topbar__right">
-      <div class="pill" id="pillPrompts" hidden>Prompts: <span id="promptsLeft">0</span>/<span id="promptsLimit">0</span></div>
-      <div class="pill" id="pillCoach" hidden>Coach: <span id="coachLeft">0</span>/<span id="coachLimit">0</span></div>
-      <button class="btn btn--mini" id="unlockBtn" type="button">Unlock</button>
-    </div>
+  <div class="topnav" aria-label="Status">
+    <button class="navbtn" id="pillPrompts" type="button" hidden>Prompts: <span id="promptsLeft">0</span>/<span id="promptsLimit">0</span></button>
+    <button class="navbtn" id="pillCoach" type="button" hidden>Review: <span id="coachLeft">0</span>/<span id="coachLimit">0</span></button>
+    <button class="navbtn" id="unlockBtn" type="button">Unlock</button>
   </div>
 </header>
 
-<main class="main">
-  <section class="shell">
-    <div class="screen">
-      <section class="screen__content" id="app"></section>
+<main class="console">
+  <section class="screen" aria-label="Prompting Buddy screen">
+    <div class="screen__bg" aria-hidden="true"></div>
+    <div class="screen__ui">
+
+      <aside class="screen__menu" aria-label="Menu">
+        <div class="menu__title">NAV</div>
+        <div class="menu__scroll">
+          <div class="menu__group">
+            <button class="menu__item is-active" data-route="buddy" type="button">Buddy</button>
+            <button class="menu__item" data-route="vault" type="button">Vault</button>
+            <button class="menu__item" data-route="about" type="button">About</button>
+          </div>
+
+          <div class="menu__sep"></div>
+
+          <div class="menu__title">STATUS</div>
+          <div class="menu__hint">
+            <div id="menuStatusLine" class="statusline">Text will be added here.</div>
+          </div>
+
+          <div class="unlock" id="menuUnlockBox">
+            <div class="menu__hint">Text will be added here.</div>
+          </div>
+        </div>
+      </aside>
+
+      <section class="screen__content" id="app" aria-label="Content"></section>
+
     </div>
   </section>
 </main>
@@ -46,133 +71,88 @@
 
 <!-- Templates -->
 <template id="tpl-buddy">
-  <div class="buddy">
-    <article class="card">
-      <div class="card__body">
-        <h2 class="card__title">Prompt Check (Beta)</h2>
-        <p class="card__desc">Improve your prompt <em>before</em> you run it. This reviews clarity — it does not execute the task.</p>
+  <div class="card">
+    <div class="card__body">
+      <div class="featured__label">Prompt Check</div>
+      <h2 class="card__title">Prompt Check (Beta)</h2>
+      <p class="card__desc">Improve your prompt before you run it. This reviews clarity - it does not execute the task.</p>
 
-        <label class="field">
-          <span class="field__label">Your prompt</span>
-          <textarea class="field__textarea" id="pcPrompt" rows="10" placeholder="Paste your prompt here..."></textarea>
-          <div class="field__hint">
-            <span id="pcChar">0</span>/<span id="pcCharMax">5000</span> characters
-            <span class="muted">·</span>
-            <span class="muted">Daily reset: 00:00 Sofia time</span>
-          </div>
-        </label>
+      <label class="field">
+        <span class="field__label">Your prompt</span>
+        <textarea class="output output--input" id="pcPrompt" rows="10" placeholder="Paste your prompt here..."></textarea>
+        <div class="pc__usage"><span id="pcChar">0</span>/<span id="pcCharMax">5000</span> characters &middot; Daily reset: 00:00 Sofia time</div>
+      </label>
 
-        <div class="panel__actions">
-          <button class="btn btn--primary" id="pcRun" type="button">Run Prompt Check</button>
-          <button class="btn" id="pcClear" type="button">Clear</button>
-        </div>
+      <div class="panel__actions">
+        <button class="btn btn--primary" id="pcRun" type="button">Run Prompt Check</button>
+        <button class="btn" id="pcClear" type="button">Clear</button>
+      </div>
 
-        <div class="settings__status" id="pcStatus" aria-live="polite"></div>
+      <div class="settings__status" id="pcStatus" aria-live="polite"></div>
 
-        <div class="pc" id="pcOut" hidden>
-          <div class="pc__row">
-            <h3 class="pc__h">Diagnosis</h3>
-            <div class="pc__box" id="pcDiagnosis"></div>
+      <div class="pc" id="pcOut" hidden>
+        <section class="pc__section">
+          <div class="pc__h">Diagnosis</div>
+          <div class="pb__scroll" id="pcDiagnosis"></div>
+        </section>
+
+        <section class="pc__section">
+          <div class="pc__h">What's missing</div>
+          <div class="pb__scroll" id="pcMissing"></div>
+        </section>
+
+        <section class="pc__section">
+          <div class="pc__h">Suggested improvements</div>
+          <div class="pb__scroll" id="pcImprovements"></div>
+        </section>
+
+        <section class="pc__section pc__section--gold">
+          <div class="pc__h">Golden Prompt</div>
+          <div class="pc__muted">Text will be added here.</div>
+          <pre class="pc__pre" id="pcGolden"></pre>
+          <div class="pc__actions">
+            <button class="btn btn--primary" id="pcCopyGolden" type="button">Copy</button>
           </div>
-          <div class="pc__row">
-            <h3 class="pc__h">What’s missing</h3>
-            <div class="pc__box" id="pcMissing"></div>
-          </div>
-          <div class="pc__row">
-            <h3 class="pc__h">Suggested improvements</h3>
-            <div class="pc__box" id="pcImprovements"></div>
-          </div>
-          <div class="pc__row">
-            <div class="pc__head">
-              <h3 class="pc__h">Golden Prompt</h3>
-              <button class="btn btn--mini" id="pcCopyGolden" type="button">Copy</button>
+
+          <details class="fold" id="pcDebugFold">
+            <summary class="fold__sum">Show raw output (debug)</summary>
+            <div class="fold__body">
+              <pre class="pc__pre" id="pcRaw"></pre>
             </div>
-            <pre class="pc__golden" id="pcGolden"></pre>
-          </div>
-        </div>
-
-        <p class="panel__note">Prompt Check cap: <strong>5,000 characters</strong> per check.</p>
-      </div>
-    </article>
-  </div>
-</template>
-
-<template id="tpl-coach">
-  <div class="modal_backdrop" id="coachBackdrop" role="dialog" aria-modal="true">
-    <div class="modal">
-      <div class="modal__head">
-        <h3 class="modal__title">Last 5 Review</h3>
-        <button class="btn btn--mini" id="coachClose" type="button">Close</button>
-      </div>
-      <div class="modal__body">
-        <div class="settings__status" id="coachStatus" aria-live="polite"></div>
-
-        <div class="pc__row">
-          <h3 class="pc__h">Recurring issues</h3>
-          <div class="pc__box"><ul id="coachMistakes"></ul></div>
-        </div>
-
-        <div class="pc__row">
-          <h3 class="pc__h">Fixes to apply</h3>
-          <div class="pc__box"><ul id="coachFixes"></ul></div>
-        </div>
-
-        <div class="pc__row">
-          <div class="pc__head">
-            <h3 class="pc__h">Reusable meta-prompt</h3>
-            <button class="btn btn--mini" id="coachCopy" type="button">Copy</button>
-          </div>
-          <pre class="pc__golden" id="coachMeta"></pre>
-
-          <details class="fold">
-            <summary>Show raw output (debug)</summary>
-            <pre class="pc__golden" id="coachRaw"></pre>
           </details>
-
-          <p class="panel__note">Coach cap: <strong>8,000 characters</strong> (combined).</p>
-        </div>
+        </section>
       </div>
+
+      <p class="panel__note">Prompt Check cap: <strong>5,000 characters</strong> per check.</p>
     </div>
   </div>
 </template>
 
 <template id="tpl-vault">
-  <div class="vault">
-    <article class="card">
-      <div class="card__body">
-        <div class="card__head">
-          <h2 class="card__title">Vault</h2>
-          <div class="card__headActions">
-            <button class="btn btn--mini" id="vaultReset" type="button">Reset Vault</button>
-          </div>
-        </div>
-        <p class="card__desc">Saves your last <strong>10</strong> Prompt Checks locally (in your browser). No accounts.</p>
-
-        <div class="panel__actions">
-          <button class="btn btn--primary" id="vaultCoach" type="button">Coach last 5 (8,000 chars max)</button>
-        </div>
-        <div class="settings__status" id="vaultStatus" aria-live="polite"></div>
-
-        <div class="vault__list" id="vaultList"></div>
+  <div class="card">
+    <div class="card__body">
+      <h2 class="card__title">Vault</h2>
+      <p class="card__desc">Saves your last <strong>10</strong> Prompt Checks locally (in your browser). No accounts.</p>
+      <div class="panel__actions">
+        <button class="btn btn--primary" id="vaultCoach" type="button">Last 5 Review (8,000 chars max)</button>
+        <button class="btn" id="vaultReset" type="button">Reset Vault</button>
       </div>
-    </article>
+      <div class="settings__status" id="vaultStatus" aria-live="polite"></div>
+      <div id="vaultList"></div>
+    </div>
   </div>
 </template>
 
 <template id="tpl-about">
-  <div class="about">
-    <article class="card">
-      <div class="card__body" id="aboutBody"></div>
-    </article>
-  </div>
+  <div class="card"><div class="card__body" id="aboutBody"></div></div>
 </template>
 
 <template id="tpl-unlock">
   <div class="modal_backdrop" id="unlockBackdrop" role="dialog" aria-modal="true">
     <div class="modal">
       <div class="modal__head">
-        <h3 class="modal__title">Unlock Prompting Buddy</h3>
-        <button class="btn btn--mini" id="unlockClose" type="button">Close</button>
+        <strong>Unlock Prompting Buddy</strong>
+        <button class="btn" id="unlockClose" type="button">Close</button>
       </div>
       <div class="modal__body">
         <label class="field">
@@ -183,77 +163,105 @@
           <button class="btn btn--primary" id="unlockDo" type="button">Unlock</button>
         </div>
         <div class="settings__status" id="unlockStatus" aria-live="polite"></div>
-        <p class="panel__note">Your passphrase is verified by the backend. Only a token is stored locally.</p>
+        <p class="panel__note">Text will be added here.</p>
       </div>
     </div>
   </div>
 </template>
 
-  <template id="tpl-pcmodal">
-    <div class="modal_backdrop" id="pcBackdrop" role="dialog" aria-modal="true" hidden>
-      <div class="modal">
-        <div class="modal__head">
-          <strong>Prompt Check result</strong>
-          <button class="btn" id="pcClose" type="button">Close</button>
-        </div>
-        <div class="modal__body">
-          <div class="tips">
-            <h3>Diagnosis</h3>
-            <div id="pcModalDiagnosis"></div>
-          </div>
+<template id="tpl-coach">
+  <div class="modal_backdrop" id="coachBackdrop" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div class="modal__head">
+        <strong>Last 5 Review</strong>
+        <button class="btn" id="coachClose" type="button">Close</button>
+      </div>
+      <div class="modal__body">
+        <div class="settings__status" id="coachStatus" aria-live="polite"></div>
 
-          <div class="tips">
-            <h3>What’s missing</h3>
-            <div id="pcModalMissing"></div>
-          </div>
+        <section class="pc__section">
+          <div class="pc__h">Recurring issues</div>
+          <div class="pb__scroll"><ul class="pc__list" id="coachMistakes"></ul></div>
+        </section>
 
-          <div class="tips">
-            <h3>Suggested improvements</h3>
-            <div id="pcModalImprovements"></div>
-          </div>
+        <section class="pc__section">
+          <div class="pc__h">Fixes to apply</div>
+          <div class="pb__scroll"><ul class="pc__list" id="coachFixes"></ul></div>
+        </section>
 
-          <div class="tips">
-            <h3>Golden Prompt</h3>
-            <p class="muted">Open in its own window for a clean, readable prompt.</p>
-            <button class="btn" id="pcOpenGolden" type="button">Open Golden</button>
+        <section class="pc__section pc__section--gold">
+          <div class="pc__h">Reusable meta-prompt</div>
+          <pre class="pc__pre" id="coachMeta"></pre>
+          <div class="panel__actions">
+            <button class="btn btn--primary" id="coachCopyMeta" type="button">Copy</button>
           </div>
-        </div>
+          <p class="panel__note">Coach cap: <strong>8,000 characters</strong> (combined).</p>
+        </section>
+
+        <details class="fold" id="coachDebugFold">
+          <summary class="fold__sum">Show raw output (debug)</summary>
+          <div class="fold__body">
+            <pre class="pc__pre" id="coachRaw"></pre>
+          </div>
+        </details>
       </div>
     </div>
-  </template>
+  </div>
+</template>
 
-  <template id="tpl-goldmodal">
-    <div id="goldModal" class="modal_backdrop" hidden>
-      <div class="modal">
-        <div class="modal__head">
-          <h2>Golden Prompt</h2>
-          <button class="btn" data-close="goldModal" type="button">Close</button>
-        </div>
+<!-- Prompt Check modal (kept for compatibility) -->
+<template id="tpl-pcmodal">
+  <div class="modal_backdrop" id="pcBackdrop" role="dialog" aria-modal="true" hidden>
+    <div class="modal">
+      <div class="modal__head">
+        <strong>Prompt Check result</strong>
+        <button class="btn" id="pcClose" type="button">Close</button>
+      </div>
+      <div class="modal__body">
         <div class="tips">
-          <button class="btn" id="goldCopyBtn" type="button">Copy</button>
-          <pre class="pre" id="goldText"></pre>
+          <h3>Diagnosis</h3>
+          <div id="pcModalDiagnosis"></div>
         </div>
-      </div>
-    </div>
-  </template>
 
-
-  <template id="tpl-goldmodal">
-    <div id="goldModal" class="modal_backdrop" hidden>
-      <div class="modal">
-        <div class="modal__head">
-          <h2>Golden Prompt</h2>
-          <button class="btn" data-close="goldModal" type="button">Close</button>
-        </div>
         <div class="tips">
-          <button class="btn" id="goldCopyBtn" type="button">Copy</button>
-          <pre id="goldText" class="pre"></pre>
+          <h3>What's missing</h3>
+          <div id="pcModalMissing"></div>
+        </div>
+
+        <div class="tips">
+          <h3>Suggested improvements</h3>
+          <div id="pcModalImprovements"></div>
+        </div>
+
+        <div class="tips">
+          <h3>Golden Prompt</h3>
+          <p class="pc__muted">Open in its own window for a clean, readable prompt.</p>
+          <button class="btn" id="pcOpenGolden" type="button">Open Golden</button>
         </div>
       </div>
     </div>
-  </template>
+  </div>
+</template>
+
+<template id="tpl-goldmodal">
+  <div id="goldModal" class="modal_backdrop" hidden>
+    <div class="modal">
+      <div class="modal__head">
+        <h2>Golden Prompt</h2>
+        <button class="btn" data-close="goldModal" type="button">Close</button>
+      </div>
+      <div class="modal__body">
+        <div class="panel__actions">
+          <button class="btn btn--primary" id="goldCopyBtn" type="button">Copy</button>
+        </div>
+        <pre id="goldText" class="pc__pre"></pre>
+      </div>
+    </div>
+  </div>
+</template>
+
 <!-- Cache-bust scripts so GitHub Pages / browser doesn't serve an older app.js -->
-<script src="assets/data.js?v=20260118b"></script>
-<script src="assets/app.js?v=20260118b"></script>
+<script src="assets/data.js?v=20260121a"></script>
+<script src="assets/app.js?v=20260121a"></script>
 </body>
 </html>
