@@ -252,7 +252,6 @@
     const miss = document.getElementById('pcMissing');
     const sugg = document.getElementById('pcImprovements');
     const gold = document.getElementById('pcGolden');
-    const raw = document.getElementById('pcRaw');
     const copy = document.getElementById('pcCopyGolden');
     const ch = document.getElementById('pcChar');
     const chMax = document.getElementById('pcCharMax');
@@ -294,18 +293,11 @@
     });
     countChars();
 
-    
-    function stripFences(t){
-      const x = String(t||'').trim();
-      if(!x) return '';
-      const m = x.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
-      return m ? String(m[1]||'').trim() : x;
-    }
-function renderLines(el, arr){
+    function renderLines(el, arr){
       if(!el) return;
       const items = Array.isArray(arr) ? arr : [];
       if(!items.length) { el.innerHTML = '<p class="muted">—</p>'; return; }
-      el.innerHTML = `<ul class="pc__list">${items.map(x=>`<li>${escapeHtml(String(x))}</li>`).join('')}</ul>`;
+      el.innerHTML = `<ul class="tips__list">${items.map(x=>`<li>${escapeHtml(String(x))}</li>`).join('')}</ul>`;
     }
 
     function renderResult(j){
@@ -314,28 +306,9 @@ function renderLines(el, arr){
       renderLines(diag, norm.diagnosis);
       renderLines(miss, norm.missing);
       renderLines(sugg, norm.improvements);
-
-      // Golden prompt display: keep it clean. If the model/server returned JSON-ish text, push it to Debug.
-      let g = String(norm.golden || "").trim();
-      const looksJson = (g.startsWith("{") && g.includes("diagnosis")) || g.includes("```");
-      if(looksJson && !(norm.diagnosis.length || norm.missing.length || norm.improvements.length)) {
-        // No usable sections + golden looks like JSON -> treat as raw debug.
-        if(raw) raw.textContent = g;
-        g = "";
-      }
-      if(gold) gold.textContent = stripFences(g);
-
-      // Debug: show the most useful raw blob we have.
-      if(raw){
-        const inner = norm._debug && norm._debug.innerGoldenRaw ? String(norm._debug.innerGoldenRaw) : "";
-        if(inner){ raw.textContent = inner; }
-        else {
-          try{ raw.textContent = JSON.stringify(j, null, 2); } catch{ raw.textContent = String(j??""); }
-        }
-      }
-      // Persist (store raw response so switching tabs keeps results)
-      try{ localStorage.setItem(LS_LAST.pc, JSON.stringify(j)); }catch{}
-      return norm;
+      if(gold) gold.textContent = String(norm.golden||"").trim();
+      // Persist
+      try{ localStorage.setItem(LS_LAST.pc, JSON.stringify(norm._raw || norm)); }catch{}
     }
 
     clear?.addEventListener('click', ()=>{
@@ -381,7 +354,8 @@ function renderLines(el, arr){
           },
           body: { prompt: text }
         });
-        const norm = renderResult(j || {});
+        const norm = normalizePromptCheckPayload(j || {});
+        renderResult(norm);
         try{ localStorage.setItem(LS_LAST.pc, JSON.stringify(norm)); }catch{}
         addVaultItem({
           t: Date.now(),
@@ -669,7 +643,7 @@ function renderLines(el, arr){
       const modalFix = modal.querySelector('#coachFixes');
       const modalMeta = modal.querySelector('#coachMeta');
       const modalRaw = modal.querySelector('#coachRaw');
-      const modalCopy = modal.querySelector('#coachCopyMeta');
+      const modalCopy = modal.querySelector('#coachCopy');
 
       const setModalStatus = (m)=>{ if(modalStatus) modalStatus.textContent = m||""; };
 
@@ -699,9 +673,7 @@ function renderLines(el, arr){
         }
         const txt = await res.text();
         const parsed = normalizeCoachPayload(parseJsonFromText(txt) || txt);
-
-        if(modalRaw) modalRaw.textContent = txt;
-
+        if(modalRaw) modalRaw.textContent = String(txt||"").trim();
 
         const cleanList = (arr)=> (arr||[])
           .map(x=>String(x ?? '').trim())
@@ -709,8 +681,8 @@ function renderLines(el, arr){
           .slice(0, 3);
         const mList = cleanList(parsed.mistakes);
         const fList = cleanList(parsed.fixes);
-        if(modalMist) modalMist.innerHTML = (mList.length?mList:["—"]).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('');
-        if(modalFix) modalFix.innerHTML = (fList.length?fList:["—"]).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('');
+        if(modalMist) modalMist.innerHTML = `<ul class="tips__list">${(mList.length?mList:["—"]).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('')}</ul>`;
+        if(modalFix) modalFix.innerHTML = `<ul class="tips__list">${(fList.length?fList:["—"]).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('')}</ul>`;
         if(modalMeta) modalMeta.textContent = parsed.metaPrompt;
 
         setModalStatus("Done ✅");
@@ -844,24 +816,8 @@ function renderLines(el, arr){
       return x;
     };
     let obj = unwrap(maybe);
-    const original = obj;
-
-    // If server ever returns plain text, try to parse it; otherwise treat as golden raw.
     if(typeof obj === 'string') obj = parseJsonFromText(obj) || { golden: obj };
-
     if(!obj || typeof obj !== 'object') obj = {};
-
-    // Salvage: sometimes a whole JSON blob lands inside `golden`. Parse and prefer the inner fields.
-    const goldenField = (typeof obj.golden === 'string') ? obj.golden : '';
-    if(goldenField && (goldenField.includes('```') || goldenField.trim().startsWith('{'))){
-      const inner = parseJsonFromText(goldenField);
-      if(inner && typeof inner === 'object'){
-        const looksLikeSchema = !!(inner.diagnosis || inner.missing || inner.improvements || inner.golden || inner.goldenPrompt || inner.prompt);
-        if(looksLikeSchema){
-          obj = { ...obj, ...inner, _innerGoldenRaw: goldenField };
-        }
-      }
-    }
 
     const toList = (v)=>{
       if(Array.isArray(v)) return v.map(x=>String(x)).filter(Boolean);
@@ -873,12 +829,7 @@ function renderLines(el, arr){
       diagnosis: toList(obj.diagnosis || obj.mistakes || obj.notes),
       missing: toList(obj.missing),
       improvements: toList(obj.improvements || obj.fixes || obj.suggestions),
-      golden: String(obj.golden || obj.goldenPrompt || obj.prompt || '').trim(),
-      _raw: original,
-      _debug: {
-        mergedFromGolden: typeof obj._innerGoldenRaw === 'string',
-        innerGoldenRaw: String(obj._innerGoldenRaw || '').trim()
-      }
+      golden: String(obj.golden || obj.goldenPrompt || obj.prompt || "").trim()
     };
   }
 
