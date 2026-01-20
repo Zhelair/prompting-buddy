@@ -1,6 +1,141 @@
-/* Prompting Buddy — minimal styles (testing build) */
-:root{--pb-bg:#efe9de;--pb-panel:#fff;--pb-text:#1b1b1b;--pb-muted:#666;--pb-accent:#ff8a3d;}
-body{background:var(--pb-bg);color:var(--pb-text);}
+/* Prompting Buddy — Layout sanity (Phase 0)
+   Goal: stop “infinite scroll walls”, make sections feel like tidy cards,
+   and keep long AI outputs contained inside scrollable boxes.
+*/
+
+:root{
+  --pb-bg:#efe9de;
+  --pb-panel:#fff;
+  --pb-text:#1b1b1b;
+  --pb-muted:#666;
+  --pb-accent:#ff8a3d;
+  --pb-border:rgba(0,0,0,.10);
+  --pb-shadow:0 10px 26px rgba(0,0,0,.10);
+}
+
+*{box-sizing:border-box;}
+
+html,body{height:100%;}
+
+body{
+  margin:0;
+  background:var(--pb-bg);
+  color:var(--pb-text);
+  font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji","Segoe UI Emoji";
+  line-height:1.35;
+}
+
+/* Page shell */
+.shell{max-width:1040px;margin:0 auto;padding:14px 14px 46px;}
+
+.screen{background:rgba(255,255,255,.55);border:1px solid var(--pb-border);border-radius:22px;box-shadow:var(--pb-shadow);overflow:hidden;}
+.screen__content{padding:16px;}
+
+/* Topbar */
+.topbar{position:sticky;top:0;z-index:10;background:rgba(239,233,222,.92);backdrop-filter:saturate(120%) blur(4px);border-bottom:1px solid var(--pb-border);}
+.topbar__inner{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;padding:10px 14px;max-width:1040px;margin:0 auto;}
+.topbar__left{display:flex;align-items:center;gap:10px;}
+.topbar__logo{width:28px;height:28px;display:grid;place-items:center;border-radius:10px;border:1px solid rgba(0,0,0,.16);background:rgba(255,255,255,.70);font-weight:900;}
+.topbar__title{font-weight:900;letter-spacing:.2px;line-height:1;}
+.topbar__nav{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+.topbar__right{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:flex-end;}
+.chip{
+  appearance:none;
+  border:1px solid rgba(0,0,0,.18);
+  background:rgba(255,255,255,.65);
+  color:var(--pb-text);
+  border-radius:12px;
+  padding:6px 10px;
+  cursor:pointer;
+  font-weight:600;
+}
+.chip:hover{background:rgba(255,255,255,.9);}
+.chip.is-active{border-color:rgba(0,0,0,.28);background:rgba(255,255,255,.95);box-shadow:0 6px 18px rgba(0,0,0,.08);}
+
+/* Status pills */
+.pills{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.pill{display:inline-flex;gap:6px;align-items:center;padding:6px 10px;border-radius:999px;border:1px solid rgba(0,0,0,.14);background:rgba(255,255,255,.65);font-weight:600;}
+.pill b{font-weight:800;}
+
+/* Buttons */
+.btn{
+  appearance:none;
+  border:1px solid rgba(0,0,0,.20);
+  background:rgba(255,255,255,.80);
+  color:var(--pb-text);
+  border-radius:12px;
+  padding:8px 12px;
+  cursor:pointer;
+  font-weight:700;
+}
+.btn:hover{background:#fff;}
+.btn:disabled{opacity:.55;cursor:not-allowed;}
+.btn--mini{padding:6px 10px;font-weight:700;border-radius:10px;}
+
+/* Cards */
+.card{background:var(--pb-panel);border:1px solid var(--pb-border);border-radius:18px;box-shadow:var(--pb-shadow);overflow:hidden;}
+.card--flat{box-shadow:none;background:rgba(255,255,255,.65);}
+.card__body{padding:14px;}
+
+/* Form fields */
+.field{display:block;margin:12px 0;}
+.field__label{display:block;font-weight:700;margin:0 0 6px;}
+.field__textarea{
+  width:100%;
+  min-height:140px;
+  resize:vertical;
+  padding:10px 12px;
+  border-radius:14px;
+  border:1px solid rgba(0,0,0,.16);
+  background:rgba(255,255,255,.85);
+  font:inherit;
+}
+
+/* Pre blocks */
+.pre{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;border-radius:14px;border:1px solid rgba(0,0,0,.10);background:rgba(250,244,233,.9);padding:12px 14px;}
+.pre--sm{font-size:13px;line-height:1.45;}
+
+/* Prompt Check layout */
+.pc__wrap{display:grid;gap:12px;}
+.pc__actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+.pc__meta{display:flex;gap:10px;flex-wrap:wrap;color:var(--pb-muted);font-weight:600;}
+.pc__out{display:grid;gap:12px;margin-top:10px;}
+
+/* ===== THE KEY FIX: contain long text inside scrollable boxes ===== */
+.pc__box,
+.vault__item .pre,
+#pcDiagnosis,
+#pcMissing,
+#pcImprovements,
+#pcGolden,
+#coachMeta{
+  max-height:clamp(140px, 26vh, 280px);
+  overflow:auto;
+}
+
+/* Golden prompt usually needs a bit more room */
+.pc__golden{max-height:clamp(180px, 34vh, 420px);overflow:auto;}
+
+/* Keep scrollbars from looking too harsh */
+.pc__box::-webkit-scrollbar,
+#pcDiagnosis::-webkit-scrollbar,
+#pcMissing::-webkit-scrollbar,
+#pcImprovements::-webkit-scrollbar,
+#pcGolden::-webkit-scrollbar,
+#coachMeta::-webkit-scrollbar,
+.pc__golden::-webkit-scrollbar{height:10px;width:10px;}
+.pc__box::-webkit-scrollbar-thumb,
+#pcDiagnosis::-webkit-scrollbar-thumb,
+#pcMissing::-webkit-scrollbar-thumb,
+#pcImprovements::-webkit-scrollbar-thumb,
+#pcGolden::-webkit-scrollbar-thumb,
+#coachMeta::-webkit-scrollbar-thumb,
+.pc__golden::-webkit-scrollbar-thumb{background:rgba(0,0,0,.18);border-radius:999px;}
+
+/* Tips list */
+.tips__list{margin:0;padding-left:18px;}
+.tips__list li{margin:6px 0;}
+.muted{color:var(--pb-muted);}
 
 /* ===== Modal “paper card” look (Oddly Useful vibe) ===== */
 .modal_backdrop{backdrop-filter:saturate(120%) blur(2px);}
