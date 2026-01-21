@@ -24,6 +24,7 @@
     tokenExp: "pb_token_exp",
     vault: "pb_vault_v1",
     library: "pb_library_v1",
+    ideas: "pb_ideas_v1",
     draftPrompt: "pb_draft_prompt_v1",
     theme: "pb_theme",
     variant: (t)=>`pb_theme_variant_${t}`
@@ -205,6 +206,9 @@
     } else if(route === "library") {
       app.appendChild(tpl("tpl-library"));
       initLibrary();
+    } else if(route === "ideas") {
+      app.appendChild(tpl("tpl-ideas"));
+      initIdeas();
     } else if(route === "about") {
       app.appendChild(tpl("tpl-about"));
       initAbout();
@@ -794,6 +798,7 @@ function renderLines(el, arr){
       : ["Daily drivers","Writing","Coding","Research / OSINT","Visuals","Creators","Business","Life / Mood"];
 
     const LS_LIB_SEEDED = "pb_library_seeded_v1";
+    const LS_IDEAS_SEEDED = "pb_ideas_seeded_v1";
 
     function ensureCategoriesInUI(){
       if(!catSel || !fCat) return;
@@ -822,36 +827,81 @@ function renderLines(el, arr){
     }
 
     function seedLibraryIfEmpty(){
+      // Library should be user-owned only.
+      // We still keep a seeded flag so we don't accidentally re-run older placeholder logic.
       try{
         const seeded = localStorage.getItem(LS_LIB_SEEDED);
         if(seeded) return;
-        const lib = loadLibrary();
-        if(lib.length) { localStorage.setItem(LS_LIB_SEEDED, "1"); return; }
-
-        const now = Date.now();
-        const placeholders = [
-          {cat:"Daily drivers", title:"Daily starter (placeholder)", text:"Text will be added here.", tags:"#daily", model:"", notes:""},
-          {cat:"Writing", title:"Rewrite like a pro (placeholder)", text:"Text will be added here.", tags:"#writing", model:"", notes:""},
-          {cat:"Coding", title:"Debug buddy (placeholder)", text:"Text will be added here.", tags:"#coding", model:"", notes:""},
-          {cat:"Research / OSINT", title:"Fast research plan (placeholder)", text:"Text will be added here.", tags:"#research #osint", model:"", notes:""},
-          {cat:"Visuals", title:"Image prompt builder (placeholder)", text:"Text will be added here.", tags:"#visual", model:"", notes:""},
-          {cat:"Creators", title:"TikTok hook machine (placeholder)", text:"Text will be added here.", tags:"#creator", model:"", notes:""},
-          {cat:"Business", title:"Offer + proposal skeleton (placeholder)", text:"Text will be added here.", tags:"#business", model:"", notes:""},
-          {cat:"Life / Mood", title:"Mood reset (placeholder)", text:"Text will be added here.", tags:"#mood", model:"", notes:""}
-        ].map((x,i)=>({
-          id: `seed_${now}_${i}`,
-          t: now - i*1000,
-          title: x.title,
-          text: x.text,
-          tags: x.tags,
-          model: x.model,
-          notes: x.notes,
-          cat: x.cat,
-          fav: false
-        }));
-
-        saveLibrary(placeholders);
         localStorage.setItem(LS_LIB_SEEDED, "1");
+      } catch {}
+    }
+
+    function defaultIdeas(){
+      const now = Date.now();
+      const presets = [
+        {cat:"Daily drivers", title:"Daily starter (idea)", text:"Text will be added here.", tags:"#daily", model:"", notes:""},
+        {cat:"Writing", title:"Rewrite like a pro (idea)", text:"Text will be added here.", tags:"#writing", model:"", notes:""},
+        {cat:"Coding", title:"Debug buddy (idea)", text:"Text will be added here.", tags:"#coding", model:"", notes:""},
+        {cat:"Research / OSINT", title:"Fast research plan (idea)", text:"Text will be added here.", tags:"#research #osint", model:"", notes:""},
+        {cat:"Visuals", title:"Image prompt builder (idea)", text:"Text will be added here.", tags:"#visual", model:"", notes:""},
+        {cat:"Creators", title:"TikTok hook machine (idea)", text:"Text will be added here.", tags:"#creator", model:"", notes:""},
+        {cat:"Business", title:"Offer + proposal skeleton (idea)", text:"Text will be added here.", tags:"#business", model:"", notes:""},
+        {cat:"Life / Mood", title:"Mood reset (idea)", text:"Text will be added here.", tags:"#mood", model:"", notes:""}
+      ];
+      return presets.map((x,i)=>({
+        id: `idea_${now}_${i}`,
+        t: now - i*1000,
+        title: x.title,
+        text: x.text,
+        tags: x.tags,
+        model: x.model,
+        notes: x.notes,
+        cat: x.cat,
+        fav: false
+      }));
+    }
+
+    function loadIdeas(){
+      try{ return getLS(LS.ideas, []); } catch { return []; }
+    }
+
+    function saveIdeas(arr){
+      try{ setLS(LS.ideas, Array.isArray(arr)?arr:[]); } catch {}
+    }
+
+    function seedIdeasIfEmpty(){
+      try{
+        const seeded = localStorage.getItem(LS_IDEAS_SEEDED);
+        if(seeded) return;
+        const ideas = loadIdeas();
+        if(ideas && ideas.length){ localStorage.setItem(LS_IDEAS_SEEDED, "1"); return; }
+        saveIdeas(defaultIdeas());
+        localStorage.setItem(LS_IDEAS_SEEDED, "1");
+      } catch {}
+    }
+
+    function migrateSeededLibraryToIdeas(){
+      // If someone has older versions with placeholder cards in Library, move them to Ideas.
+      try{
+        const lib = loadLibrary();
+        if(!lib || !lib.length) return;
+        const seededItems = lib.filter(x=>x && String(x.id||'').startsWith('seed_'));
+        if(!seededItems.length) return;
+
+        const ideas = loadIdeas();
+        const have = new Set(ideas.map(x=>String(x?.id||'')));
+        const moved = seededItems
+          .filter(x=>!have.has(String(x.id)))
+          .map(x=>({
+            ...x,
+            id: String(x.id).replace(/^seed_/, 'idea_')
+          }));
+
+        if(moved.length){
+          saveIdeas([ ...moved, ...ideas ]);
+        }
+        const cleaned = lib.filter(x=>!(x && String(x.id||'').startsWith('seed_')));
+        saveLibrary(cleaned);
       } catch {}
     }
 
