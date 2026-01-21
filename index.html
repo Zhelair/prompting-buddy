@@ -158,25 +158,20 @@
         <input id="libImportFile" type="file" accept="application/json" hidden />
       </div>
 
+      <label class="field" style="margin-top:12px">
+        <span class="field__label">Search</span>
+        <input class="field__input" id="libSearch" type="text" placeholder="Search title, tags, model, notes…" />
+      </label>
+
       <div class="settings__status" id="libStatus" aria-live="polite"></div>
 
-      <div id="libList"></div>
-    </div>
-  </div>
-</template>
+      <!-- Inline editor (keeps everything inside the main screen) -->
+      <div class="block" id="libEditorWrap" hidden>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+          <strong id="libEditorTitle">Edit prompt</strong>
+          <button class="btn" id="libEditorClose" type="button">Close</button>
+        </div>
 
-<template id="tpl-about">
-  <div class="card"><div class="card__body" id="aboutBody"></div></div>
-</template>
-
-<template id="tpl-libedit">
-  <div class="modal_backdrop" id="libEditBackdrop" role="dialog" aria-modal="true">
-    <div class="modal">
-      <div class="modal__head">
-        <strong id="libEditTitle">Edit prompt</strong>
-        <button class="btn" id="libEditClose" type="button">Close</button>
-      </div>
-      <div class="modal__body">
         <label class="field">
           <span class="field__label">Title</span>
           <input class="field__input" id="libFieldTitle" type="text" placeholder="Short name" />
@@ -184,7 +179,7 @@
 
         <label class="field">
           <span class="field__label">Prompt</span>
-          <textarea class="field__textarea" id="libFieldText" rows="8" placeholder="Paste prompt text..."></textarea>
+          <textarea class="output" id="libFieldText" rows="8" placeholder="Paste prompt text..."></textarea>
         </label>
 
         <label class="field">
@@ -199,7 +194,7 @@
 
         <label class="field">
           <span class="field__label">Notes</span>
-          <textarea class="field__textarea" id="libFieldNotes" rows="3" placeholder="Text will be added here."></textarea>
+          <textarea class="output" id="libFieldNotes" rows="3" placeholder="Text will be added here."></textarea>
         </label>
 
         <div class="panel__actions">
@@ -208,9 +203,17 @@
         </div>
         <div class="settings__status" id="libEditStatus" aria-live="polite"></div>
       </div>
+
+      <div id="libList"></div>
     </div>
   </div>
 </template>
+
+<template id="tpl-about">
+  <div class="card"><div class="card__body" id="aboutBody"></div></div>
+</template>
+
+<!-- Library editor is now inline inside the Library page -->
 
 <template id="tpl-unlock">
   <div class="modal_backdrop" id="unlockBackdrop" role="dialog" aria-modal="true">

@@ -768,6 +768,23 @@ function renderLines(el, arr){
     const exportBtn = document.getElementById('libExport');
     const importBtn = document.getElementById('libImport');
     const importFile = document.getElementById('libImportFile');
+    const search = document.getElementById('libSearch');
+
+    // Inline editor (inside Library page)
+    const editorWrap = document.getElementById('libEditorWrap');
+    const editorTitle = document.getElementById('libEditorTitle');
+    const editorClose = document.getElementById('libEditorClose');
+    const editorStatus = document.getElementById('libEditStatus');
+    const fTitle = document.getElementById('libFieldTitle');
+    const fText = document.getElementById('libFieldText');
+    const fTags = document.getElementById('libFieldTags');
+    const fModel = document.getElementById('libFieldModel');
+    const fNotes = document.getElementById('libFieldNotes');
+    const btnSave = document.getElementById('libSave');
+    const btnCancel = document.getElementById('libCancel');
+
+    let editingId = null;
+    let editingCreatedAt = null;
 
     function setStatus(msg){
       const s = document.getElementById('libStatus');
@@ -786,74 +803,50 @@ function renderLines(el, arr){
       setTimeout(()=>URL.revokeObjectURL(url), 500);
     }
 
-    function openEditModal(existing){
-      const tplEl = document.getElementById('tpl-libedit');
-      if(!tplEl) return;
-      const node = tplEl.content.firstElementChild.cloneNode(true);
+    function setEditStatus(m){ if(editorStatus) editorStatus.textContent = m || ''; }
 
-      const titleEl = node.querySelector('#libEditTitle');
-      const closeEl = node.querySelector('#libEditClose');
-      const cancelEl = node.querySelector('#libCancel');
-      const saveEl = node.querySelector('#libSave');
-      const stEl = node.querySelector('#libEditStatus');
-
-      const fTitle = node.querySelector('#libFieldTitle');
-      const fText = node.querySelector('#libFieldText');
-      const fTags = node.querySelector('#libFieldTags');
-      const fModel = node.querySelector('#libFieldModel');
-      const fNotes = node.querySelector('#libFieldNotes');
-
+    function openEditor(existing){
       const isEdit = !!(existing && existing.id);
-      if(titleEl) titleEl.textContent = isEdit ? 'Edit prompt' : 'Add prompt';
+      editingId = existing?.id || null;
+      editingCreatedAt = existing?.t || Date.now();
 
+      if(editorTitle) editorTitle.textContent = isEdit ? 'Edit prompt' : 'Add prompt';
       if(fTitle) fTitle.value = existing?.title || '';
       if(fText) fText.value = existing?.text || '';
       if(fTags) fTags.value = existing?.tags || '';
       if(fModel) fModel.value = existing?.model || '';
       if(fNotes) fNotes.value = existing?.notes || '';
+      setEditStatus('');
 
-      function setLocalStatus(m){ if(stEl) stEl.textContent = m || ''; }
-      function close(){ node.remove(); }
+      if(editorWrap){
+        editorWrap.hidden = false;
+        // keep it inside the main screen
+        editorWrap.scrollIntoView({ behavior:'smooth', block:'start' });
+      }
+      setTimeout(()=>{ fTitle?.focus(); }, 30);
+    }
 
-      closeEl?.addEventListener('click', close);
-      cancelEl?.addEventListener('click', close);
-      node.addEventListener('click', (e)=>{ if(e.target===node) close(); });
-      document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') close(); }, { once:true });
-
-      saveEl?.addEventListener('click', ()=>{
-        const item = {
-          id: existing?.id || `lib_${Date.now()}_${Math.random().toString(16).slice(2)}`,
-          t: existing?.t || Date.now(),
-          title: String(fTitle?.value || '').trim(),
-          text: String(fText?.value || '').trim(),
-          tags: String(fTags?.value || '').trim(),
-          model: String(fModel?.value || '').trim(),
-          notes: String(fNotes?.value || '').trim()
-        };
-        if(!item.text){ setLocalStatus('Prompt text is required.'); return; }
-        if(!item.title){ item.title = item.text.split(/\n|\r/)[0].slice(0,48) || 'Untitled'; }
-
-        const lib = loadLibrary();
-        const idx = lib.findIndex(x=>x && x.id === item.id);
-        if(idx >= 0) lib[idx] = item;
-        else lib.unshift(item);
-        saveLibrary(lib);
-        renderLibrary();
-        setStatus(isEdit ? 'Saved ✅' : 'Added ✅');
-        setTimeout(()=>setStatus(''), 900);
-        close();
-      });
-
-      document.body.appendChild(node);
-      // focus
-      setTimeout(()=>{ fTitle?.focus(); }, 50);
+    function closeEditor(){
+      if(editorWrap) editorWrap.hidden = true;
+      editingId = null;
+      editingCreatedAt = null;
+      setEditStatus('');
     }
 
     function renderLibrary(){
-      const lib = loadLibrary();
+      const q = String(search?.value || '').trim().toLowerCase();
+      const libAll = loadLibrary();
+      const lib = q
+        ? libAll.filter(it=>{
+            const hay = [it?.title, it?.text, it?.tags, it?.model, it?.notes].filter(Boolean).join(' ').toLowerCase();
+            return hay.includes(q);
+          })
+        : libAll;
       if(!list) return;
       if(!lib.length){
-        list.innerHTML = '<p class="muted">No saved prompts yet. Click “Add prompt”.</p>';
+        list.innerHTML = q
+          ? '<p class="muted">No matches. Try a different search.</p>'
+          : '<p class="muted">No saved prompts yet. Click “Add prompt”.</p>';
         return;
       }
 
@@ -866,7 +859,7 @@ function renderLines(el, arr){
         const notes = escapeHtml(String(item.notes || ''));
         const text = escapeHtml(String(item.text || ''));
         return `
-          <article class="card card--flat lib__item" data-idx="${idx}">
+          <article class="card card--flat lib__item" data-id="${escapeHtml(String(item.id||""))}">
             <div class="card__body">
               <div class="lib__head">
                 <div>
@@ -894,10 +887,10 @@ function renderLines(el, arr){
 
       list.querySelectorAll('button[data-act]').forEach(btn=>{
         btn.addEventListener('click', async ()=>{
-          const card = btn.closest('[data-idx]');
-          const idx = Number(card?.getAttribute('data-idx'));
-          const lib = loadLibrary();
-          const item = lib[idx];
+          const card = btn.closest('[data-id]');
+          const id = String(card?.getAttribute('data-id')||'');
+          const libAll = loadLibrary();
+          const item = libAll.find(x=>x && String(x.id)===id);
           if(!item) return;
 
           const act = btn.getAttribute('data-act');
@@ -911,12 +904,12 @@ function renderLines(el, arr){
             location.hash = 'buddy';
           }
           if(act === 'edit'){
-            openEditModal(item);
+            openEditor(item);
           }
           if(act === 'del'){
             if(!confirm('Delete this prompt from Library?')) return;
-            lib.splice(idx, 1);
-            saveLibrary(lib);
+            const next = libAll.filter(x=>x && String(x.id)!==id);
+            saveLibrary(next);
             renderLibrary();
             setStatus('Deleted ✅');
             setTimeout(()=>setStatus(''), 900);
@@ -925,7 +918,36 @@ function renderLines(el, arr){
       });
     }
 
-    addBtn?.addEventListener('click', ()=>openEditModal(null));
+    // Editor buttons
+    addBtn?.addEventListener('click', ()=>openEditor(null));
+    editorClose?.addEventListener('click', closeEditor);
+    btnCancel?.addEventListener('click', closeEditor);
+
+    btnSave?.addEventListener('click', ()=>{
+      const item = {
+        id: editingId || `lib_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+        t: editingCreatedAt || Date.now(),
+        title: String(fTitle?.value || '').trim(),
+        text: String(fText?.value || '').trim(),
+        tags: String(fTags?.value || '').trim(),
+        model: String(fModel?.value || '').trim(),
+        notes: String(fNotes?.value || '').trim()
+      };
+      if(!item.text){ setEditStatus('Prompt text is required.'); return; }
+      if(!item.title){ item.title = item.text.split(/\n|\r/)[0].slice(0,48) || 'Untitled'; }
+
+      const libAll = loadLibrary();
+      const idx = libAll.findIndex(x=>x && x.id === item.id);
+      if(idx >= 0) libAll[idx] = item;
+      else libAll.unshift(item);
+      saveLibrary(libAll);
+      renderLibrary();
+      setStatus(editingId ? 'Saved ✅' : 'Added ✅');
+      setTimeout(()=>setStatus(''), 900);
+      closeEditor();
+    });
+
+    search?.addEventListener('input', ()=>renderLibrary());
 
     exportBtn?.addEventListener('click', ()=>{
       try{
