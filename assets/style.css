@@ -472,6 +472,7 @@ body[data-theme="nostalgia"][data-variant="magnetic-tape"] .output:focus{
 .lib__actions{ display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end; }
 .lib__notes{ margin-top:10px; font-size:13px; color:rgba(0,0,0,.72); }
 .lib__pre{ margin-top:10px; }
+.lib__pre--scroll{max-height:160px; overflow:auto; border:1px solid rgba(0,0,0,.08); background:rgba(0,0,0,.03); border-radius:12px; padding:10px 12px;}
 
 
 .lib__filters{
