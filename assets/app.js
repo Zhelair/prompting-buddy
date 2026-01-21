@@ -845,11 +845,11 @@ function renderLines(el, arr){
           tags:"#daily #starter",
           model:"Any",
           notes:"Quick ignition when you don’t know where to start.",
-          prompt:"You are my practical assistant. Ask me 5 short questions to clarify what I want. Then propose:
+          prompt:`You are my practical assistant. Ask me 5 short questions to clarify what I want. Then propose:
 1) the best next step (15 min)
 2) a 60‑minute plan
 3) a ‘done for today’ version.
-Keep it simple, no fluff."
+Keep it simple, no fluff.`
         },
         {
           cat:"Writing",
@@ -857,10 +857,10 @@ Keep it simple, no fluff."
           tags:"#writing #rewrite",
           model:"Any",
           notes:"Keeps your meaning, improves clarity and tone.",
-          prompt:"Rewrite the text below to sound natural, confident, and human. Keep the meaning. Avoid clichés and marketing fluff. Use short sentences. If something is unclear, ask 1 clarifying question at the end.
+          prompt:`Rewrite the text below to sound natural, confident, and human. Keep the meaning. Avoid clichés and marketing fluff. Use short sentences. If something is unclear, ask 1 clarifying question at the end.
 
 TEXT:
-[PASTE]"
+[PASTE]`
         },
         {
           cat:"Writing",
@@ -868,14 +868,14 @@ TEXT:
           tags:"#writing #email",
           model:"Any",
           notes:"Fast, polite, effective.",
-          prompt:"Write a professional email.
+          prompt:`Write a professional email.
 Context: [who I am + situation]
 Goal: [what I want]
 Tone: friendly, confident, not salesy.
 Constraints: 120–180 words, 1 clear ask, include 2 subject line options.
 
 Details:
-[PASTE]"
+[PASTE]`
         },
         {
           cat:"Coding",
@@ -883,14 +883,14 @@ Details:
           tags:"#coding #debug",
           model:"Any",
           notes:"For quick ‘what do I change’ answers.",
-          prompt:"You are a senior engineer. I will paste code + the error. Do:
+          prompt:`You are a senior engineer. I will paste code + the error. Do:
 1) Diagnose the root cause in 2–3 bullets.
 2) Give the exact code change (diff-style if possible).
 3) Add a quick sanity checklist.
 If you’re unsure, propose the smallest safe experiment.
 
 CODE/ERROR:
-[PASTE]"
+[PASTE]`
         },
         {
           cat:"Visual",
@@ -898,13 +898,13 @@ CODE/ERROR:
           tags:"#visual #midjourney #video",
           model:"Any",
           notes:"Same idea, two prompt formats.",
-          prompt:"Take my concept and produce:
+          prompt:`Take my concept and produce:
 A) an IMAGE prompt (high detail, composition, lighting, style)
 B) a VIDEO prompt (movement, duration, camera, actions, continuity)
 Keep them consistent.
 
 CONCEPT:
-[PASTE]"
+[PASTE]`
         },
         {
           cat:"Creator",
@@ -912,12 +912,12 @@ CONCEPT:
           tags:"#creator #tiktok",
           model:"Any",
           notes:"Gives 5 hooks + best pick.",
-          prompt:"Generate 5 TikTok hooks for my topic.
+          prompt:`Generate 5 TikTok hooks for my topic.
 Rules: 12–15 seconds spoken, punchy, no cringe.
 Then pick the best one and rewrite it 2 more ways.
 
 TOPIC:
-[PASTE]"
+[PASTE]`
         },
         {
           cat:"Editor",
@@ -925,7 +925,7 @@ TOPIC:
           tags:"#editor #capcut",
           model:"Any",
           notes:"Shot list + text overlays + pacing.",
-          prompt:"Create a CapCut edit plan for a 30‑second video.
+          prompt:`Create a CapCut edit plan for a 30‑second video.
 Give:
 - timeline by seconds
 - what we see (shot description)
@@ -934,7 +934,7 @@ Give:
 - transitions
 
 FOOTAGE / STORY:
-[PASTE]"
+[PASTE]`
         },
         {
           cat:"Research / OSINT",
@@ -942,13 +942,13 @@ FOOTAGE / STORY:
           tags:"#research #osint",
           model:"Any",
           notes:"Turns a vague topic into a source-backed plan.",
-          prompt:"I need to research: [TOPIC].
+          prompt:`I need to research: [TOPIC].
 Make a plan with:
 1) 5 key questions
 2) what sources to use (official docs, datasets, reputable media)
 3) search queries to run
 4) what to extract from each source
-5) a 10‑bullet outline for the final writeup."
+5) a 10‑bullet outline for the final writeup.`
         },
         {
           cat:"Life / Mood",
@@ -956,12 +956,12 @@ Make a plan with:
           tags:"#mood #life",
           model:"Any",
           notes:"Tiny reset, not therapy.",
-          prompt:"Give me a 3‑minute reset:
+          prompt:`Give me a 3‑minute reset:
 1) one breathing cue
 2) one tiny physical action
 3) one sentence to reframe the day
 4) one micro-task I can finish in 5 minutes.
-Keep it grounded."
+Keep it grounded.`
         }
       ];
       return presets.map((x,i)=>({
@@ -1481,7 +1481,7 @@ Keep it grounded."
           tags:"#daily #starter",
           model:"Any",
           notes:"Quick ignition when you don’t know where to start.",
-          prompt:"You are my practical assistant. Ask me 5 short questions to clarify what I want. Then propose:\n1) the best next step (15 min)\n2) a 60‑minute plan\n3) a ‘done for today’ version.\nKeep it simple, no fluff."
+          prompt:`You are my practical assistant. Ask me 5 short questions to clarify what I want. Then propose:\n1) the best next step (15 min)\n2) a 60‑minute plan\n3) a ‘done for today’ version.\nKeep it simple, no fluff.`
         },
         {
           cat:"Writing",
@@ -1489,7 +1489,7 @@ Keep it grounded."
           tags:"#writing #rewrite",
           model:"Any",
           notes:"Keeps your meaning, improves clarity and tone.",
-          prompt:"Rewrite the text below to sound natural, confident, and human. Keep the meaning. Avoid clichés and marketing fluff. Use short sentences. If something is unclear, ask 1 clarifying question at the end.\n\nTEXT:\n[PASTE]"
+          prompt:`Rewrite the text below to sound natural, confident, and human. Keep the meaning. Avoid clichés and marketing fluff. Use short sentences. If something is unclear, ask 1 clarifying question at the end.\n\nTEXT:\n[PASTE]`
         },
         {
           cat:"Writing",
@@ -1497,7 +1497,7 @@ Keep it grounded."
           tags:"#writing #email",
           model:"Any",
           notes:"Fast, polite, effective.",
-          prompt:"Write a professional email.\nContext: [who I am + situation]\nGoal: [what I want]\nTone: friendly, confident, not salesy.\nConstraints: 120–180 words, 1 clear ask, include 2 subject line options.\n\nDetails:\n[PASTE]"
+          prompt:`Write a professional email.\nContext: [who I am + situation]\nGoal: [what I want]\nTone: friendly, confident, not salesy.\nConstraints: 120–180 words, 1 clear ask, include 2 subject line options.\n\nDetails:\n[PASTE]`
         },
         {
           cat:"Coding",
@@ -1505,7 +1505,7 @@ Keep it grounded."
           tags:"#coding #debug",
           model:"Any",
           notes:"For quick ‘what do I change’ answers.",
-          prompt:"You are a senior engineer. I will paste code + the error. Do:\n1) Diagnose the root cause in 2–3 bullets.\n2) Give the exact code change (diff-style if possible).\n3) Add a quick sanity checklist.\nIf you’re unsure, propose the smallest safe experiment.\n\nCODE/ERROR:\n[PASTE]"
+          prompt:`You are a senior engineer. I will paste code + the error. Do:\n1) Diagnose the root cause in 2–3 bullets.\n2) Give the exact code change (diff-style if possible).\n3) Add a quick sanity checklist.\nIf you’re unsure, propose the smallest safe experiment.\n\nCODE/ERROR:\n[PASTE]`
         },
         {
           cat:"Visual",
@@ -1513,7 +1513,7 @@ Keep it grounded."
           tags:"#visual #midjourney #video",
           model:"Any",
           notes:"Same idea, two prompt formats.",
-          prompt:"Take my concept and produce:\nA) an IMAGE prompt (high detail, composition, lighting, style)\nB) a VIDEO prompt (movement, duration, camera, actions, continuity)\nKeep them consistent.\n\nCONCEPT:\n[PASTE]"
+          prompt:`Take my concept and produce:\nA) an IMAGE prompt (high detail, composition, lighting, style)\nB) a VIDEO prompt (movement, duration, camera, actions, continuity)\nKeep them consistent.\n\nCONCEPT:\n[PASTE]`
         },
         {
           cat:"Creator",
@@ -1521,7 +1521,7 @@ Keep it grounded."
           tags:"#creator #tiktok",
           model:"Any",
           notes:"Gives 5 hooks + best pick.",
-          prompt:"Generate 5 TikTok hooks for my topic.\nRules: 12–15 seconds spoken, punchy, no cringe.\nThen pick the best one and rewrite it 2 more ways.\n\nTOPIC:\n[PASTE]"
+          prompt:`Generate 5 TikTok hooks for my topic.\nRules: 12–15 seconds spoken, punchy, no cringe.\nThen pick the best one and rewrite it 2 more ways.\n\nTOPIC:\n[PASTE]`
         },
         {
           cat:"Editor",
@@ -1529,7 +1529,7 @@ Keep it grounded."
           tags:"#editor #capcut",
           model:"Any",
           notes:"Shot list + text overlays + pacing.",
-          prompt:"Create a CapCut edit plan for a 30‑second video.\nGive:\n- timeline by seconds\n- what we see (shot description)\n- on-screen text (max 6 words)\n- sound/music cues\n- transitions\n\nFOOTAGE / STORY:\n[PASTE]"
+          prompt:`Create a CapCut edit plan for a 30‑second video.\nGive:\n- timeline by seconds\n- what we see (shot description)\n- on-screen text (max 6 words)\n- sound/music cues\n- transitions\n\nFOOTAGE / STORY:\n[PASTE]`
         },
         {
           cat:"Research / OSINT",
@@ -1537,7 +1537,7 @@ Keep it grounded."
           tags:"#research #osint",
           model:"Any",
           notes:"Turns a vague topic into a source-backed plan.",
-          prompt:"I need to research: [TOPIC].\nMake a plan with:\n1) 5 key questions\n2) what sources to use (official docs, datasets, reputable media)\n3) search queries to run\n4) what to extract from each source\n5) a 10‑bullet outline for the final writeup."
+          prompt:`I need to research: [TOPIC].\nMake a plan with:\n1) 5 key questions\n2) what sources to use (official docs, datasets, reputable media)\n3) search queries to run\n4) what to extract from each source\n5) a 10‑bullet outline for the final writeup.`
         },
         {
           cat:"Life / Mood",
@@ -1545,7 +1545,7 @@ Keep it grounded."
           tags:"#mood #life",
           model:"Any",
           notes:"Tiny reset, not therapy.",
-          prompt:"Give me a 3‑minute reset:\n1) one breathing cue\n2) one tiny physical action\n3) one sentence to reframe the day\n4) one micro-task I can finish in 5 minutes.\nKeep it grounded."
+          prompt:`Give me a 3‑minute reset:\n1) one breathing cue\n2) one tiny physical action\n3) one sentence to reframe the day\n4) one micro-task I can finish in 5 minutes.\nKeep it grounded.`
         }
       ];
 
