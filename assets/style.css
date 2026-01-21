@@ -472,3 +472,25 @@ body[data-theme="nostalgia"][data-variant="magnetic-tape"] .output:focus{
 .lib__actions{ display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end; }
 .lib__notes{ margin-top:10px; font-size:13px; color:rgba(0,0,0,.72); }
 .lib__pre{ margin-top:10px; }
+
+
+.lib__filters{
+  margin-top: 10px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px;
+  align-items:flex-end;
+}
+.field--inline{ margin:0; }
+.check{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:13px;
+  user-select:none;
+}
+.check input{ transform: translateY(1px); }
+
+.btn--star{
+  min-width: 40px;
+}

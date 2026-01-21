@@ -3,6 +3,17 @@ window.PB_DATA = {
   brand: "Prompting Buddy",
   supportUrl: "#",
   aboutHtml: "",
+
+  libraryCategories: [
+    "Daily drivers",
+    "Writing",
+    "Coding",
+    "Research / OSINT",
+    "Visuals",
+    "Creators",
+    "Business",
+    "Life / Mood"
+  ],
   house: {
     endpoint: "https://prompting-buddy-house.nik-sales-737.workers.dev",
     dailyPromptLimit: 30,

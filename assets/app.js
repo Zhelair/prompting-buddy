@@ -769,6 +769,8 @@ function renderLines(el, arr){
     const importBtn = document.getElementById('libImport');
     const importFile = document.getElementById('libImportFile');
     const search = document.getElementById('libSearch');
+    const catSel = document.getElementById('libCat');
+    const onlyFav = document.getElementById('libOnlyFav');
 
     // Inline editor (inside Library page)
     const editorWrap = document.getElementById('libEditorWrap');
@@ -777,6 +779,7 @@ function renderLines(el, arr){
     const editorStatus = document.getElementById('libEditStatus');
     const fTitle = document.getElementById('libFieldTitle');
     const fText = document.getElementById('libFieldText');
+    const fCat = document.getElementById('libFieldCat');
     const fTags = document.getElementById('libFieldTags');
     const fModel = document.getElementById('libFieldModel');
     const fNotes = document.getElementById('libFieldNotes');
@@ -785,6 +788,72 @@ function renderLines(el, arr){
 
     let editingId = null;
     let editingCreatedAt = null;
+
+    const CATS = Array.isArray(data.libraryCategories) && data.libraryCategories.length
+      ? data.libraryCategories.slice(0,50)
+      : ["Daily drivers","Writing","Coding","Research / OSINT","Visuals","Creators","Business","Life / Mood"];
+
+    const LS_LIB_SEEDED = "pb_library_seeded_v1";
+
+    function ensureCategoriesInUI(){
+      if(!catSel || !fCat) return;
+      // Category filter dropdown
+      if(catSel.options.length <= 1){
+        CATS.forEach(c=>{
+          const o = document.createElement('option');
+          o.value = c;
+          o.textContent = c;
+          catSel.appendChild(o);
+        });
+      }
+      // Editor dropdown
+      if(fCat.options.length === 0){
+        const o0 = document.createElement('option');
+        o0.value = "";
+        o0.textContent = "General";
+        fCat.appendChild(o0);
+        CATS.forEach(c=>{
+          const o = document.createElement('option');
+          o.value = c;
+          o.textContent = c;
+          fCat.appendChild(o);
+        });
+      }
+    }
+
+    function seedLibraryIfEmpty(){
+      try{
+        const seeded = localStorage.getItem(LS_LIB_SEEDED);
+        if(seeded) return;
+        const lib = loadLibrary();
+        if(lib.length) { localStorage.setItem(LS_LIB_SEEDED, "1"); return; }
+
+        const now = Date.now();
+        const placeholders = [
+          {cat:"Daily drivers", title:"Daily starter (placeholder)", text:"Text will be added here.", tags:"#daily", model:"", notes:""},
+          {cat:"Writing", title:"Rewrite like a pro (placeholder)", text:"Text will be added here.", tags:"#writing", model:"", notes:""},
+          {cat:"Coding", title:"Debug buddy (placeholder)", text:"Text will be added here.", tags:"#coding", model:"", notes:""},
+          {cat:"Research / OSINT", title:"Fast research plan (placeholder)", text:"Text will be added here.", tags:"#research #osint", model:"", notes:""},
+          {cat:"Visuals", title:"Image prompt builder (placeholder)", text:"Text will be added here.", tags:"#visual", model:"", notes:""},
+          {cat:"Creators", title:"TikTok hook machine (placeholder)", text:"Text will be added here.", tags:"#creator", model:"", notes:""},
+          {cat:"Business", title:"Offer + proposal skeleton (placeholder)", text:"Text will be added here.", tags:"#business", model:"", notes:""},
+          {cat:"Life / Mood", title:"Mood reset (placeholder)", text:"Text will be added here.", tags:"#mood", model:"", notes:""}
+        ].map((x,i)=>({
+          id: `seed_${now}_${i}`,
+          t: now - i*1000,
+          title: x.title,
+          text: x.text,
+          tags: x.tags,
+          model: x.model,
+          notes: x.notes,
+          cat: x.cat,
+          fav: false
+        }));
+
+        saveLibrary(placeholders);
+        localStorage.setItem(LS_LIB_SEEDED, "1");
+      } catch {}
+    }
 
     function setStatus(msg){
       const s = document.getElementById('libStatus');
@@ -813,6 +882,7 @@ function renderLines(el, arr){
       if(editorTitle) editorTitle.textContent = isEdit ? 'Edit prompt' : 'Add prompt';
       if(fTitle) fTitle.value = existing?.title || '';
       if(fText) fText.value = existing?.text || '';
+      if(fCat) fCat.value = existing?.cat || '';
       if(fTags) fTags.value = existing?.tags || '';
       if(fModel) fModel.value = existing?.model || '';
       if(fNotes) fNotes.value = existing?.notes || '';
@@ -835,16 +905,39 @@ function renderLines(el, arr){
 
     function renderLibrary(){
       const q = String(search?.value || '').trim().toLowerCase();
-      const libAll = loadLibrary();
-      const lib = q
-        ? libAll.filter(it=>{
-            const hay = [it?.title, it?.text, it?.tags, it?.model, it?.notes].filter(Boolean).join(' ').toLowerCase();
-            return hay.includes(q);
-          })
-        : libAll;
+      const cat = String(catSel?.value || '').trim();
+      const favOnly = !!(onlyFav && onlyFav.checked);
+
+      const libAllRaw = loadLibrary().map(it=>{
+        if(!it || typeof it!=='object') return it;
+        return {
+          ...it,
+          cat: it.cat || "",
+          fav: !!it.fav
+        };
+      });
+
+      // Favorites first, then newest
+      libAllRaw.sort((a,b)=>{
+        const af = a?.fav ? 1 : 0;
+        const bf = b?.fav ? 1 : 0;
+        if(bf !== af) return bf - af;
+        return (b?.t||0) - (a?.t||0);
+      });
+
+      const libAll = libAllRaw;
+
+      const lib = libAll.filter(it=>{
+        if(!it) return false;
+        if(cat && String(it.cat||'') !== cat) return false;
+        if(favOnly && !it.fav) return false;
+        if(!q) return true;
+        const hay = [it?.title, it?.text, it?.tags, it?.model, it?.notes, it?.cat].filter(Boolean).join(' ').toLowerCase();
+        return hay.includes(q);
+      });
       if(!list) return;
       if(!lib.length){
-        list.innerHTML = q
+        list.innerHTML = (q || catSel?.value || (onlyFav && onlyFav.checked))
           ? '<p class="muted">No matches. Try a different search.</p>'
           : '<p class="muted">No saved prompts yet. Click “Add prompt”.</p>';
         return;
@@ -856,6 +949,7 @@ function renderLines(el, arr){
         const title = escapeHtml(String(item.title || 'Untitled'));
         const tags = escapeHtml(String(item.tags || ''));
         const model = escapeHtml(String(item.model || ''));
+        const cat = escapeHtml(String(item.cat || ''));
         const notes = escapeHtml(String(item.notes || ''));
         const text = escapeHtml(String(item.text || ''));
         return `
@@ -866,11 +960,13 @@ function renderLines(el, arr){
                   <div class="lib__title">${title}</div>
                   <div class="lib__meta">
                     <span class="muted">${ts}</span>
+                    ${cat ? `<span class="pill">${cat}</span>` : ''}
                     ${model ? `<span class="pill">${model}</span>` : ''}
                     ${tags ? `<span class="pill pill--ghost">${tags}</span>` : ''}
                   </div>
                 </div>
                 <div class="lib__actions">
+                  <button class="btn btn--mini btn--star" data-act="fav" type="button">${item.fav ? "★" : "☆"}</button>
                   <button class="btn btn--mini" data-act="copy" type="button">Copy</button>
                   <button class="btn btn--mini" data-act="send" type="button">Send to Buddy</button>
                   <button class="btn btn--mini" data-act="edit" type="button">Edit</button>
@@ -894,6 +990,19 @@ function renderLines(el, arr){
           if(!item) return;
 
           const act = btn.getAttribute('data-act');
+
+          if(act === 'fav'){
+            const next = libAll.map(x=>{
+              if(!x || String(x.id)!==id) return x;
+              return { ...x, fav: !x.fav };
+            });
+            saveLibrary(next);
+            renderLibrary();
+            setStatus('Saved ✅');
+            setTimeout(()=>setStatus(''), 700);
+            return;
+          }
+
           if(act === 'copy'){
             try{ await navigator.clipboard.writeText(String(item.text||"")); setStatus('Copied ✅'); }
             catch{ setStatus('Copy failed.'); }
@@ -929,17 +1038,24 @@ function renderLines(el, arr){
         t: editingCreatedAt || Date.now(),
         title: String(fTitle?.value || '').trim(),
         text: String(fText?.value || '').trim(),
+        cat: String(fCat?.value || '').trim(),
         tags: String(fTags?.value || '').trim(),
         model: String(fModel?.value || '').trim(),
-        notes: String(fNotes?.value || '').trim()
+        notes: String(fNotes?.value || '').trim(),
+        fav: false
       };
       if(!item.text){ setEditStatus('Prompt text is required.'); return; }
       if(!item.title){ item.title = item.text.split(/\n|\r/)[0].slice(0,48) || 'Untitled'; }
 
       const libAll = loadLibrary();
       const idx = libAll.findIndex(x=>x && x.id === item.id);
-      if(idx >= 0) libAll[idx] = item;
-      else libAll.unshift(item);
+      if(idx >= 0){
+        const prev = libAll[idx] || {};
+        item.fav = !!prev.fav;
+        libAll[idx] = item;
+      } else {
+        libAll.unshift(item);
+      }
       saveLibrary(libAll);
       renderLibrary();
       setStatus(editingId ? 'Saved ✅' : 'Added ✅');
@@ -948,6 +1064,8 @@ function renderLines(el, arr){
     });
 
     search?.addEventListener('input', ()=>renderLibrary());
+    catSel?.addEventListener('change', ()=>renderLibrary());
+    onlyFav?.addEventListener('change', ()=>renderLibrary());
 
     exportBtn?.addEventListener('click', ()=>{
       try{
@@ -984,6 +1102,8 @@ function renderLines(el, arr){
       try{ importFile.value = ''; }catch{}
     });
 
+    ensureCategoriesInUI();
+    seedLibraryIfEmpty();
     renderLibrary();
   }
 

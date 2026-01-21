@@ -163,6 +163,20 @@
         <input class="field__input" id="libSearch" type="text" placeholder="Search title, tags, model, notes…" />
       </label>
 
+      <div class="lib__filters">
+        <label class="field field--inline">
+          <span class="field__label">Category</span>
+          <select class="field__input" id="libCat">
+            <option value="">All</option>
+          </select>
+        </label>
+
+        <label class="check">
+          <input id="libOnlyFav" type="checkbox" />
+          <span>Only favorites</span>
+        </label>
+      </div>
+
       <div class="settings__status" id="libStatus" aria-live="polite"></div>
 
       <!-- Inline editor (keeps everything inside the main screen) -->
@@ -180,6 +194,11 @@
         <label class="field">
           <span class="field__label">Prompt</span>
           <textarea class="output" id="libFieldText" rows="8" placeholder="Paste prompt text..."></textarea>
+        </label>
+
+        <label class="field">
+          <span class="field__label">Category</span>
+          <select class="field__input" id="libFieldCat"></select>
         </label>
 
         <label class="field">
