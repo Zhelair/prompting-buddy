@@ -20,6 +20,7 @@
   <nav class="topnav" aria-label="Primary">
     <a class="navbtn" href="#buddy">Buddy</a>
     <a class="navbtn" href="#vault">Vault</a>
+    <a class="navbtn" href="#library">Library</a>
     <a class="navbtn" href="#about">About</a>
   </nav>
 
@@ -41,6 +42,7 @@
           <div class="menu__group">
             <button class="menu__item is-active" data-route="buddy" type="button">Buddy</button>
             <button class="menu__item" data-route="vault" type="button">Vault</button>
+            <button class="menu__item" data-route="library" type="button">Library</button>
             <button class="menu__item" data-route="about" type="button">About</button>
           </div>
 
@@ -143,8 +145,71 @@
   </div>
 </template>
 
+<template id="tpl-library">
+  <div class="card">
+    <div class="card__body">
+      <h2 class="card__title">Library</h2>
+      <p class="card__desc">Save prompts you want to reuse. Stored locally in your browser.</p>
+
+      <div class="panel__actions">
+        <button class="btn btn--primary" id="libAdd" type="button">Add prompt</button>
+        <button class="btn" id="libExport" type="button">Export</button>
+        <button class="btn" id="libImport" type="button">Import</button>
+        <input id="libImportFile" type="file" accept="application/json" hidden />
+      </div>
+
+      <div class="settings__status" id="libStatus" aria-live="polite"></div>
+
+      <div id="libList"></div>
+    </div>
+  </div>
+</template>
+
 <template id="tpl-about">
   <div class="card"><div class="card__body" id="aboutBody"></div></div>
+</template>
+
+<template id="tpl-libedit">
+  <div class="modal_backdrop" id="libEditBackdrop" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div class="modal__head">
+        <strong id="libEditTitle">Edit prompt</strong>
+        <button class="btn" id="libEditClose" type="button">Close</button>
+      </div>
+      <div class="modal__body">
+        <label class="field">
+          <span class="field__label">Title</span>
+          <input class="field__input" id="libFieldTitle" type="text" placeholder="Short name" />
+        </label>
+
+        <label class="field">
+          <span class="field__label">Prompt</span>
+          <textarea class="field__textarea" id="libFieldText" rows="8" placeholder="Paste prompt text..."></textarea>
+        </label>
+
+        <label class="field">
+          <span class="field__label">Tags</span>
+          <input class="field__input" id="libFieldTags" type="text" placeholder="#writing #claude #coding" />
+        </label>
+
+        <label class="field">
+          <span class="field__label">AI model hint (optional)</span>
+          <input class="field__input" id="libFieldModel" type="text" placeholder="e.g., DeepSeek, GPT, Claude" />
+        </label>
+
+        <label class="field">
+          <span class="field__label">Notes</span>
+          <textarea class="field__textarea" id="libFieldNotes" rows="3" placeholder="Text will be added here."></textarea>
+        </label>
+
+        <div class="panel__actions">
+          <button class="btn btn--primary" id="libSave" type="button">Save</button>
+          <button class="btn" id="libCancel" type="button">Cancel</button>
+        </div>
+        <div class="settings__status" id="libEditStatus" aria-live="polite"></div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <template id="tpl-unlock">

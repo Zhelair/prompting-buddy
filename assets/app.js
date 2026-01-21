@@ -23,6 +23,7 @@
     token: "pb_token",
     tokenExp: "pb_token_exp",
     vault: "pb_vault_v1",
+    library: "pb_library_v1",
     draftPrompt: "pb_draft_prompt_v1",
     theme: "pb_theme",
     variant: (t)=>`pb_theme_variant_${t}`
@@ -77,6 +78,35 @@
     const v = loadVault();
     v.unshift(item);
     saveVault(v);
+  }
+
+  // --- Library helpers (local-only)
+  function loadLibrary(){
+    try {
+      const raw = localStorage.getItem(LS.library);
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch { return []; }
+  }
+  function saveLibrary(arr){
+    try { localStorage.setItem(LS.library, JSON.stringify(Array.isArray(arr)?arr:[])); } catch {}
+  }
+
+  // Export/Import bundle (Vault + Library). Local-only “seatbelt”.
+  function makeExportBundle(){
+    return {
+      schema: "pb_export_v1",
+      exportedAt: new Date().toISOString(),
+      vault: loadVault(),
+      library: loadLibrary()
+    };
+  }
+  function applyImportBundle(bundle){
+    if(!bundle || typeof bundle !== 'object') throw new Error('Invalid file.');
+    const v = Array.isArray(bundle.vault) ? bundle.vault : [];
+    const l = Array.isArray(bundle.library) ? bundle.library : [];
+    saveVault(v);
+    saveLibrary(l);
   }
 
   // --- Auth / token
@@ -172,6 +202,9 @@
     if(route === "vault") {
       app.appendChild(tpl("tpl-vault"));
       initVault();
+    } else if(route === "library") {
+      app.appendChild(tpl("tpl-library"));
+      initLibrary();
     } else if(route === "about") {
       app.appendChild(tpl("tpl-about"));
       initAbout();
@@ -726,6 +759,210 @@ function renderLines(el, arr){
     });
 
     renderVault();
+  }
+
+  // --- Library
+  function initLibrary(){
+    const list = document.getElementById('libList');
+    const addBtn = document.getElementById('libAdd');
+    const exportBtn = document.getElementById('libExport');
+    const importBtn = document.getElementById('libImport');
+    const importFile = document.getElementById('libImportFile');
+
+    function setStatus(msg){
+      const s = document.getElementById('libStatus');
+      if(s) s.textContent = msg || "";
+    }
+
+    function downloadText(filename, text){
+      const blob = new Blob([text], { type: 'application/json;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url), 500);
+    }
+
+    function openEditModal(existing){
+      const tplEl = document.getElementById('tpl-libedit');
+      if(!tplEl) return;
+      const node = tplEl.content.firstElementChild.cloneNode(true);
+
+      const titleEl = node.querySelector('#libEditTitle');
+      const closeEl = node.querySelector('#libEditClose');
+      const cancelEl = node.querySelector('#libCancel');
+      const saveEl = node.querySelector('#libSave');
+      const stEl = node.querySelector('#libEditStatus');
+
+      const fTitle = node.querySelector('#libFieldTitle');
+      const fText = node.querySelector('#libFieldText');
+      const fTags = node.querySelector('#libFieldTags');
+      const fModel = node.querySelector('#libFieldModel');
+      const fNotes = node.querySelector('#libFieldNotes');
+
+      const isEdit = !!(existing && existing.id);
+      if(titleEl) titleEl.textContent = isEdit ? 'Edit prompt' : 'Add prompt';
+
+      if(fTitle) fTitle.value = existing?.title || '';
+      if(fText) fText.value = existing?.text || '';
+      if(fTags) fTags.value = existing?.tags || '';
+      if(fModel) fModel.value = existing?.model || '';
+      if(fNotes) fNotes.value = existing?.notes || '';
+
+      function setLocalStatus(m){ if(stEl) stEl.textContent = m || ''; }
+      function close(){ node.remove(); }
+
+      closeEl?.addEventListener('click', close);
+      cancelEl?.addEventListener('click', close);
+      node.addEventListener('click', (e)=>{ if(e.target===node) close(); });
+      document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') close(); }, { once:true });
+
+      saveEl?.addEventListener('click', ()=>{
+        const item = {
+          id: existing?.id || `lib_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+          t: existing?.t || Date.now(),
+          title: String(fTitle?.value || '').trim(),
+          text: String(fText?.value || '').trim(),
+          tags: String(fTags?.value || '').trim(),
+          model: String(fModel?.value || '').trim(),
+          notes: String(fNotes?.value || '').trim()
+        };
+        if(!item.text){ setLocalStatus('Prompt text is required.'); return; }
+        if(!item.title){ item.title = item.text.split(/\n|\r/)[0].slice(0,48) || 'Untitled'; }
+
+        const lib = loadLibrary();
+        const idx = lib.findIndex(x=>x && x.id === item.id);
+        if(idx >= 0) lib[idx] = item;
+        else lib.unshift(item);
+        saveLibrary(lib);
+        renderLibrary();
+        setStatus(isEdit ? 'Saved ✅' : 'Added ✅');
+        setTimeout(()=>setStatus(''), 900);
+        close();
+      });
+
+      document.body.appendChild(node);
+      // focus
+      setTimeout(()=>{ fTitle?.focus(); }, 50);
+    }
+
+    function renderLibrary(){
+      const lib = loadLibrary();
+      if(!list) return;
+      if(!lib.length){
+        list.innerHTML = '<p class="muted">No saved prompts yet. Click “Add prompt”.</p>';
+        return;
+      }
+
+      list.innerHTML = lib.map((item, idx)=>{
+        const dt = new Date(item.t || Date.now());
+        const ts = dt.toLocaleString();
+        const title = escapeHtml(String(item.title || 'Untitled'));
+        const tags = escapeHtml(String(item.tags || ''));
+        const model = escapeHtml(String(item.model || ''));
+        const notes = escapeHtml(String(item.notes || ''));
+        const text = escapeHtml(String(item.text || ''));
+        return `
+          <article class="card card--flat lib__item" data-idx="${idx}">
+            <div class="card__body">
+              <div class="lib__head">
+                <div>
+                  <div class="lib__title">${title}</div>
+                  <div class="lib__meta">
+                    <span class="muted">${ts}</span>
+                    ${model ? `<span class="pill">${model}</span>` : ''}
+                    ${tags ? `<span class="pill pill--ghost">${tags}</span>` : ''}
+                  </div>
+                </div>
+                <div class="lib__actions">
+                  <button class="btn btn--mini" data-act="copy" type="button">Copy</button>
+                  <button class="btn btn--mini" data-act="send" type="button">Send to Buddy</button>
+                  <button class="btn btn--mini" data-act="edit" type="button">Edit</button>
+                  <button class="btn btn--mini" data-act="del" type="button">Delete</button>
+                </div>
+              </div>
+
+              ${notes ? `<div class="lib__notes">${notes}</div>` : ''}
+              <pre class="pre pre--sm lib__pre">${text}</pre>
+            </div>
+          </article>
+        `;
+      }).join('');
+
+      list.querySelectorAll('button[data-act]').forEach(btn=>{
+        btn.addEventListener('click', async ()=>{
+          const card = btn.closest('[data-idx]');
+          const idx = Number(card?.getAttribute('data-idx'));
+          const lib = loadLibrary();
+          const item = lib[idx];
+          if(!item) return;
+
+          const act = btn.getAttribute('data-act');
+          if(act === 'copy'){
+            try{ await navigator.clipboard.writeText(String(item.text||"")); setStatus('Copied ✅'); }
+            catch{ setStatus('Copy failed.'); }
+            setTimeout(()=>setStatus(''), 900);
+          }
+          if(act === 'send'){
+            setDraftPrompt(String(item.text||""));
+            location.hash = 'buddy';
+          }
+          if(act === 'edit'){
+            openEditModal(item);
+          }
+          if(act === 'del'){
+            if(!confirm('Delete this prompt from Library?')) return;
+            lib.splice(idx, 1);
+            saveLibrary(lib);
+            renderLibrary();
+            setStatus('Deleted ✅');
+            setTimeout(()=>setStatus(''), 900);
+          }
+        });
+      });
+    }
+
+    addBtn?.addEventListener('click', ()=>openEditModal(null));
+
+    exportBtn?.addEventListener('click', ()=>{
+      try{
+        const bundle = makeExportBundle();
+        const stamp = new Date().toISOString().slice(0,10);
+        downloadText(`prompting-buddy-export-${stamp}.json`, JSON.stringify(bundle, null, 2));
+        setStatus('Exported ✅');
+        setTimeout(()=>setStatus(''), 900);
+      } catch {
+        setStatus('Export failed.');
+      }
+    });
+
+    importBtn?.addEventListener('click', ()=>{ importFile?.click(); });
+    importFile?.addEventListener('change', async ()=>{
+      const f = importFile.files && importFile.files[0];
+      if(!f) return;
+      try{
+        const txt = await f.text();
+        const parsed = JSON.parse(txt);
+        if(Array.isArray(parsed)){
+          // allow importing a plain Library array
+          saveLibrary(parsed);
+        } else {
+          applyImportBundle(parsed);
+        }
+        renderLibrary();
+        setStatus('Imported ✅');
+        setTimeout(()=>setStatus(''), 900);
+      } catch {
+        setStatus('Import failed.');
+      }
+      // reset input so you can import same file again
+      try{ importFile.value = ''; }catch{}
+    });
+
+    renderLibrary();
   }
 
   function closeAllModals(){
