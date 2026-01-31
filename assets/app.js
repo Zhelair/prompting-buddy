@@ -206,6 +206,9 @@
     } else if(route === "library") {
       app.appendChild(tpl("tpl-library"));
       initLibrary();
+    } else if(route === "ideas") {
+      app.appendChild(tpl("tpl-ideas"));
+      initIdeas();
     } else if(route === "about") {
       app.appendChild(tpl("tpl-about"));
       initAbout();
@@ -617,7 +620,7 @@ function renderLines(el, arr){
       if(typeof obj === 'string') obj = parseJsonFromText(obj) || { metaPrompt: obj };
       if(obj && typeof obj === 'object'){
         // If the model returned a big blob in metaPrompt, try to parse it
-        if((!Array.isArray(obj.mistakes) || !Array.isArray(obj.fixes)) && typeof obj.metaPrompt === 'string'){
+        if(typeof obj.metaPrompt === 'string' && ( (!Array.isArray(obj.mistakes) || !Array.isArray(obj.fixes)) || (Array.isArray(obj.mistakes) && obj.mistakes.some(m=>/not\s+valid\s+json/i.test(String(m)))) )){
           const parsed = parseJsonFromText(obj.metaPrompt);
           if(parsed && typeof parsed === 'object') obj = { ...obj, ...parsed };
         }
@@ -1313,7 +1316,7 @@ function renderLines(el, arr){
     if(typeof obj === 'string') obj = parseJsonFromText(obj) || { metaPrompt: obj };
     if(obj && typeof obj === 'object'){
       if(obj.result && typeof obj.result === 'object') obj = obj.result;
-      if((!Array.isArray(obj.mistakes) || !Array.isArray(obj.fixes)) && typeof obj.metaPrompt === 'string'){
+      if(typeof obj.metaPrompt === 'string' && ( (!Array.isArray(obj.mistakes) || !Array.isArray(obj.fixes)) || (Array.isArray(obj.mistakes) && obj.mistakes.some(m=>/not\s+valid\s+json/i.test(String(m)))) )){
         const parsed = parseJsonFromText(obj.metaPrompt);
         if(parsed && typeof parsed === 'object') obj = { ...obj, ...parsed };
       }
