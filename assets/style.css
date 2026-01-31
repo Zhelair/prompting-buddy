@@ -52,7 +52,7 @@ a{color:inherit}button,a.navbtn{font:inherit}
 @media (min-width: 900px){
   .tips{grid-template-columns:1fr 1fr}
 }
-.btn{padding:9px 12px;border-radius:14px;border:1px solid rgba(0,0,0,.12);background:rgba(255,255,255,.92);cursor:pointer;text-decoration:none;color:#1c1c1c}
+.btn{padding:9px 12px;border-radius:14px;border:1px solid rgba(0,0,0,.12);background:rgba(255,255,255,.92);cursor:pointer;text-decoration:none;color:inherit}
 .btn:hover{background:rgba(255,255,255,1);border-color:rgba(0,0,0,.18)}
 .btn--primary{background:rgba(255,138,61,.18);border-color:rgba(255,138,61,.35)}
 .buddy__layout{display:grid;grid-template-columns:240px 1fr;gap:12px}
@@ -256,6 +256,9 @@ body[data-theme="retro"] .tips__box{
   border-color: rgba(255,255,255,.14);
   color:#f0f0ff;
 }
+
+body[data-theme="retro"] .btn, body[data-theme="retro"] a.navbtn{background:rgba(255,255,255,.10);border-color:rgba(255,255,255,.18);color:inherit}
+body[data-theme="retro"] .btn:hover, body[data-theme="retro"] a.navbtn:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.24)}
 body[data-theme="retro"] .pc__pre,
 body[data-theme="retro"] .output,
 body[data-theme="retro"] .field__input,
@@ -366,6 +369,9 @@ body[data-theme="nostalgia"] .screen__menu,
 body[data-theme="nostalgia"] .screen__content{
   background: rgba(246,241,230,.92);
 }
+
+body[data-theme="nostalgia"] .btn, body[data-theme="nostalgia"] a.navbtn{background:rgba(255,255,255,.82);border-color:rgba(0,0,0,.10);color:inherit}
+body[data-theme="nostalgia"] .btn:hover, body[data-theme="nostalgia"] a.navbtn:hover{background:rgba(255,255,255,.92)}
 
 /* Nostalgia Variant A — Cardboard Arcade (worn playmat) */
 body[data-theme="nostalgia"][data-variant="cardboard-arcade"]{
@@ -498,3 +504,6 @@ body[data-theme="nostalgia"][data-variant="magnetic-tape"] .output:focus{
 .btn--star{
   min-width: 40px;
 }
+
+
+.muted{opacity:.75}

@@ -1375,7 +1375,97 @@ function renderLines(el, arr){
 
   function initAbout(){
     const box = document.getElementById('aboutBody');
-    if(box) box.innerHTML = data.aboutHtml || "";
+    if(!box) return;
+
+    // About copy (editable via data.aboutHtml if you want)
+    const aboutCopy = data.aboutHtml && String(data.aboutHtml).trim()
+      ? String(data.aboutHtml)
+      : `
+        <h2 class="card__title">About Prompting Buddy</h2>
+        <p class="card__desc">
+          Prompting Buddy is a tiny privacy-first tool that helps you tighten prompts <em>before</em> you spend tokens.
+          No accounts. Your Vault + Library live in your browser.
+        </p>
+      `;
+
+    const supportUrl = data.supportUrl || '#';
+
+    // “Theme modes” (5 distinct looks, like Oddly Useful)
+    const MODES = [
+      { id:'modern', label:'Modern Calm', sub:'Clean + minimal. Default look.', theme:'modern', variant:'default' },
+      { id:'neon', label:'Neon Grid', sub:'Retro TRON vibes. Crisp neon focus.', theme:'retro', variant:'neon-grid' },
+      { id:'candy', label:'Candy Console', sub:'Chunky 90s console. Pressy buttons.', theme:'retro', variant:'candy-console' },
+      { id:'cardboard', label:'Cardboard Arcade', sub:'Warm paper texture. Soft shadows.', theme:'nostalgia', variant:'cardboard-arcade' },
+      { id:'tape', label:'Magnetic Tape', sub:'VHS dream. Glossy pill buttons.', theme:'nostalgia', variant:'magnetic-tape' },
+    ];
+
+    const curTheme = (document.body.dataset.theme || getTheme() || 'modern').trim();
+    const curVar = (document.body.dataset.variant || getVariant(curTheme) || 'default').trim();
+
+    const currentModeId = (()=>{
+      const hit = MODES.find(m => m.theme===curTheme && m.variant===curVar);
+      return hit ? hit.id : 'modern';
+    })();
+
+    box.innerHTML = `
+          ${aboutCopy}
+
+          <div class="card" style="margin-top:12px">
+            <div class="card__body">
+              <div class="card__title card__title--sm">Support</div>
+              <p class="card__desc" style="margin-bottom:10px">
+                If this saves you even a couple paid runs, it did its job ☕
+              </p>
+              <a class="btn btn--primary" href="${escapeHtml(supportUrl)}" target="_blank" rel="noopener">Support on Buy Me a Coffee</a>
+              <p class="settings__note">Support is optional.</p>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top:12px">
+            <div class="card__body">
+              <div class="card__title card__title--sm">Theme</div>
+              <p class="card__desc">Themes change visuals only. Layout stays the same.</p>
+
+              <div class="block" style="margin:10px 0">
+                ${MODES.map(m => `
+                  <label class="check" style="display:flex; align-items:flex-start; gap:10px; margin:10px 0">
+                    <input type="radio" name="pbThemeMode" value="${m.id}" ${m.id===currentModeId ? 'checked' : ''} />
+                    <span>
+                      <strong>${m.label}</strong><br/>
+                      <span class="muted" style="font-size:12px">${m.sub}</span>
+                    </span>
+                  </label>
+                `).join('')}
+              </div>
+
+              <div class="settings__status" id="aboutThemeStatus" aria-live="polite"></div>
+              <p class="settings__note">Tip: if text ever looks “too dark”, switch theme once — it forces a clean repaint.</p>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top:12px">
+            <div class="card__body">
+              <div class="card__title card__title--sm">Privacy</div>
+              <p class="card__desc">
+                Library + Vault are stored locally (localStorage). Your passphrase unlocks a token for the worker — it’s not an “account”.
+              </p>
+            </div>
+          </div>
+
+    `;
+
+    const status = document.getElementById('aboutThemeStatus');
+    const setStatus = (m)=>{ if(status) status.textContent = m || ''; };
+
+    box.querySelectorAll('input[name="pbThemeMode"]').forEach(r=>{
+      r.addEventListener('change', ()=>{
+        const id = String(r.value || '').trim();
+        const mode = MODES.find(m=>m.id===id) || MODES[0];
+        applyTheme(mode.theme, mode.variant);
+        setStatus(`Theme applied: ${mode.label} ✅`);
+        setTimeout(()=>setStatus(''), 1000);
+      });
+    });
   }
 
   function escapeHtml(s){
