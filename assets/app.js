@@ -198,7 +198,6 @@
 
   function render(route){
     closeAllModals();
-    if(route === "ideas") route = "buddy";
     setActiveNav(route);
     app.innerHTML = "";
     if(route === "vault") {
@@ -207,6 +206,9 @@
     } else if(route === "library") {
       app.appendChild(tpl("tpl-library"));
       initLibrary();
+    } else if(route === "ideas") {
+      app.appendChild(tpl("tpl-ideas"));
+      initIdeas();
     } else if(route === "about") {
       app.appendChild(tpl("tpl-about"));
       initAbout();

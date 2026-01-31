@@ -1,13 +1,14 @@
-*{box-sizing:border-box}html,body{height:100%}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:radial-gradient(1200px 800px at 50% 20%,#2a2a2a 0%,#17161[...]
+*{box-sizing:border-box}html,body{height:100%}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:radial-gradient(1200px 800px at 50% 20%,#2a2a2a 0%,#171616 55%,#0f0f10 100%);color:#1c1c1c}
 :root{--paper:#f6f1e6;--accent:#ff8a3d}
 a{color:inherit}button,a.navbtn{font:inherit}
-.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.16);background:rgba(245,239,226,.92);position:sticky;top:0[...]
-.brand{display:flex;align-items:center;gap:10px}.brand__badge{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:rgba(255,138,61,.18);border:1px solid rgba(255,138[...]
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.16);background:rgba(245,239,226,.92);position:sticky;top:0;z-index:5;backdrop-filter:blur(10px)}
+.brand{display:flex;align-items:center;gap:10px}.brand__badge{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:rgba(255,138,61,.18);border:1px solid rgba(255,138,61,.35);font-weight:800}
 .brand__name{font-weight:800;font-size:14px;line-height:1.1}.brand__tag{font-size:12px;opacity:.75}
 .topnav{display:flex;gap:8px;flex-wrap:wrap}.navbtn{padding:6px 10px;border-radius:12px;border:1px solid rgba(0,0,0,.10);background:rgba(255,255,255,.72);cursor:pointer}
 .navbtn:hover{border-color:rgba(0,0,0,.18);background:rgba(255,255,255,.92)}
 .console{min-height:calc(100vh - 110px);display:grid;place-items:center;padding:18px 12px}
-.screen{width:min(1200px,94vw);aspect-ratio:4/3;border-radius:18px;border:1px solid rgba(255,255,255,.22);background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,.06));box-shadow:[...]
+.screen{width:min(1200px,94vw);aspect-ratio:4/3;border-radius:18px;border:1px solid rgba(255,255,255,.22);background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,.06));box-shadow:0 30px 90px rgba(0,0,0,.55);overflow:hidden;position:relative}
+
 /* Desktop: make the “cabinet” feel bigger without touching mobile */
 @media (min-width: 1100px){
   body{font-size:17px}
@@ -15,8 +16,8 @@ a{color:inherit}button,a.navbtn{font:inherit}
   .screen{width:min(1480px,96vw)}
   .home__headline{font-size:30px}
 }
-.screen__bg{position:absolute;inset:0;opacity:.55;background:radial-gradient(70% 55% at 70% 30%,rgba(255,138,61,.18),transparent 60%),radial-gradient(60% 50% at 20% 65%,rgba(44,130,126,.16),transp[...]
-.screen:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(to bottom,rgba(255,255,255,.05),rgba(255,255,255,.05) 1px,rgba(0,0,0,0) 4px,rgba(0,0,0,0) 7px);opacity:.22;p[...]
+.screen__bg{position:absolute;inset:0;opacity:.55;background:radial-gradient(70% 55% at 70% 30%,rgba(255,138,61,.18),transparent 60%),radial-gradient(60% 50% at 20% 65%,rgba(44,130,126,.16),transparent 60%),linear-gradient(180deg,rgba(245,239,226,.12),rgba(12,12,13,.35));pointer-events:none}
+.screen:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(to bottom,rgba(255,255,255,.05),rgba(255,255,255,.05) 1px,rgba(0,0,0,0) 4px,rgba(0,0,0,0) 7px);opacity:.22;pointer-events:none}
 .screen__ui{position:relative;height:100%;display:grid;grid-template-columns:240px 1fr;gap:14px;padding:14px}
 .screen__menu,.screen__content{border-radius:14px;border:1px solid rgba(255,255,255,.20);background:rgba(246,241,230,.90);box-shadow:0 10px 30px rgba(0,0,0,.22);overflow:hidden}
 .screen__menu{padding:10px}
@@ -75,7 +76,7 @@ a{color:inherit}button,a.navbtn{font:inherit}
 .pc__h{font-weight:800;margin-bottom:6px}
 .pc__list{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
 .pc__muted{color:rgba(0,0,0,.60);font-size:13px}
-.pc__pre{white-space:pre-wrap;word-break:break-word;border-radius:12px;border:1px solid rgba(0,0,0,.08);background:rgba(255,255,255,.78);padding:10px;margin:8px 0 0 0;font-family:ui-monospace,SFMo[...]
+.pc__pre{white-space:pre-wrap;word-break:break-word;border-radius:12px;border:1px solid rgba(0,0,0,.08);background:rgba(255,255,255,.78);padding:10px;margin:8px 0 0 0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;line-height:1.35}
 .pc__actions{margin-top:10px}
 .output--input{background:rgba(255,255,255,.85)}
 .panels{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -95,7 +96,7 @@ a{color:inherit}button,a.navbtn{font:inherit}
 .footer{padding:10px 14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;font-size:12px;background:rgba(245,239,226,.92);border-top:1px solid rgba(255,255,255,.16)}
 .footer__sep{opacity:.5}
 body[data-theme=nostalgia]{filter:saturate(1.05)}body[data-theme=nostalgia] .screen:after{opacity:.30}
-body[data-theme=modern] .screen__bg{opacity:.45;background:radial-gradient(70% 55% at 70% 30%,rgba(0,0,0,.10),transparent 60%),radial-gradient(60% 50% at 20% 65%,rgba(0,0,0,.08),transparent 60%),l[...]
+body[data-theme=modern] .screen__bg{opacity:.45;background:radial-gradient(70% 55% at 70% 30%,rgba(0,0,0,.10),transparent 60%),radial-gradient(60% 50% at 20% 65%,rgba(0,0,0,.08),transparent 60%),linear-gradient(180deg,rgba(255,255,255,.10),rgba(12,12,13,.35))}
 @media(max-width:720px){.screen__ui{grid-template-columns:1fr}.buddy__layout{grid-template-columns:1fr}.panels{grid-template-columns:1fr}.menu__scroll{max-height:220px}}
 
 @media (max-width: 720px){
@@ -472,6 +473,7 @@ body[data-theme="nostalgia"][data-variant="magnetic-tape"] .output:focus{
 .lib__notes{ margin-top:10px; font-size:13px; color:rgba(0,0,0,.72); }
 .lib__pre{ margin-top:10px; }
 
+
 .lib__filters{
   margin-top: 10px;
   display:flex;
@@ -491,13 +493,4 @@ body[data-theme="nostalgia"][data-variant="magnetic-tape"] .output:focus{
 
 .btn--star{
   min-width: 40px;
-}
-
-/* Vault + Library: keep long text readable */
-.vault__item .pre,
-.vault__item .pre--sm,
-.lib__item .lib__pre{
-  white-space: pre-wrap;
-  word-break: break-word;
-  overflow-wrap: anywhere;
 }
