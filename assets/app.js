@@ -36,6 +36,35 @@
     coach: "pb_last_coach_v1"
   };
 
+  function loadLastCoach(){
+    try{
+      const raw = localStorage.getItem(LS_LAST.coach);
+      if(!raw) return null;
+      const obj = JSON.parse(raw);
+      if(!obj || typeof obj !== 'object') return null;
+      return {
+        t: Number(obj.t||0) || 0,
+        mistakes: Array.isArray(obj.mistakes) ? obj.mistakes : [],
+        fixes: Array.isArray(obj.fixes) ? obj.fixes : [],
+        metaPrompt: String(obj.metaPrompt||""),
+        raw: String(obj.raw||"")
+      };
+    } catch { return null; }
+  }
+
+  function saveLastCoach(payload){
+    try{
+      const safe = {
+        t: Date.now(),
+        mistakes: Array.isArray(payload?.mistakes) ? payload.mistakes : [],
+        fixes: Array.isArray(payload?.fixes) ? payload.fixes : [],
+        metaPrompt: String(payload?.metaPrompt||""),
+        raw: String(payload?.raw||"")
+      };
+      localStorage.setItem(LS_LAST.coach, JSON.stringify(safe));
+    } catch {}
+  }
+
   function setDraftPrompt(v){
     try{ localStorage.setItem(LS.draftPrompt, String(v||"")); }catch{}
   }
@@ -445,12 +474,104 @@ function renderLines(el, arr){
     const reset = document.getElementById('vaultReset');
     const coachBtn = document.getElementById('vaultCoach');
     const coachCap = document.getElementById('vaultCoachCap');
+    const persistWrap = document.getElementById('vaultCoachPersist');
 
     if(coachCap) coachCap.textContent = String(COACH_MAX_CHARS);
 
     function setCoachStatus(msg){
       const s = document.getElementById('vaultStatus');
       if(s) s.textContent = msg||"";
+    }
+
+    function fmtWhen(ts){
+      if(!ts) return "";
+      try{
+        const d = new Date(ts);
+        // Keep it short and locale-friendly.
+        return d.toLocaleString();
+      } catch { return ""; }
+    }
+
+    function renderCoachPersisted(data){
+      if(!persistWrap) return;
+      persistWrap.innerHTML = "";
+      if(!data) return;
+
+      const wrap = document.createElement('div');
+      wrap.className = 'card';
+      wrap.style.marginTop = '12px';
+      wrap.innerHTML = `
+        <div class="card__body">
+          <div class="modal__head" style="padding:0; background:none; border:none; margin-bottom:10px">
+            <strong>Last 5 Review</strong>
+            <div style="display:flex; gap:8px; align-items:center">
+              <span class="muted" style="font-size:12px">${escapeHtml(fmtWhen(data.t))}</span>
+              <button class="btn" id="vaultCoachHide" type="button">Hide</button>
+              <button class="btn" id="vaultCoachClear" type="button">Clear</button>
+            </div>
+          </div>
+
+          <section class="pc__section">
+            <div class="pc__h">Recurring issues</div>
+            <div class="pb__scroll"><ul class="pc__list" id="vaultCoachMistakes"></ul></div>
+          </section>
+
+          <section class="pc__section">
+            <div class="pc__h">Fixes to apply</div>
+            <div class="pb__scroll"><ul class="pc__list" id="vaultCoachFixes"></ul></div>
+          </section>
+
+          <section class="pc__section pc__section--gold">
+            <div class="pc__h">Reusable meta-prompt</div>
+            <pre class="pc__pre" id="vaultCoachMeta"></pre>
+            <div class="panel__actions">
+              <button class="btn btn--primary" id="vaultCoachCopy" type="button">Copy</button>
+            </div>
+          </section>
+
+          <details class="fold">
+            <summary class="fold__sum">Show raw output (debug)</summary>
+            <div class="fold__body">
+              <pre class="pc__pre" id="vaultCoachRaw"></pre>
+            </div>
+          </details>
+        </div>
+      `;
+      persistWrap.appendChild(wrap);
+
+      const ulM = wrap.querySelector('#vaultCoachMistakes');
+      const ulF = wrap.querySelector('#vaultCoachFixes');
+      const preMeta = wrap.querySelector('#vaultCoachMeta');
+      const preRaw = wrap.querySelector('#vaultCoachRaw');
+      const btnCopy = wrap.querySelector('#vaultCoachCopy');
+      const btnHide = wrap.querySelector('#vaultCoachHide');
+      const btnClear = wrap.querySelector('#vaultCoachClear');
+
+      const cleanList = (arr)=> (arr||[])
+        .map(x=>String(x ?? '').trim())
+        .filter(Boolean)
+        .slice(0, 12);
+      const mList = cleanList(data.mistakes);
+      const fList = cleanList(data.fixes);
+      if(ulM) ulM.innerHTML = (mList.length?mList:["—"]).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('');
+      if(ulF) ulF.innerHTML = (fList.length?fList:["—"]).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('');
+      if(preMeta) preMeta.textContent = String(data.metaPrompt||"");
+      if(preRaw) preRaw.textContent = String(data.raw||"");
+
+      btnCopy?.addEventListener('click', async ()=>{
+        const txt = String(preMeta?.textContent||"").trim();
+        if(!txt) return;
+        try{ await navigator.clipboard.writeText(txt); setCoachStatus('Meta-prompt copied ✅'); }
+        catch{ setCoachStatus('Copy failed.'); }
+        setTimeout(()=>setCoachStatus(''), 900);
+      });
+      btnHide?.addEventListener('click', ()=>{ persistWrap.innerHTML = ""; });
+      btnClear?.addEventListener('click', ()=>{
+        try{ localStorage.removeItem(LS_LAST.coach); }catch{}
+        persistWrap.innerHTML = "";
+        setCoachStatus('Cleared ✅');
+        setTimeout(()=>setCoachStatus(''), 900);
+      });
     }
 
     function createCoachModal(){
@@ -737,6 +858,15 @@ function renderLines(el, arr){
         const txt = await res.text();
         const parsed = normalizeCoachPayload(parseJsonFromText(txt) || txt);
 
+        // Persist so results survive tab switches (Buddy/Vault/Library/About)
+        saveLastCoach({
+          mistakes: parsed.mistakes,
+          fixes: parsed.fixes,
+          metaPrompt: parsed.metaPrompt,
+          raw: txt
+        });
+        renderCoachPersisted(loadLastCoach());
+
         if(modalRaw) modalRaw.textContent = txt;
 
 
@@ -761,6 +891,9 @@ function renderLines(el, arr){
         coachBtn.disabled = false;
       }
     });
+
+    // Restore persisted “Last 5 Review” output (if any)
+    renderCoachPersisted(loadLastCoach());
 
     renderVault();
   }
