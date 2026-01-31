@@ -21,7 +21,7 @@ a{color:inherit}button,a.navbtn{font:inherit}
 .screen__ui{position:relative;height:100%;display:grid;grid-template-columns:240px 1fr;gap:14px;padding:14px}
 .screen__menu,.screen__content{border-radius:14px;border:1px solid rgba(255,255,255,.20);background:rgba(246,241,230,.90);box-shadow:0 10px 30px rgba(0,0,0,.22);overflow:hidden}
 .screen__menu{padding:10px}
-.screen__content{padding:14px;overflow:auto}
+.screen__content{padding:14px;overflow:auto;overflow-x:hidden}
 .menu__title{font-size:12px;opacity:.7;letter-spacing:.10em;margin-bottom:8px;color:rgba(0,0,0,.65)}
 .menu__group{margin-bottom:6px}
 .menu__item{display:block;width:100%;text-align:left;padding:9px 10px;border-radius:12px;border:1px solid transparent;background:transparent;cursor:pointer}
@@ -77,6 +77,10 @@ a{color:inherit}button,a.navbtn{font:inherit}
 .pc__list{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
 .pc__muted{color:rgba(0,0,0,.60);font-size:13px}
 .pc__pre{white-space:pre-wrap;word-break:break-word;border-radius:12px;border:1px solid rgba(0,0,0,.08);background:rgba(255,255,255,.78);padding:10px;margin:8px 0 0 0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;line-height:1.35}
+
+/* Vault/Library long text readability */
+.pre{white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;overflow:auto;max-height:260px;border-radius:12px;border:1px solid rgba(0,0,0,.08);background:rgba(255,255,255,.78);padding:10px;margin:8px 0 0 0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;line-height:1.35}
+.pre--sm{font-size:12px;line-height:1.35;padding:8px;border-radius:10px;max-height:240px}
 .pc__actions{margin-top:10px}
 .output--input{background:rgba(255,255,255,.85)}
 .panels{display:grid;grid-template-columns:1fr 1fr;gap:12px}
