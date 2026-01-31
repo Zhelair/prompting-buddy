@@ -36,29 +36,6 @@
     coach: "pb_last_coach_v1"
   };
 
-function saveLastCoachRun(rawText, parsedObj){
-  try{
-    const payload = { at: Date.now(), raw: String(rawText||""), parsed: parsedObj || null };
-    localStorage.setItem(LS_LAST.coach, JSON.stringify(payload));
-  }catch{}
-}
-function loadLastCoachRun(){
-  try{
-    const raw = localStorage.getItem(LS_LAST.coach);
-    if(!raw) return null;
-    const obj = JSON.parse(raw);
-    if(!obj || typeof obj !== 'object') return null;
-    // basic shape
-    return {
-      at: Number(obj.at||0),
-      raw: String(obj.raw||""),
-      parsed: (obj.parsed && typeof obj.parsed==='object') ? obj.parsed : null
-    };
-  }catch{ return null; }
-}
-
-
-
   function setDraftPrompt(v){
     try{ localStorage.setItem(LS.draftPrompt, String(v||"")); }catch{}
   }
@@ -697,39 +674,6 @@ function renderLines(el, arr){
       const onKey = (e)=>{ if(e.key === 'Escape') { onClose(); document.removeEventListener('keydown', onKey); } };
       document.addEventListener('keydown', onKey);
 
-
-// Restore last "Last 5 Review" output (so switching tabs doesn't wipe it)
-try{
-  const last = loadLastCoachRun();
-  if(last){
-    const modalMist = node.querySelector('#coachMistakes');
-    const modalFix = node.querySelector('#coachFixes');
-    const modalMeta = node.querySelector('#coachMeta');
-    const modalRaw = node.querySelector('#coachRaw');
-    const modalStatus = node.querySelector('#coachStatus');
-
-    const cleanList = (arr)=> (arr||[])
-      .map(x=>String(x ?? '').trim())
-      .filter(Boolean)
-      .slice(0, 3);
-
-    const parsed = last.parsed ? normalizeCoachPayload(last.parsed) : normalizeCoachPayload(parseJsonFromText(last.raw) || last.raw);
-
-    const mList = cleanList(parsed.mistakes);
-    const fList = cleanList(parsed.fixes);
-
-    if(modalMist) modalMist.innerHTML = (mList.length?mList:["—"]).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('');
-    if(modalFix) modalFix.innerHTML = (fList.length?fList:["—"]).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('');
-    if(modalMeta) modalMeta.textContent = parsed.metaPrompt || "";
-    if(modalRaw) modalRaw.textContent = last.raw || "";
-    if(modalStatus){
-      const d = last.at ? new Date(last.at) : null;
-      modalStatus.textContent = d ? `Restored last review (${d.toLocaleString()})` : "Restored last review";
-    }
-  }
-}catch{}
-
-
       return node;
     }
 
@@ -805,9 +749,6 @@ try{
         if(modalMist) modalMist.innerHTML = (mList.length?mList:["—"]).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('');
         if(modalFix) modalFix.innerHTML = (fList.length?fList:["—"]).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('');
         if(modalMeta) modalMeta.textContent = parsed.metaPrompt;
-
-        // Persist last-5 review so it survives navigation
-        try{ saveLastCoachRun(txt, parsed); }catch{}
 
         setModalStatus("Done ✅");
         setCoachStatus("Done ✅");
