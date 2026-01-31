@@ -33,7 +33,8 @@
   // last-run caches (for persistence when navigating Buddy/Vault/About)
   const LS_LAST = {
     pc: "pb_last_promptcheck_v1",
-    coach: "pb_last_coach_v1"
+    coach: "pb_last_coach_v1",
+    coachLast5: "pb_last_coach_last5_v1"
   };
 
   function setDraftPrompt(v){
@@ -620,7 +621,7 @@ function renderLines(el, arr){
       if(typeof obj === 'string') obj = parseJsonFromText(obj) || { metaPrompt: obj };
       if(obj && typeof obj === 'object'){
         // If the model returned a big blob in metaPrompt, try to parse it
-        if(typeof obj.metaPrompt === 'string' && ( (!Array.isArray(obj.mistakes) || !Array.isArray(obj.fixes)) || (Array.isArray(obj.mistakes) && obj.mistakes.some(m=>/not\s+valid\s+json/i.test(String(m)))) )){
+        if((!Array.isArray(obj.mistakes) || !Array.isArray(obj.fixes)) && typeof obj.metaPrompt === 'string'){
           const parsed = parseJsonFromText(obj.metaPrompt);
           if(parsed && typeof parsed === 'object') obj = { ...obj, ...parsed };
         }
@@ -709,6 +710,32 @@ function renderLines(el, arr){
       const modalCopy = modal.querySelector('#coachCopyMeta');
 
       const setModalStatus = (m)=>{ if(modalStatus) modalStatus.textContent = m||""; };
+      const cleanList = (arr)=> (arr||[])
+        .map(x=>String(x ?? '').trim())
+        .filter(Boolean)
+        .slice(0, 3);
+
+      const applyCoachToModal = (p, rawTxt)=>{
+        const mList = cleanList(p.mistakes);
+        const fList = cleanList(p.fixes);
+        if(modalMist) modalMist.innerHTML = (mList.length?mList:["—"]).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('');
+        if(modalFix) modalFix.innerHTML = (fList.length?fList:["—"]).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('');
+        if(modalMeta) modalMeta.textContent = p.metaPrompt || "";
+        if(modalRaw) modalRaw.textContent = String(rawTxt || "");
+      };
+
+      // Restore last "Last 5 Review" result so navigating tabs doesn't wipe it
+      try{
+        const last = localStorage.getItem(LS_LAST.coachLast5);
+        if(last){
+          const obj = JSON.parse(last);
+          const p = normalizeCoachPayload(obj.parsed || obj);
+          applyCoachToModal(p, obj.raw || "");
+          setModalStatus("Restored ✅");
+          setTimeout(()=>setModalStatus(""), 900);
+        }
+      }catch{}
+
 
       modalCopy?.addEventListener('click', async ()=>{
         const txt = String(modalMeta?.textContent||"").trim();
@@ -740,15 +767,8 @@ function renderLines(el, arr){
         if(modalRaw) modalRaw.textContent = txt;
 
 
-        const cleanList = (arr)=> (arr||[])
-          .map(x=>String(x ?? '').trim())
-          .filter(Boolean)
-          .slice(0, 3);
-        const mList = cleanList(parsed.mistakes);
-        const fList = cleanList(parsed.fixes);
-        if(modalMist) modalMist.innerHTML = (mList.length?mList:["—"]).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('');
-        if(modalFix) modalFix.innerHTML = (fList.length?fList:["—"]).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('');
-        if(modalMeta) modalMeta.textContent = parsed.metaPrompt;
+        applyCoachToModal(parsed, txt);
+        try{ localStorage.setItem(LS_LAST.coachLast5, JSON.stringify({ raw: txt, parsed })); }catch{}
 
         setModalStatus("Done ✅");
         setCoachStatus("Done ✅");
@@ -1316,7 +1336,7 @@ function renderLines(el, arr){
     if(typeof obj === 'string') obj = parseJsonFromText(obj) || { metaPrompt: obj };
     if(obj && typeof obj === 'object'){
       if(obj.result && typeof obj.result === 'object') obj = obj.result;
-      if(typeof obj.metaPrompt === 'string' && ( (!Array.isArray(obj.mistakes) || !Array.isArray(obj.fixes)) || (Array.isArray(obj.mistakes) && obj.mistakes.some(m=>/not\s+valid\s+json/i.test(String(m)))) )){
+      if((!Array.isArray(obj.mistakes) || !Array.isArray(obj.fixes)) && typeof obj.metaPrompt === 'string'){
         const parsed = parseJsonFromText(obj.metaPrompt);
         if(parsed && typeof parsed === 'object') obj = { ...obj, ...parsed };
       }
