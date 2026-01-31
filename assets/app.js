@@ -33,9 +33,31 @@
   // last-run caches (for persistence when navigating Buddy/Vault/About)
   const LS_LAST = {
     pc: "pb_last_promptcheck_v1",
-    coach: "pb_last_coach_v1",
-    coachLast5: "pb_last_coach_last5_v1"
+    coach: "pb_last_coach_v1"
   };
+
+function saveLastCoachRun(rawText, parsedObj){
+  try{
+    const payload = { at: Date.now(), raw: String(rawText||""), parsed: parsedObj || null };
+    localStorage.setItem(LS_LAST.coach, JSON.stringify(payload));
+  }catch{}
+}
+function loadLastCoachRun(){
+  try{
+    const raw = localStorage.getItem(LS_LAST.coach);
+    if(!raw) return null;
+    const obj = JSON.parse(raw);
+    if(!obj || typeof obj !== 'object') return null;
+    // basic shape
+    return {
+      at: Number(obj.at||0),
+      raw: String(obj.raw||""),
+      parsed: (obj.parsed && typeof obj.parsed==='object') ? obj.parsed : null
+    };
+  }catch{ return null; }
+}
+
+
 
   function setDraftPrompt(v){
     try{ localStorage.setItem(LS.draftPrompt, String(v||"")); }catch{}
@@ -621,7 +643,7 @@ function renderLines(el, arr){
       if(typeof obj === 'string') obj = parseJsonFromText(obj) || { metaPrompt: obj };
       if(obj && typeof obj === 'object'){
         // If the model returned a big blob in metaPrompt, try to parse it
-        if((!Array.isArray(obj.mistakes) || !Array.isArray(obj.fixes)) && typeof obj.metaPrompt === 'string'){
+        if(typeof obj.metaPrompt === 'string' && ( (!Array.isArray(obj.mistakes) || !Array.isArray(obj.fixes)) || (Array.isArray(obj.mistakes) && obj.mistakes.some(m=>/not\s+valid\s+json/i.test(String(m)))) )){
           const parsed = parseJsonFromText(obj.metaPrompt);
           if(parsed && typeof parsed === 'object') obj = { ...obj, ...parsed };
         }
@@ -675,6 +697,39 @@ function renderLines(el, arr){
       const onKey = (e)=>{ if(e.key === 'Escape') { onClose(); document.removeEventListener('keydown', onKey); } };
       document.addEventListener('keydown', onKey);
 
+
+// Restore last "Last 5 Review" output (so switching tabs doesn't wipe it)
+try{
+  const last = loadLastCoachRun();
+  if(last){
+    const modalMist = node.querySelector('#coachMistakes');
+    const modalFix = node.querySelector('#coachFixes');
+    const modalMeta = node.querySelector('#coachMeta');
+    const modalRaw = node.querySelector('#coachRaw');
+    const modalStatus = node.querySelector('#coachStatus');
+
+    const cleanList = (arr)=> (arr||[])
+      .map(x=>String(x ?? '').trim())
+      .filter(Boolean)
+      .slice(0, 3);
+
+    const parsed = last.parsed ? normalizeCoachPayload(last.parsed) : normalizeCoachPayload(parseJsonFromText(last.raw) || last.raw);
+
+    const mList = cleanList(parsed.mistakes);
+    const fList = cleanList(parsed.fixes);
+
+    if(modalMist) modalMist.innerHTML = (mList.length?mList:["—"]).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('');
+    if(modalFix) modalFix.innerHTML = (fList.length?fList:["—"]).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('');
+    if(modalMeta) modalMeta.textContent = parsed.metaPrompt || "";
+    if(modalRaw) modalRaw.textContent = last.raw || "";
+    if(modalStatus){
+      const d = last.at ? new Date(last.at) : null;
+      modalStatus.textContent = d ? `Restored last review (${d.toLocaleString()})` : "Restored last review";
+    }
+  }
+}catch{}
+
+
       return node;
     }
 
@@ -710,32 +765,6 @@ function renderLines(el, arr){
       const modalCopy = modal.querySelector('#coachCopyMeta');
 
       const setModalStatus = (m)=>{ if(modalStatus) modalStatus.textContent = m||""; };
-      const cleanList = (arr)=> (arr||[])
-        .map(x=>String(x ?? '').trim())
-        .filter(Boolean)
-        .slice(0, 3);
-
-      const applyCoachToModal = (p, rawTxt)=>{
-        const mList = cleanList(p.mistakes);
-        const fList = cleanList(p.fixes);
-        if(modalMist) modalMist.innerHTML = (mList.length?mList:["—"]).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('');
-        if(modalFix) modalFix.innerHTML = (fList.length?fList:["—"]).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('');
-        if(modalMeta) modalMeta.textContent = p.metaPrompt || "";
-        if(modalRaw) modalRaw.textContent = String(rawTxt || "");
-      };
-
-      // Restore last "Last 5 Review" result so navigating tabs doesn't wipe it
-      try{
-        const last = localStorage.getItem(LS_LAST.coachLast5);
-        if(last){
-          const obj = JSON.parse(last);
-          const p = normalizeCoachPayload(obj.parsed || obj);
-          applyCoachToModal(p, obj.raw || "");
-          setModalStatus("Restored ✅");
-          setTimeout(()=>setModalStatus(""), 900);
-        }
-      }catch{}
-
 
       modalCopy?.addEventListener('click', async ()=>{
         const txt = String(modalMeta?.textContent||"").trim();
@@ -767,8 +796,18 @@ function renderLines(el, arr){
         if(modalRaw) modalRaw.textContent = txt;
 
 
-        applyCoachToModal(parsed, txt);
-        try{ localStorage.setItem(LS_LAST.coachLast5, JSON.stringify({ raw: txt, parsed })); }catch{}
+        const cleanList = (arr)=> (arr||[])
+          .map(x=>String(x ?? '').trim())
+          .filter(Boolean)
+          .slice(0, 3);
+        const mList = cleanList(parsed.mistakes);
+        const fList = cleanList(parsed.fixes);
+        if(modalMist) modalMist.innerHTML = (mList.length?mList:["—"]).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('');
+        if(modalFix) modalFix.innerHTML = (fList.length?fList:["—"]).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('');
+        if(modalMeta) modalMeta.textContent = parsed.metaPrompt;
+
+        // Persist last-5 review so it survives navigation
+        try{ saveLastCoachRun(txt, parsed); }catch{}
 
         setModalStatus("Done ✅");
         setCoachStatus("Done ✅");
@@ -1336,7 +1375,7 @@ function renderLines(el, arr){
     if(typeof obj === 'string') obj = parseJsonFromText(obj) || { metaPrompt: obj };
     if(obj && typeof obj === 'object'){
       if(obj.result && typeof obj.result === 'object') obj = obj.result;
-      if((!Array.isArray(obj.mistakes) || !Array.isArray(obj.fixes)) && typeof obj.metaPrompt === 'string'){
+      if(typeof obj.metaPrompt === 'string' && ( (!Array.isArray(obj.mistakes) || !Array.isArray(obj.fixes)) || (Array.isArray(obj.mistakes) && obj.mistakes.some(m=>/not\s+valid\s+json/i.test(String(m)))) )){
         const parsed = parseJsonFromText(obj.metaPrompt);
         if(parsed && typeof parsed === 'object') obj = { ...obj, ...parsed };
       }
