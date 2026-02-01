@@ -52,7 +52,7 @@ a{color:inherit}button,a.navbtn{font:inherit}
 @media (min-width: 900px){
   .tips{grid-template-columns:1fr 1fr}
 }
-.btn{padding:9px 12px;border-radius:14px;border:1px solid rgba(0,0,0,.12);background:rgba(255,255,255,.92);cursor:pointer;text-decoration:none;color:inherit}
+.btn{padding:9px 12px;border-radius:14px;border:1px solid rgba(0,0,0,.12);background:rgba(255,255,255,.92);cursor:pointer;text-decoration:none;color:#1c1c1c}
 .btn:hover{background:rgba(255,255,255,1);border-color:rgba(0,0,0,.18)}
 .btn--primary{background:rgba(255,138,61,.18);border-color:rgba(255,138,61,.35)}
 .buddy__layout{display:grid;grid-template-columns:240px 1fr;gap:12px}
@@ -458,153 +458,6 @@ body[data-theme="nostalgia"][data-variant="magnetic-tape"] .output:focus{
   border-color: rgba(122,252,255,.45);
 }
 
-/* ---------- Readability safety net (no black-on-black) ---------- */
-body[data-theme="retro"],
-body[data-theme="myspace"]{
-  color:#f2f4ff;
-}
-body[data-theme="retro"] .btn,
-body[data-theme="myspace"] .btn{
-  background: rgba(255,255,255,.08);
-  border-color: rgba(255,255,255,.18);
-  color:#f2f4ff;
-}
-body[data-theme="retro"] .btn:hover,
-body[data-theme="myspace"] .btn:hover{
-  background: rgba(255,255,255,.12);
-  border-color: rgba(255,255,255,.24);
-}
-body[data-theme="retro"] .btn--primary,
-body[data-theme="myspace"] .btn--primary{
-  background: rgba(122,252,255,.12);
-  border-color: rgba(122,252,255,.30);
-}
-body[data-theme="retro"] .field__label,
-body[data-theme="myspace"] .field__label{ color: rgba(255,255,255,.82); }
-body[data-theme="retro"] .muted,
-body[data-theme="myspace"] .muted{ color: rgba(255,255,255,.70); }
-
-/* ---------- Modal (Unlock, Coach, Golden) ---------- */
-.modal_backdrop{
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.55);
-  display:flex;
-  align-items:flex-start;
-  justify-content:center;
-  padding: 72px 16px 24px;
-  z-index: 9999;
-}
-.modal{
-  width: min(720px, 100%);
-  border-radius: 18px;
-  background: rgba(255,255,255,.96);
-  border: 1px solid rgba(0,0,0,.10);
-  box-shadow: 0 30px 100px rgba(0,0,0,.40);
-  overflow:hidden;
-}
-.modal__head{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap: 12px;
-  padding: 14px 16px;
-  background: rgba(250,250,250,.92);
-  border-bottom: 1px solid rgba(0,0,0,.08);
-}
-.modal__body{ padding: 16px; }
-body[data-theme="retro"] .modal,
-body[data-theme="myspace"] .modal{
-  background: rgba(12,12,20,.92);
-  border-color: rgba(255,255,255,.14);
-  color:#f2f4ff;
-}
-body[data-theme="retro"] .modal__head,
-body[data-theme="myspace"] .modal__head{
-  background: rgba(8,8,14,.72);
-  border-bottom-color: rgba(255,255,255,.12);
-}
-
-/* ---------- MySpace-ish theme (animated, playful) ---------- */
-body[data-theme="myspace"]{
-  background:
-    radial-gradient(1200px 800px at 20% 20%, rgba(255,0,200,.22), transparent 55%),
-    radial-gradient(900px 700px at 80% 40%, rgba(0,220,255,.18), transparent 55%),
-    radial-gradient(900px 700px at 40% 85%, rgba(255,210,0,.14), transparent 55%),
-    linear-gradient(180deg, #070711, #05050a);
-}
-body[data-theme="myspace"] .screen:before{
-  content:"";
-  position:absolute;
-  inset:0;
-  pointer-events:none;
-  opacity:.22;
-  background:
-    radial-gradient(circle at 10% 20%, rgba(255,255,255,.9) 0 1px, transparent 2px),
-    radial-gradient(circle at 35% 60%, rgba(255,255,255,.8) 0 1px, transparent 2px),
-    radial-gradient(circle at 60% 30%, rgba(255,255,255,.85) 0 1px, transparent 2px),
-    radial-gradient(circle at 80% 70%, rgba(255,255,255,.75) 0 1px, transparent 2px);
-  background-size: 220px 220px;
-  animation: pbStars 12s linear infinite;
-}
-@keyframes pbStars{ from{ transform: translateY(0); } to{ transform: translateY(80px); } }
-
-body[data-theme="myspace"] .topbar,
-body[data-theme="myspace"] .footer{
-  background: rgba(10,10,16,.70);
-  border-color: rgba(255,255,255,.12);
-  color:#f2f4ff;
-}
-body[data-theme="myspace"] .screen__menu,
-body[data-theme="myspace"] .screen__content{
-  background: rgba(10,10,16,.62);
-  border-color: rgba(255,255,255,.14);
-}
-body[data-theme="myspace"] .menu__item.is-active{
-  background: rgba(255,0,200,.14);
-  border-color: rgba(255,0,200,.28);
-}
-body[data-theme="myspace"] .btn{
-  border-radius: 999px;
-  position: relative;
-  overflow:hidden;
-}
-body[data-theme="myspace"] .btn:before{
-  content:"";
-  position:absolute;
-  inset:-1px;
-  pointer-events:none;
-  background: linear-gradient(90deg, rgba(255,0,200,.0), rgba(255,0,200,.26), rgba(0,220,255,.22), rgba(255,210,0,.18), rgba(255,0,200,.0));
-  transform: translateX(-40%);
-  opacity:.55;
-}
-body[data-theme="myspace"] .btn:hover{
-  transform: translateY(-1px) scale(1.01);
-  box-shadow: 0 10px 26px rgba(0,0,0,.45);
-}
-body[data-theme="myspace"] .btn:hover:before{
-  animation: pbShimmer .8s ease forwards;
-}
-@keyframes pbShimmer{ to{ transform: translateX(40%); opacity:.75; } }
-
-/* ---------- Library: subtle per-category accents ---------- */
-.lib__item{ position:relative; }
-.lib__item:before{
-  content:"";
-  position:absolute;
-  left:0; top:0; bottom:0;
-  width: 6px;
-  border-radius: 14px 0 0 14px;
-  background: rgba(255,138,61,.28);
-}
-.lib__item[data-cat="Writing"]:before{ background: rgba(196,69,105,.30); }
-.lib__item[data-cat="Coding"]:before{ background: rgba(122,252,255,.26); }
-.lib__item[data-cat="Research / OSINT"]:before{ background: rgba(255,210,0,.24); }
-.lib__item[data-cat="Visuals"]:before{ background: rgba(155,93,229,.28); }
-.lib__item[data-cat="Creators"]:before{ background: rgba(78,205,196,.26); }
-.lib__item[data-cat="Business"]:before{ background: rgba(93,138,168,.26); }
-.lib__item[data-cat="Life / Mood"]:before{ background: rgba(217,160,102,.26); }
-
 
 /* Prompting Buddy Phase 0.5: internal scroll areas for result cards */
 .pb__scroll{
@@ -646,91 +499,195 @@ body[data-theme="myspace"] .btn:hover:before{
   min-width: 40px;
 }
 
-/* Make sure text is readable in dark themes */
-body[data-theme="retro"] .btn,
-body[data-theme="retro"] .navbtn,
-body[data-theme="retro"] .menu__item,
-body[data-theme="retro"] .muted,
-body[data-theme="retro"] .field__label{color:#f0f0ff}
-body[data-theme="retro"] .btn{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.18)}
-body[data-theme="retro"] .btn:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.28)}
-body[data-theme="retro"] .btn--primary{background:rgba(0,243,255,.12);border-color:rgba(0,243,255,.40)}
-body[data-theme="retro"] .modal{background:rgba(10,10,20,.92);border-color:rgba(255,255,255,.18)}
-body[data-theme="retro"] .modal__head{background:rgba(12,12,22,.92);border-bottom-color:rgba(255,255,255,.14)}
-body[data-theme="retro"] .field__input, body[data-theme="retro"] select, body[data-theme="retro"] .output{color:#f0f0ff}
+/* ===========================
+   PB UI polish — chips/badges + modal readability + extra variants
+   =========================== */
 
-body[data-theme="nostalgia"] .modal{background:rgba(246,241,230,.97)}
+/* Modal (Unlock) — always readable (no black-on-black ever) */
+.modal_backdrop{
+  position:fixed; inset:0; z-index:999;
+  display:flex; align-items:center; justify-content:center;
+  padding:18px;
+  background:rgba(0,0,0,.55);
+  backdrop-filter:blur(10px);
+}
+.modal{
+  width:min(760px, calc(100vw - 24px));
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.18);
+  background:rgba(255,255,255,.95);
+  color:#111;
+  box-shadow:0 30px 80px rgba(0,0,0,.35);
+}
+.modal__head{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:14px 14px 10px 14px;
+  border-bottom:1px solid rgba(0,0,0,.08);
+}
+.modal__body{ padding:14px; }
+.modal .field__label{ color:rgba(0,0,0,.70) }
+.modal .field__input{
+  background:#fff;
+  color:#111;
+  border-color:rgba(0,0,0,.18);
+}
+.modal .panel__note{ color:rgba(0,0,0,.55) }
 
-/* -----------------------------
-   MySpace-ish theme (fun)
------------------------------- */
-@keyframes pbStars{0%{transform:translate3d(0,0,0)}100%{transform:translate3d(-120px,90px,0)}}
-@keyframes pbWiggle{0%,100%{transform:translateY(0)}50%{transform:translateY(-1px)}}
+/* Chips + badges (Library meta) */
+.lib__meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:4px}
+.meta__time{font-size:12px;color:rgba(0,0,0,.55)}
+.chip{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:4px 10px;border-radius:999px;
+  border:1px solid rgba(0,0,0,.10);
+  background:rgba(255,255,255,.72);
+  font-size:12px; line-height:1;
+}
+.chip__icon{font-size:13px}
+.chip--tags{background:rgba(255,255,255,.55)}
+.badge{
+  display:inline-flex;align-items:center;
+  padding:4px 10px;border-radius:10px;
+  border:1px solid rgba(0,0,0,.12);
+  background:rgba(255,255,255,.82);
+  font-size:12px; font-weight:600;
+}
+.badge--model{letter-spacing:.2px}
+.lib__notes{
+  margin:10px 0 8px 0;
+  padding:10px 12px;
+  border-radius:14px;
+  border:1px dashed rgba(0,0,0,.14);
+  background:rgba(255,255,255,.55);
+  color:rgba(0,0,0,.70);
+  font-size:13px;
+}
 
-body[data-theme="myspace"]{
-  color:#1a1026;
+/* Make Library cards feel more "sectioned" */
+.lib__title{font-weight:800;letter-spacing:.2px}
+.pre.lib__pre{border-radius:14px}
+
+/* About theme picker (clean list, no descriptions) */
+.themePick{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.themePick__row{display:flex;align-items:center;gap:10px;font-size:14px}
+.themePick__row input{transform:translateY(1px)}
+
+/* ===== New Variant: Fancy Glitter (Tiffany + Gold, readable) ===== */
+body[data-theme="nostalgia"][data-variant="fancy-glitter"]{
   background:
-    radial-gradient(1000px 700px at 20% 10%, rgba(255,124,216,.18), transparent 55%),
-    radial-gradient(900px 650px at 90% 35%, rgba(126,252,255,.18), transparent 55%),
-    linear-gradient(180deg, #f6f0ff 0%, #e9f3ff 45%, #fff1f7 100%);
+    radial-gradient(1200px 700px at 20% 10%, rgba(64,224,208,.25) 0%, rgba(64,224,208,0) 55%),
+    radial-gradient(1000px 700px at 80% 20%, rgba(255,215,0,.18) 0%, rgba(255,215,0,0) 60%),
+    radial-gradient(1200px 900px at 50% 90%, rgba(175,122,255,.12) 0%, rgba(0,0,0,0) 60%),
+    radial-gradient(1200px 800px at 50% 20%, #2a2d43 0%, #141523 60%, #0f1018 100%);
 }
-body[data-theme="myspace"] .screen__bg{opacity:.55}
-body[data-theme="myspace"] .screen__bg:before{
+body[data-theme="nostalgia"][data-variant="fancy-glitter"] .screen__menu,
+body[data-theme="nostalgia"][data-variant="fancy-glitter"] .screen__content{
+  background:rgba(246,241,230,.94);
+}
+body[data-theme="nostalgia"][data-variant="fancy-glitter"] .card{
+  border-color:rgba(64,224,208,.28);
+  box-shadow:0 18px 40px rgba(0,0,0,.10);
+}
+body[data-theme="nostalgia"][data-variant="fancy-glitter"] .btn,
+body[data-theme="nostalgia"][data-variant="fancy-glitter"] a.navbtn{
+  background:linear-gradient(90deg, rgba(64,224,208,.18), rgba(255,215,0,.14));
+  border-color:rgba(64,224,208,.35);
+}
+body[data-theme="nostalgia"][data-variant="fancy-glitter"] .btn:hover,
+body[data-theme="nostalgia"][data-variant="fancy-glitter"] a.navbtn:hover{
+  background:linear-gradient(90deg, rgba(64,224,208,.26), rgba(255,215,0,.20));
+}
+body[data-theme="nostalgia"][data-variant="fancy-glitter"] .menu__item.is-active{
+  background:rgba(64,224,208,.22);
+  border-color:rgba(64,224,208,.45);
+}
+
+/* subtle sparkle overlay */
+body[data-theme="nostalgia"][data-variant="fancy-glitter"]::before{
   content:"";
-  position:absolute;inset:-40px;
+  position:fixed; inset:0; pointer-events:none; z-index:0;
   background-image:
-    radial-gradient(circle, rgba(255,255,255,.9) 0 1px, transparent 2px),
-    radial-gradient(circle, rgba(255,255,255,.7) 0 1px, transparent 2px),
-    radial-gradient(circle, rgba(255,255,255,.6) 0 1px, transparent 2px);
-  background-size: 120px 120px, 180px 180px, 240px 240px;
-  background-position: 0 0, 40px 70px, 80px 20px;
-  opacity:.45;
-  animation: pbStars 14s linear infinite;
+    radial-gradient(circle at 12% 18%, rgba(255,255,255,.35) 0 2px, rgba(255,255,255,0) 3px),
+    radial-gradient(circle at 72% 26%, rgba(255,255,255,.25) 0 2px, rgba(255,255,255,0) 3px),
+    radial-gradient(circle at 32% 76%, rgba(255,255,255,.20) 0 2px, rgba(255,255,255,0) 3px),
+    radial-gradient(circle at 86% 70%, rgba(255,255,255,.22) 0 2px, rgba(255,255,255,0) 3px);
+  opacity:.35;
+  mix-blend-mode:screen;
 }
-body[data-theme="myspace"] .topbar,
-body[data-theme="myspace"] .footer{background:rgba(255,255,255,.86)}
-body[data-theme="myspace"] .screen{border-color:rgba(76,0,255,.18);box-shadow:0 34px 110px rgba(12,12,18,.32)}
-body[data-theme="myspace"] .screen__menu,
-body[data-theme="myspace"] .screen__content{background:rgba(255,255,255,.82)}
-body[data-theme="myspace"] .btn{border:2px solid rgba(76,0,255,.18);background:linear-gradient(180deg, rgba(255,255,255,.92), rgba(255,255,255,.70));box-shadow: 0 8px 0 rgba(76,0,255,.08);border-radius: 999px;animation: pbWiggle 2.6s ease-in-out infinite}
-body[data-theme="myspace"] .btn:hover{transform:translateY(-1px) scale(1.01);box-shadow: 0 10px 0 rgba(255,0,184,.10)}
-body[data-theme="myspace"] .btn:active{transform:translateY(2px);box-shadow: 0 6px 0 rgba(76,0,255,.08)}
-body[data-theme="myspace"] .btn--primary{background:linear-gradient(180deg, rgba(255,198,233,.72), rgba(126,252,255,.36));border-color:rgba(255,0,184,.18)}
-body[data-theme="myspace"] .menu__item.is-active{background:rgba(255,198,233,.45);border-color:rgba(255,0,184,.18)}
 
-/* -----------------------------
-   Terminal theme (high contrast, no black-on-black)
------------------------------- */
-body[data-theme="terminal"]{
-  color:#d6ffd9;
-  background: radial-gradient(1200px 800px at 15% 10%, rgba(0,255,128,.18), transparent 55%),
-              radial-gradient(900px 650px at 85% 25%, rgba(0,190,255,.16), transparent 55%),
-              linear-gradient(180deg, #04170e 0%, #02110a 100%);
+/* ===== New Variant: Terminal Hacker (classic matrix green, readable) ===== */
+body[data-theme="retro"][data-variant="terminal-hacker"]{
+  background:
+    radial-gradient(1200px 800px at 50% 20%, rgba(0,255,170,.10) 0%, rgba(0,0,0,0) 60%),
+    radial-gradient(1200px 900px at 50% 90%, rgba(0,255,90,.06) 0%, rgba(0,0,0,0) 60%),
+    radial-gradient(1200px 800px at 50% 20%, #0b1a12 0%, #06110c 55%, #040a07 100%);
+  color:#eafff4;
 }
-body[data-theme="terminal"] .topbar,
-body[data-theme="terminal"] .footer{background:rgba(2,18,10,.86);border-color:rgba(0,255,128,.18)}
-body[data-theme="terminal"] .screen{border-color:rgba(0,255,128,.16);box-shadow:0 34px 110px rgba(0,0,0,.55)}
-body[data-theme="terminal"] .screen__menu,
-body[data-theme="terminal"] .screen__content{background:rgba(2,18,10,.78)}
-body[data-theme="terminal"] .card{background:rgba(6,30,18,.72);border-color:rgba(0,255,128,.12)}
-body[data-theme="terminal"] .btn{background:rgba(0,255,128,.10);border-color:rgba(0,255,128,.22)}
-body[data-theme="terminal"] .btn:hover{background:rgba(0,255,128,.14);border-color:rgba(0,255,128,.30)}
-body[data-theme="terminal"] .btn--primary{background:rgba(0,255,128,.18);border-color:rgba(0,255,128,.38)}
-body[data-theme="terminal"] .field__input, body[data-theme="terminal"] select, body[data-theme="terminal"] .output{color:#d6ffd9;background:rgba(0,0,0,.22);border-color:rgba(0,255,128,.18)}
-body[data-theme="terminal"] .muted{color:rgba(214,255,217,.72)}
-body[data-theme="terminal"] .menu__item.is-active{background:rgba(0,255,128,.14);border-color:rgba(0,255,128,.28)}
+body[data-theme="retro"][data-variant="terminal-hacker"] .topbar,
+body[data-theme="retro"][data-variant="terminal-hacker"] .footer{
+  background:rgba(4,10,7,.70);
+  border-color:rgba(0,255,170,.10);
+}
+body[data-theme="retro"][data-variant="terminal-hacker"] .screen__menu,
+body[data-theme="retro"][data-variant="terminal-hacker"] .screen__content{
+  background:rgba(4,10,7,.55);
+  border-color:rgba(0,255,170,.12);
+}
+body[data-theme="retro"][data-variant="terminal-hacker"] .card{
+  background:rgba(0,0,0,.28);
+  border-color:rgba(0,255,170,.16);
+  box-shadow:0 18px 40px rgba(0,0,0,.30);
+}
+body[data-theme="retro"][data-variant="terminal-hacker"] .card__body{color:#eafff4}
+body[data-theme="retro"][data-variant="terminal-hacker"] .muted{color:rgba(234,255,244,.70)}
+body[data-theme="retro"][data-variant="terminal-hacker"] .btn,
+body[data-theme="retro"][data-variant="terminal-hacker"] a.navbtn{
+  background:rgba(0,255,170,.10);
+  border-color:rgba(0,255,170,.22);
+  color:#eafff4;
+}
+body[data-theme="retro"][data-variant="terminal-hacker"] .btn:hover,
+body[data-theme="retro"][data-variant="terminal-hacker"] a.navbtn:hover{
+  background:rgba(0,255,170,.16);
+}
+body[data-theme="retro"][data-variant="terminal-hacker"] .field__input,
+body[data-theme="retro"][data-variant="terminal-hacker"] textarea,
+body[data-theme="retro"][data-variant="terminal-hacker"] select{
+  background:rgba(0,0,0,.28);
+  border-color:rgba(0,255,170,.18);
+  color:#eafff4;
+}
+body[data-theme="retro"][data-variant="terminal-hacker"] .field__input::placeholder,
+body[data-theme="retro"][data-variant="terminal-hacker"] textarea::placeholder{
+  color:rgba(234,255,244,.55);
+}
 
-/* -----------------------------
-   Library: make cards visually different per category
------------------------------- */
-.lib__item{position:relative}
-.lib__item:before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;border-radius:14px 0 0 14px;background:rgba(0,0,0,.10)}
-.lib__item[data-cat="Daily drivers"]:before{background:rgba(255,138,61,.55)}
-.lib__item[data-cat="Writing"]:before{background:rgba(196,69,105,.55)}
-.lib__item[data-cat="Coding"]:before{background:rgba(0,243,255,.45)}
-.lib__item[data-cat="Research / OSINT"]:before{background:rgba(93,138,168,.55)}
-.lib__item[data-cat="Visuals"]:before{background:rgba(255,126,179,.55)}
-.lib__item[data-cat="Creators"]:before{background:rgba(217,160,102,.55)}
-.lib__item[data-cat="Business"]:before{background:rgba(155,93,229,.55)}
-.lib__item[data-cat="Life / Mood"]:before{background:rgba(78,205,196,.55)}
+/* scanlines overlay */
+body[data-theme="retro"][data-variant="terminal-hacker"]::after{
+  content:"";
+  position:fixed; inset:0; pointer-events:none; z-index:0;
+  background:repeating-linear-gradient(
+    to bottom,
+    rgba(0,0,0,.00) 0px,
+    rgba(0,0,0,.00) 2px,
+    rgba(0,0,0,.16) 3px
+  );
+  opacity:.35;
+  mix-blend-mode:multiply;
+}
 
+/* Fun micro-animations on "special" variants */
+body[data-theme="retro"][data-variant="neon-grid"] .btn,
+body[data-theme="retro"][data-variant="candy-console"] .btn,
+body[data-theme="retro"][data-variant="magnetic-tape"] .btn{
+  transition:transform .12s ease, filter .12s ease;
+}
+body[data-theme="retro"][data-variant="neon-grid"] .btn:hover,
+body[data-theme="retro"][data-variant="candy-console"] .btn:hover,
+body[data-theme="retro"][data-variant="magnetic-tape"] .btn:hover{
+  transform:translateY(-1px) scale(1.02);
+  filter:saturate(1.10);
+}
+body[data-theme="nostalgia"][data-variant="fancy-glitter"] .btn:hover{
+  transform:translateY(-1px) scale(1.02);
+}
