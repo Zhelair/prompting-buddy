@@ -1086,21 +1086,7 @@ function renderLines(el, arr){
       setEditStatus('');
     }
 
-    
-function catIcon(cat){
-  const c = String(cat||'').toLowerCase();
-  if(c.includes('writing')) return '✍️';
-  if(c.includes('coding')) return '🧩';
-  if(c.includes('research')) return '🔎';
-  if(c.includes('visual')) return '🎨';
-  if(c.includes('creator')) return '🎬';
-  if(c.includes('business')) return '💼';
-  if(c.includes('life') || c.includes('mood')) return '🌿';
-  if(c.includes('daily')) return '⚡';
-  return '🏷️';
-}
-
-function renderLibrary(){
+    function renderLibrary(){
       const q = String(search?.value || '').trim().toLowerCase();
       const cat = String(catSel?.value || '').trim();
       const favOnly = !!(onlyFav && onlyFav.checked);
@@ -1156,10 +1142,10 @@ function renderLibrary(){
                 <div>
                   <div class="lib__title">${title}</div>
                   <div class="lib__meta">
-                    <span class="meta__time">${ts}</span>
-                    ${cat ? `<span class="chip chip--cat"><span class="chip__icon">${catIcon(cat)}</span><span class="chip__text">${escapeHtml(cat)}</span></span>` : ''}
-                    ${model ? `<span class="badge badge--model">${escapeHtml(model)}</span>` : ''}
-                    ${tags ? `<span class="chip chip--tags">${escapeHtml(tags)}</span>` : ''}
+                    <span class="muted">${ts}</span>
+                    ${cat ? `<span class="pill">${cat}</span>` : ''}
+                    ${model ? `<span class="pill">${model}</span>` : ''}
+                    ${tags ? `<span class="pill pill--ghost">${tags}</span>` : ''}
                   </div>
                 </div>
                 <div class="lib__actions">
@@ -1389,7 +1375,35 @@ function renderLibrary(){
 
   function initAbout(){
     const box = document.getElementById('aboutBody');
-    if(box) box.innerHTML = data.aboutHtml || "";
+    if(!box) return;
+    // About content is HTML only; we wire interactions here.
+    box.innerHTML = data.aboutHtml || "";
+
+    // Support link (BuyMeACoffee)
+    try{
+      const btn = box.querySelector('a.btn');
+      if(btn && data.supportUrl) btn.href = data.supportUrl;
+    } catch {}
+
+    // Theme picker
+    try{
+      const inputs = Array.from(box.querySelectorAll('input[type="radio"][name="pbTheme"]'));
+      if(inputs.length){
+        // Sync checked state
+        const curTheme = getTheme();
+        const curVar = getVariant(curTheme) || "";
+        for(const i of inputs){
+          const t = (i.getAttribute('data-theme')||"").trim();
+          const v = (i.getAttribute('data-variant')||"").trim();
+          const vNorm = (v === "default") ? "" : v;
+          i.checked = (t === curTheme && vNorm === curVar);
+          i.addEventListener('change', () => {
+            if(!i.checked) return;
+            applyTheme(t || 'modern', vNorm);
+          });
+        }
+      }
+    } catch {}
   }
 
   function escapeHtml(s){
