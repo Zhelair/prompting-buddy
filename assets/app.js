@@ -33,8 +33,16 @@
   // last-run caches (for persistence when navigating Buddy/Vault/About)
   const LS_LAST = {
     pc: "pb_last_promptcheck_v1",
-    coach: "pb_last_coach_v1"
+    coach: "pb_last_coach_v1",
+    coachHidden: "pb_last_coach_hidden_v1"
   };
+
+  function isCoachHidden(){
+    try{ return localStorage.getItem(LS_LAST.coachHidden) === '1'; }catch{ return false; }
+  }
+  function setCoachHidden(v){
+    try{ localStorage.setItem(LS_LAST.coachHidden, v ? '1' : '0'); }catch{}
+  }
 
   function loadLastCoach(){
     try{
@@ -497,6 +505,39 @@ function renderLines(el, arr){
       persistWrap.innerHTML = "";
       if(!data) return;
 
+      // If user hid the panel, show a compact "Show" bar instead of deleting the result.
+      if(isCoachHidden()){
+        const mini = document.createElement('div');
+        mini.className = 'card';
+        mini.style.marginTop = '12px';
+        mini.innerHTML = `
+          <div class="card__body" style="display:flex;justify-content:space-between;gap:12px;align-items:center">
+            <div>
+              <strong>Last 5 Review</strong>
+              <span class="muted" style="margin-left:8px;font-size:12px">(hidden)</span>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn" id="vaultCoachShow" type="button">Show</button>
+              <button class="btn" id="vaultCoachClearMini" type="button">Clear</button>
+            </div>
+          </div>
+        `;
+        persistWrap.appendChild(mini);
+
+        mini.querySelector('#vaultCoachShow')?.addEventListener('click', ()=>{
+          setCoachHidden(false);
+          renderCoachPersisted(data);
+        });
+        mini.querySelector('#vaultCoachClearMini')?.addEventListener('click', ()=>{
+          try{ localStorage.removeItem(LS_LAST.coach); }catch{}
+          try{ localStorage.removeItem(LS_LAST.coachHidden); }catch{}
+          persistWrap.innerHTML = '';
+          setCoachStatus('Cleared ✅');
+          setTimeout(()=>setCoachStatus(''), 900);
+        });
+        return;
+      }
+
       const wrap = document.createElement('div');
       wrap.className = 'card';
       wrap.style.marginTop = '12px';
@@ -565,9 +606,13 @@ function renderLines(el, arr){
         catch{ setCoachStatus('Copy failed.'); }
         setTimeout(()=>setCoachStatus(''), 900);
       });
-      btnHide?.addEventListener('click', ()=>{ persistWrap.innerHTML = ""; });
+      btnHide?.addEventListener('click', ()=>{
+        setCoachHidden(true);
+        renderCoachPersisted(data);
+      });
       btnClear?.addEventListener('click', ()=>{
         try{ localStorage.removeItem(LS_LAST.coach); }catch{}
+        try{ localStorage.removeItem(LS_LAST.coachHidden); }catch{}
         persistWrap.innerHTML = "";
         setCoachStatus('Cleared ✅');
         setTimeout(()=>setCoachStatus(''), 900);
@@ -1136,7 +1181,7 @@ function renderLines(el, arr){
         const notes = escapeHtml(String(item.notes || ''));
         const text = escapeHtml(String(item.text || ''));
         return `
-          <article class="card card--flat lib__item" data-id="${escapeHtml(String(item.id||""))}">
+          <article class="card card--flat lib__item" data-id="${escapeHtml(String(item.id||""))}" data-cat="${cat}">
             <div class="card__body">
               <div class="lib__head">
                 <div>
@@ -1376,94 +1421,21 @@ function renderLines(el, arr){
   function initAbout(){
     const box = document.getElementById('aboutBody');
     if(!box) return;
+    box.innerHTML = data.aboutHtml || "";
 
-    // About copy (editable via data.aboutHtml if you want)
-    const aboutCopy = data.aboutHtml && String(data.aboutHtml).trim()
-      ? String(data.aboutHtml)
-      : `
-        <h2 class="card__title">About Prompting Buddy</h2>
-        <p class="card__desc">
-          Prompting Buddy is a tiny privacy-first tool that helps you tighten prompts <em>before</em> you spend tokens.
-          No accounts. Your Vault + Library live in your browser.
-        </p>
-      `;
+    const support = box.querySelector('#pbSupportLink');
+    if(support) support.href = data.supportUrl || '#';
 
-    const supportUrl = data.supportUrl || '#';
-
-    // “Theme modes” (5 distinct looks, like Oddly Useful)
-    const MODES = [
-      { id:'modern', label:'Modern Calm', sub:'Clean + minimal. Default look.', theme:'modern', variant:'default' },
-      { id:'neon', label:'Neon Grid', sub:'Retro TRON vibes. Crisp neon focus.', theme:'retro', variant:'neon-grid' },
-      { id:'candy', label:'Candy Console', sub:'Chunky 90s console. Pressy buttons.', theme:'retro', variant:'candy-console' },
-      { id:'cardboard', label:'Cardboard Arcade', sub:'Warm paper texture. Soft shadows.', theme:'nostalgia', variant:'cardboard-arcade' },
-      { id:'tape', label:'Magnetic Tape', sub:'VHS dream. Glossy pill buttons.', theme:'nostalgia', variant:'magnetic-tape' },
-    ];
-
-    const curTheme = (document.body.dataset.theme || getTheme() || 'modern').trim();
-    const curVar = (document.body.dataset.variant || getVariant(curTheme) || 'default').trim();
-
-    const currentModeId = (()=>{
-      const hit = MODES.find(m => m.theme===curTheme && m.variant===curVar);
-      return hit ? hit.id : 'modern';
-    })();
-
-    box.innerHTML = `
-          ${aboutCopy}
-
-          <div class="card" style="margin-top:12px">
-            <div class="card__body">
-              <div class="card__title card__title--sm">Support</div>
-              <p class="card__desc" style="margin-bottom:10px">
-                If this saves you even a couple paid runs, it did its job ☕
-              </p>
-              <a class="btn btn--primary" href="${escapeHtml(supportUrl)}" target="_blank" rel="noopener">Support on Buy Me a Coffee</a>
-              <p class="settings__note">Support is optional.</p>
-            </div>
-          </div>
-
-          <div class="card" style="margin-top:12px">
-            <div class="card__body">
-              <div class="card__title card__title--sm">Theme</div>
-              <p class="card__desc">Themes change visuals only. Layout stays the same.</p>
-
-              <div class="block" style="margin:10px 0">
-                ${MODES.map(m => `
-                  <label class="check" style="display:flex; align-items:flex-start; gap:10px; margin:10px 0">
-                    <input type="radio" name="pbThemeMode" value="${m.id}" ${m.id===currentModeId ? 'checked' : ''} />
-                    <span>
-                      <strong>${m.label}</strong><br/>
-                      <span class="muted" style="font-size:12px">${m.sub}</span>
-                    </span>
-                  </label>
-                `).join('')}
-              </div>
-
-              <div class="settings__status" id="aboutThemeStatus" aria-live="polite"></div>
-              <p class="settings__note">Tip: if text ever looks “too dark”, switch theme once — it forces a clean repaint.</p>
-            </div>
-          </div>
-
-          <div class="card" style="margin-top:12px">
-            <div class="card__body">
-              <div class="card__title card__title--sm">Privacy</div>
-              <p class="card__desc">
-                Library + Vault are stored locally (localStorage). Your passphrase unlocks a token for the worker — it’s not an “account”.
-              </p>
-            </div>
-          </div>
-
-    `;
-
-    const status = document.getElementById('aboutThemeStatus');
-    const setStatus = (m)=>{ if(status) status.textContent = m || ''; };
-
-    box.querySelectorAll('input[name="pbThemeMode"]').forEach(r=>{
-      r.addEventListener('change', ()=>{
-        const id = String(r.value || '').trim();
-        const mode = MODES.find(m=>m.id===id) || MODES[0];
-        applyTheme(mode.theme, mode.variant);
-        setStatus(`Theme applied: ${mode.label} ✅`);
-        setTimeout(()=>setStatus(''), 1000);
+    // Wire theme picker (radio list)
+    const currentTheme = getTheme();
+    const currentVar = getVariant(currentTheme);
+    box.querySelectorAll('input[name="pbTheme"]')?.forEach(inp=>{
+      const t = inp.getAttribute('data-theme') || "modern";
+      const v = inp.getAttribute('data-variant') || "default";
+      if(t === currentTheme && v === currentVar) inp.checked = true;
+      inp.addEventListener('change', ()=>{
+        if(!inp.checked) return;
+        applyTheme(t, v);
       });
     });
   }
