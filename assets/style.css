@@ -666,8 +666,8 @@ body[data-theme="terminal"]{
   --term-bg:#04140c;
   --term-panel:rgba(5,22,14,.78);
   --term-border:rgba(0,255,110,.22);
-  --term-ink:#fe7f2d;
-  --term-muted:#a03a13;
+  --term-ink:#d9ffe6;
+  --term-muted:#9cebb8;
   --term-accent:#00ff6e;
   color:var(--term-ink);
   background:
@@ -725,4 +725,3 @@ body[data-theme="terminal"] .panel__body::after{
 body[data-theme="glitter"] .nav{ padding:14px; }
 body[data-theme="terminal"] .nav{ padding:12px; }
 body[data-theme="terminal"] .nav__title{ opacity:.75; }
-
