@@ -574,6 +574,28 @@ body[data-theme="retro"] .field__input, body[data-theme="retro"] select, body[da
 body[data-theme="nostalgia"] .modal{background:rgba(246,241,230,.97)}
 
 /* -----------------------------
+   Terminal theme (high contrast, no black-on-black)
+------------------------------ */
+body[data-theme="terminal"]{
+  color:#d6ffd9;
+  background: radial-gradient(1200px 800px at 15% 10%, rgba(0,255,128,.18), transparent 55%),
+              radial-gradient(900px 650px at 85% 25%, rgba(0,190,255,.16), transparent 55%),
+              linear-gradient(180deg, #04170e 0%, #02110a 100%);
+}
+body[data-theme="terminal"] .topbar,
+body[data-theme="terminal"] .footer{background:rgba(2,18,10,.86);border-color:rgba(0,255,128,.18)}
+body[data-theme="terminal"] .screen{border-color:rgba(0,255,128,.16);box-shadow:0 34px 110px rgba(0,0,0,.55)}
+body[data-theme="terminal"] .screen__menu,
+body[data-theme="terminal"] .screen__content{background:rgba(2,18,10,.78)}
+body[data-theme="terminal"] .card{background:rgba(6,30,18,.72);border-color:rgba(0,255,128,.12)}
+body[data-theme="terminal"] .btn{background:rgba(0,255,128,.10);border-color:rgba(0,255,128,.22)}
+body[data-theme="terminal"] .btn:hover{background:rgba(0,255,128,.14);border-color:rgba(0,255,128,.30)}
+body[data-theme="terminal"] .btn--primary{background:rgba(0,255,128,.18);border-color:rgba(0,255,128,.38)}
+body[data-theme="terminal"] .field__input, body[data-theme="terminal"] select, body[data-theme="terminal"] .output{color:#d6ffd9;background:rgba(0,0,0,.22);border-color:rgba(0,255,128,.18)}
+body[data-theme="terminal"] .muted{color:rgba(214,255,217,.72)}
+body[data-theme="terminal"] .menu__item.is-active{background:rgba(0,255,128,.14);border-color:rgba(0,255,128,.28)}
+
+/* -----------------------------
    Library: make cards visually different per category
 ------------------------------ */
 .lib__item{position:relative}
