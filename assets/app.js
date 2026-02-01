@@ -33,8 +33,16 @@
   // last-run caches (for persistence when navigating Buddy/Vault/About)
   const LS_LAST = {
     pc: "pb_last_promptcheck_v1",
-    coach: "pb_last_coach_v1"
+    coach: "pb_last_coach_v1",
+    coachHidden: "pb_last_coach_hidden_v1"
   };
+
+  function isCoachHidden(){
+    try{ return localStorage.getItem(LS_LAST.coachHidden) === '1'; }catch{ return false; }
+  }
+  function setCoachHidden(v){
+    try{ localStorage.setItem(LS_LAST.coachHidden, v ? '1' : '0'); }catch{}
+  }
 
   function loadLastCoach(){
     try{
@@ -78,7 +86,11 @@
   if(brandName) brandName.textContent = data.brand || "Prompting Buddy";
 
   // --- Theme (same mechanism as main app, lightweight)
-  function getTheme(){ return (localStorage.getItem(LS.theme) || "modern").trim(); }
+  function getTheme(){
+    let t = (localStorage.getItem(LS.theme) || "modern").trim();
+    if (t === "myspace") t = "glitter";
+    return t;
+  }
   function getVariant(theme){
     const t = (theme || getTheme()).trim();
     return (localStorage.getItem(LS.variant(t)) || "default").trim();
@@ -497,6 +509,39 @@ function renderLines(el, arr){
       persistWrap.innerHTML = "";
       if(!data) return;
 
+      // If user hid the panel, show a compact "Show" bar instead of deleting the result.
+      if(isCoachHidden()){
+        const mini = document.createElement('div');
+        mini.className = 'card';
+        mini.style.marginTop = '12px';
+        mini.innerHTML = `
+          <div class="card__body" style="display:flex;justify-content:space-between;gap:12px;align-items:center">
+            <div>
+              <strong>Last 5 Review</strong>
+              <span class="muted" style="margin-left:8px;font-size:12px">(hidden)</span>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn" id="vaultCoachShow" type="button">Show</button>
+              <button class="btn" id="vaultCoachClearMini" type="button">Clear</button>
+            </div>
+          </div>
+        `;
+        persistWrap.appendChild(mini);
+
+        mini.querySelector('#vaultCoachShow')?.addEventListener('click', ()=>{
+          setCoachHidden(false);
+          renderCoachPersisted(data);
+        });
+        mini.querySelector('#vaultCoachClearMini')?.addEventListener('click', ()=>{
+          try{ localStorage.removeItem(LS_LAST.coach); }catch{}
+          try{ localStorage.removeItem(LS_LAST.coachHidden); }catch{}
+          persistWrap.innerHTML = '';
+          setCoachStatus('Cleared ✅');
+          setTimeout(()=>setCoachStatus(''), 900);
+        });
+        return;
+      }
+
       const wrap = document.createElement('div');
       wrap.className = 'card';
       wrap.style.marginTop = '12px';
@@ -565,9 +610,13 @@ function renderLines(el, arr){
         catch{ setCoachStatus('Copy failed.'); }
         setTimeout(()=>setCoachStatus(''), 900);
       });
-      btnHide?.addEventListener('click', ()=>{ persistWrap.innerHTML = ""; });
+      btnHide?.addEventListener('click', ()=>{
+        setCoachHidden(true);
+        renderCoachPersisted(data);
+      });
       btnClear?.addEventListener('click', ()=>{
         try{ localStorage.removeItem(LS_LAST.coach); }catch{}
+        try{ localStorage.removeItem(LS_LAST.coachHidden); }catch{}
         persistWrap.innerHTML = "";
         setCoachStatus('Cleared ✅');
         setTimeout(()=>setCoachStatus(''), 900);
@@ -1136,16 +1185,16 @@ function renderLines(el, arr){
         const notes = escapeHtml(String(item.notes || ''));
         const text = escapeHtml(String(item.text || ''));
         return `
-          <article class="card card--flat lib__item" data-id="${escapeHtml(String(item.id||""))}">
+          <article class="card card--flat lib__item" data-id="${escapeHtml(String(item.id||""))}" data-cat="${cat}">
             <div class="card__body">
               <div class="lib__head">
                 <div>
                   <div class="lib__title">${title}</div>
                   <div class="lib__meta">
-                    <span class="muted">${ts}</span>
-                    ${cat ? `<span class="pill">${cat}</span>` : ''}
-                    ${model ? `<span class="pill">${model}</span>` : ''}
-                    ${tags ? `<span class="pill pill--ghost">${tags}</span>` : ''}
+                    <span class="chip chip--time">🕒 ${ts}</span>
+                    ${cat ? `<span class="chip chip--cat"><span class="chip__dot"></span>${cat}</span>` : ''}
+                    ${model ? `<span class="chip chip--model">🤖 ${model}</span>` : ''}
+                    ${tags ? `<span class="chip chip--tags">🏷️ ${tags}</span>` : ''}
                   </div>
                 </div>
                 <div class="lib__actions">
@@ -1375,7 +1424,24 @@ function renderLines(el, arr){
 
   function initAbout(){
     const box = document.getElementById('aboutBody');
-    if(box) box.innerHTML = data.aboutHtml || "";
+    if(!box) return;
+    box.innerHTML = data.aboutHtml || "";
+
+    const support = box.querySelector('#pbSupportLink');
+    if(support) support.href = data.supportUrl || '#';
+
+    // Wire theme picker (radio list)
+    const currentTheme = getTheme();
+    const currentVar = getVariant(currentTheme);
+    box.querySelectorAll('input[name="pbTheme"]')?.forEach(inp=>{
+      const t = inp.getAttribute('data-theme') || "modern";
+      const v = inp.getAttribute('data-variant') || "default";
+      if(t === currentTheme && v === currentVar) inp.checked = true;
+      inp.addEventListener('change', ()=>{
+        if(!inp.checked) return;
+        applyTheme(t, v);
+      });
+    });
   }
 
   function escapeHtml(s){
