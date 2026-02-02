@@ -44,8 +44,8 @@
             <button class="menu__item is-active" data-route="buddy" type="button">Buddy</button>
             <button class="menu__item" data-route="vault" type="button">Vault</button>
             <button class="menu__item" data-route="library" type="button">Library</button>
-                      <button class="menu__item" data-route="extension">Extension</button>
-<button class="menu__item" data-route="about" type="button">About</button>
+            <button class="menu__item" data-route="extension" type="button">Extension</button>
+            <button class="menu__item" data-route="about" type="button">About</button>
           </div>
 
           <div class="menu__sep"></div>
@@ -79,7 +79,7 @@
       </label>
 
       <div class="pc__lens">
-        <span class="field__label pc__lensLabel">Reasoning lens</span>
+        <span class="field__label pc__lensLabel">Reasoning lens <span class="tip" title="Pick the vibe for feedback: strict, balanced, or creative.">?</span></span>
         <select class="field__input pc__lensSelect" id="pcLens" aria-label="Reasoning lens">
           <option value="auditor">Auditor (Strict)</option>
           <option value="thinker">Thinker</option>
@@ -111,7 +111,7 @@
         </section>
 
         <section class="pc__section pc__section--gold">
-          <div class="pc__h">Golden Prompt</div>
+          <div class="pc__h">Golden Prompt <span class="tip" title="A clean, ready-to-use rewrite of your prompt (copy/paste).">?</span></div>
           <div class="pc__muted">Text will be added here.</div>
           <pre class="pc__pre" id="pcGolden"></pre>
           <div class="pc__actions">
@@ -138,7 +138,7 @@
       <h2 class="card__title">Vault</h2>
       <p class="card__desc">Saves your last <strong>10</strong> Prompt Checks locally (in your browser). No accounts.</p>
       <div class="panel__actions">
-        <button class="btn btn--primary" id="vaultCoach" type="button">Last 5 Review (8,000 chars max)</button>
+        <button class="btn btn--primary" id="vaultCoach" type="button">Last 5 Review (8,000 chars max) </button>
         <button class="btn" id="vaultReset" type="button">Reset Vault</button>
       </div>
       <div class="settings__status" id="vaultStatus" aria-live="polite"></div>
@@ -157,8 +157,8 @@
 
       <div class="panel__actions">
         <button class="btn btn--primary" id="libAdd" type="button">Add prompt</button>
-        <button class="btn" id="libExport" type="button">Export</button>
-        <button class="btn" id="libImport" type="button">Import</button>
+        <button class="btn" id="libExport" type="button">Export <span class="tip" title="Download your Library as a JSON file to move it to another device.">?</span></button>
+        <button class="btn" id="libImport" type="button">Import <span class="tip" title="Load a Library JSON file you exported earlier.">?</span></button>
         <input id="libImportFile" type="file" accept="application/json" hidden />
       </div>
 
@@ -264,63 +264,48 @@
 </template>
 
 
-  <template id="tpl-extension">
-    <section class="card">
-      <div class="card__body">
-        <h2 class="card__title" style="margin-top:0">Extension</h2>
-        <p class="card__desc">
-          Use Prompting Buddy as a sidebar on <strong>any</strong> website.
-          Highlight text → right‑click → <strong>Send to Prompting Buddy</strong> → the sidebar opens with your text inside.
+<template id="tpl-extension">
+  <div class="card">
+    <div class="card__body">
+      <h2 class="card__title">Extension</h2>
+      <p class="card__desc">Use Prompting Buddy while you browse — send prompts into the app in one click.</p>
+
+      <div class="block">
+        <strong>What it does</strong>
+        <p class="muted" style="margin:6px 0 0">
+          Moves text from pages into Prompting Buddy. It does <strong>not</strong> run prompts, scrape sites, or collect data.
         </p>
-
-        <div class="tips" style="margin-top:14px">
-          <div class="tips__box">
-            <div class="tips__title">Install in 60 seconds</div>
-            <ol class="tips__list" style="padding-left:18px">
-              <li>Download the extension ZIP</li>
-              <li>Unzip it (you should see <code>manifest.json</code>)</li>
-              <li>Open Chrome → <code>chrome://extensions</code></li>
-              <li>Enable <strong>Developer mode</strong></li>
-              <li>Click <strong>Load unpacked</strong> → select the unzipped folder</li>
-              <li>(Optional) Pin the extension in the toolbar</li>
-            </ol>
-
-            <div class="card__actions" style="margin-top:10px">
-              <a class="btn btn--primary" id="extDownloadBtn" href="#" target="_blank" rel="noopener">Download extension .zip</a>
-              <button class="btn" id="extCopyLink" type="button">Copy link</button>
-            </div>
-            <p class="settings__note" id="extDownloadNote" style="margin-bottom:0"></p>
-          </div>
-
-          <div class="tips__box tips__box--dont">
-            <div class="tips__title">How to use</div>
-            <ul class="tips__list">
-              <li>Select text anywhere on a page.</li>
-              <li>Right‑click → <strong>Send to Prompting Buddy</strong>.</li>
-              <li>The sidebar opens, text is pasted → run Prompt Check.</li>
-            </ul>
-            <p class="settings__note" style="margin:10px 0 0">
-              Same features as the web app: Buddy / Vault / Library.
-            </p>
-          </div>
-        </div>
-
-        <div class="card card--flat" style="margin-top:14px">
-          <div class="card__body">
-            <h3 style="margin:0 0 8px">Privacy</h3>
-            <ul class="tips__list" style="margin:0">
-              <li>No ads. No data selling.</li>
-              <li>Vault/Library live on your device.</li>
-              <li>Only the text you submit is sent to the PB API to generate results.</li>
-            </ul>
-          </div>
-        </div>
-
       </div>
-    </section>
-  </template>
 
-  <template id="tpl-about">
+      <div class="block">
+        <strong>How to use it</strong>
+        <ol style="margin:8px 0 0; padding-left:18px; line-height:1.4">
+          <li>Install the extension</li>
+          <li>Pin it in Chrome</li>
+          <li>Keep Prompting Buddy open</li>
+          <li>Click the extension → send text → polish it in <strong>Buddy</strong></li>
+        </ol>
+        <p class="muted" style="margin:8px 0 0">If nothing happens: refresh the page and try again (Chrome can be dramatic).</p>
+      </div>
+
+      <div class="block">
+        <strong>Where the results go</strong>
+        <p class="muted" style="margin:6px 0 0">
+          Use <strong>Buddy</strong> to improve. Use <strong>Vault</strong> to see your last runs. Save winners to <strong>Library</strong>.
+        </p>
+      </div>
+
+      <div class="block">
+        <strong>Privacy</strong>
+        <p class="muted" style="margin:6px 0 0">
+          The extension is a delivery pigeon. Your prompts stay yours.
+        </p>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-about">
   <div class="card"><div class="card__body" id="aboutBody"></div></div>
 </template>
 

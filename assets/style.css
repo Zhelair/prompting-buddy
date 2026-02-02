@@ -6,6 +6,29 @@ a{color:inherit}button,a.navbtn{font:inherit}
 .brand__name{font-weight:800;font-size:14px;line-height:1.1}.brand__tag{font-size:12px;opacity:.75}
 .topnav{display:flex;gap:8px;flex-wrap:wrap}.navbtn{padding:6px 10px;border-radius:12px;border:1px solid rgba(0,0,0,.10);background:rgba(255,255,255,.72);cursor:pointer}
 .navbtn:hover{border-color:rgba(0,0,0,.18);background:rgba(255,255,255,.92)}
+
+/* Tiny help tooltip (only where we add it) */
+.tip{
+  display:inline-grid;
+  place-items:center;
+  width:18px;
+  height:18px;
+  margin-left:6px;
+  border-radius:999px;
+  border:1px solid rgba(0,0,0,.14);
+  background:rgba(255,255,255,.75);
+  font-size:12px;
+  font-weight:800;
+  line-height:1;
+  cursor:help;
+  user-select:none;
+}
+body[data-theme="retro"] .tip,
+body[data-theme="terminal"] .tip{
+  border-color: rgba(255,255,255,.22);
+  background: rgba(255,255,255,.10);
+}
+
 .console{min-height:calc(100vh - 110px);display:grid;place-items:center;padding:18px 12px}
 .screen{width:min(1200px,94vw);aspect-ratio:4/3;border-radius:18px;border:1px solid rgba(255,255,255,.22);background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,.06));box-shadow:0 30px 90px rgba(0,0,0,.55);overflow:hidden;position:relative}
 
@@ -878,7 +901,3 @@ body[data-theme="terminal"] .nav__title{ opacity:.75; }
 .pc__lens{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:10px 0 12px;}
 .pc__lensLabel{margin:0;}
 .pc__lensSelect{max-width:260px;}
-
-
-/* Utility: disabled look for links/buttons */
-.is-disabled{opacity:.55;pointer-events:none;}

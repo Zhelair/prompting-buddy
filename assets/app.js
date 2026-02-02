@@ -703,7 +703,7 @@ function renderLines(el, arr){
       const v = loadVault();
       if(!list) return;
       if(!v.length){
-        list.innerHTML = '<p class="muted">No saved runs yet. Use Prompt Check first.</p>';
+        list.innerHTML = '<p class="muted">Run a few Prompt Checks to see something here.</p>';
         return;
       }
       list.innerHTML = v.map((item, idx)=>{
@@ -1441,44 +1441,7 @@ function renderLines(el, arr){
     return node;
   }
 
-  
-  function initExtension(){
-    const dl = document.getElementById('extDownloadBtn');
-    const note = document.getElementById('extDownloadNote');
-    const copy = document.getElementById('extCopyLink');
-
-    const url = (data.extensionDownloadUrl || "").trim();
-    const ver = (data.extensionVersion || "").trim();
-
-    if(dl){
-      dl.href = url || "#";
-      dl.classList.toggle('is-disabled', !url || url === "#");
-      if(!url || url === "#"){
-        dl.addEventListener('click', (e)=>e.preventDefault());
-      }
-    }
-
-    if(note){
-      note.innerHTML = (url && url !== "#")
-        ? `Current build: <strong>${escapeHtml(ver || 'latest')}</strong> — ready to download.`
-        : `Owner note: set <code>extensionDownloadUrl</code> in <code>assets/data.js</code> (GitHub Releases link).`;
-    }
-
-    copy?.addEventListener('click', async ()=>{
-      if(!url || url === "#"){
-        toast('No link set yet.');
-        return;
-      }
-      try{
-        await navigator.clipboard.writeText(url);
-        toast('Link copied ✅');
-      } catch {
-        toast('Copy failed.');
-      }
-    });
-  }
-
-function initAbout(){
+  function initAbout(){
     const box = document.getElementById('aboutBody');
     if(!box) return;
     box.innerHTML = data.aboutHtml || "";
