@@ -322,6 +322,7 @@
   // --- Buddy
   function initBuddy(){
     const prompt = document.getElementById('pcPrompt');
+    const lensSel = document.getElementById('pcLens');
     const run = document.getElementById('pcRun');
     const clear = document.getElementById('pcClear');
     const status = document.getElementById('pcStatus');
@@ -336,6 +337,21 @@
     const chMax = document.getElementById('pcCharMax');
 
     if(chMax) chMax.textContent = String(PROMPT_MAX_CHARS);
+
+    const LS_LENS = 'pb_pref_lens_v1';
+    function getLens(){
+      const v = String(lensSel?.value || '').trim().toLowerCase();
+      return (v === 'thinker' || v === 'creator') ? v : 'auditor';
+    }
+    // Restore lens preference
+    try{
+      const saved = localStorage.getItem(LS_LENS);
+      if(lensSel && saved) lensSel.value = saved;
+    }catch{}
+    lensSel?.addEventListener('change', ()=>{
+      try{ localStorage.setItem(LS_LENS, getLens()); }catch{}
+    });
+
 
     function setStatus(msg){ if(status) status.textContent = msg || ""; }
     function countChars(){
@@ -457,7 +473,7 @@ function renderLines(el, arr){
             "Content-Type": "application/json",
             "Authorization": `Bearer ${tok}`
           },
-          body: { prompt: text }
+          body: { prompt: text, lens: getLens() }
         });
         const norm = renderResult(j || {});
         try{ localStorage.setItem(LS_LAST.pc, JSON.stringify(norm)); }catch{}

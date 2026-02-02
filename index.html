@@ -76,6 +76,15 @@
         <div class="pc__usage"><span id="pcChar">0</span>/<span id="pcCharMax">5000</span> characters &middot; Daily reset: 00:00 Sofia time</div>
       </label>
 
+      <div class="pc__lens">
+        <span class="field__label pc__lensLabel">Reasoning lens</span>
+        <select class="field__input pc__lensSelect" id="pcLens" aria-label="Reasoning lens">
+          <option value="auditor">Auditor (Strict)</option>
+          <option value="thinker">Thinker</option>
+          <option value="creator">Creator</option>
+        </select>
+      </div>
+
       <div class="panel__actions">
         <button class="btn btn--primary" id="pcRun" type="button">Run Prompt Check</button>
         <button class="btn" id="pcClear" type="button">Clear</button>

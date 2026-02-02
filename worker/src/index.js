@@ -88,7 +88,7 @@ export default {
     }
 
     // Premium endpoints require token
-    if (url.pathname === '/prompt-check' || url.pathname === '/coach-last5') {
+    if (url.pathname === '/prompt-check' || url.pathname === '/coach-last5' || url.pathname === '/status' || url.pathname === '/limits') {
       const tok = getBearerToken(request);
       if (!tok) return corsJson(request, env, 401, { error: 'missing_token' });
 
@@ -99,6 +99,25 @@ export default {
       const sub = String(payload.sub);
       const tz = String(env.TIMEZONE || 'Europe/Sofia');
       const dayKey = dayKeyForTz(tz);
+      // --- /status (read-only limits)
+      if (url.pathname === '/status' || url.pathname === '/limits') {
+        if (request.method !== 'GET') return corsJson(request, env, 405, { error: 'use_get' });
+
+        const pLimit = Number(env.DAILY_PROMPT_LIMIT || 30);
+        const cLimit = Number(env.DAILY_COACH_LIMIT || 5);
+
+        const pc = await getCounter(env, sub, dayKey, 'prompt', pLimit, false);
+        const cc = await getCounter(env, sub, dayKey, 'coach', cLimit, false);
+
+        const promptLeft = Math.max(0, pc.limit - pc.used);
+        const coachLeft = Math.max(0, cc.limit - cc.used);
+
+        return corsJson(request, env, 200, {
+          prompt: { used: pc.used, limit: pc.limit, left: promptLeft },
+          coach: { used: cc.used, limit: cc.limit, left: coachLeft },
+          dayKey
+        });
+      }
 
       // --- /prompt-check
       if (url.pathname === '/prompt-check') {
@@ -108,6 +127,10 @@ export default {
         try { body = await request.json(); } catch { body = {}; }
         const prompt = String(body.prompt || '').trim();
         if (!prompt) return corsJson(request, env, 400, { error: 'missing_prompt' });
+        const lensRaw = String(body.lens || body.mode || body.reasoningLens || '').trim().toLowerCase();
+        const lens = (lensRaw === 'thinker' || lensRaw === 'philosopher') ? 'thinker' : (lensRaw === 'creator' || lensRaw === 'director') ? 'creator' : 'auditor';
+        const systemPrompt = lens === 'thinker' ? SYSTEM_PROMPT_CHECK_THINKER : lens === 'creator' ? SYSTEM_PROMPT_CHECK_CREATOR : SYSTEM_PROMPT_CHECK_AUDITOR;
+
 
         const maxChars = Number(env.PROMPT_MAX_CHARS || 5000);
         const clipped = prompt.length > maxChars ? prompt.slice(0, maxChars) : prompt;
@@ -117,7 +140,7 @@ export default {
         if (pc.used > pc.limit) return corsJson(request, env, 429, { error: 'daily_prompt_limit' });
 
         const out = await deepseekChat(env, {
-          system: SYSTEM_PROMPT_CHECK,
+          system: systemPrompt,
           user: clipped,
           max_tokens: 800
         });
@@ -188,19 +211,82 @@ export default {
 // System prompts
 // ----------------------------
 
-const SYSTEM_PROMPT_CHECK = `You are Prompting Buddy. Your job is to REVIEW a user's prompt (not to execute it).
-Return ONLY valid JSON, no markdown, no code fences.
+const SYSTEM_PROMPT_CHECK_AUDITOR = `You are an expert AI prompt reviewer and strict-but-kind teacher.
+
+Your task is NOT to execute the user's request.
+Your task is to analyze the quality of the prompt itself.
+
+Tone:
+- Calm
+- Direct
+- Teacher-like
+- Respectful
+
+Follow this process:
+1) Diagnosis: how an AI will interpret the prompt, where it will fail.
+2) What's missing: only what is truly needed to remove ambiguity.
+3) Suggested improvements: concrete actions.
+4) Golden Prompt: a single revised prompt, preserving intent.
+
+Return ONLY valid JSON, no markdown, no code fences, no extra text.
 Schema:
 {
   "diagnosis": ["..."],
   "missing": ["..."],
   "improvements": ["..."],
   "golden": "..."
-}
-Rules:
-- Keep diagnosis/missing/improvements concise bullets.
-- Golden prompt should be a rewritten version that adds missing details and structure.
-- Never add extra keys.`;
+}`;
+
+const SYSTEM_PROMPT_CHECK_THINKER = `You are an expert AI prompt reviewer using the "Thinker" reasoning lens.
+
+Your task is NOT to execute the user's request.
+Your task is to analyze the quality of the prompt itself and make it think better.
+
+Tone:
+- Calm
+- Curious
+- Clear, not fluffy
+
+Follow this process:
+1) Diagnosis: how an AI will interpret the prompt and what assumptions it will make.
+2) What's missing: only what truly changes the outcome (decision criteria, constraints, context).
+3) Suggested improvements: concrete actions, including 1-2 alternative framings if helpful.
+4) Golden Prompt: a single revised prompt that encourages exploration (options, tradeoffs, criteria) while preserving intent.
+
+Return ONLY valid JSON, no markdown, no code fences, no extra text.
+Schema:
+{
+  "diagnosis": ["..."],
+  "missing": ["..."],
+  "improvements": ["..."],
+  "golden": "..."
+}`;
+
+const SYSTEM_PROMPT_CHECK_CREATOR = `You are an expert AI prompt reviewer using the "Creator" reasoning lens.
+
+Your task is NOT to execute the user's request.
+Your task is to analyze the quality of the prompt itself and make it create better.
+
+Tone:
+- Direct
+- Creative, but practical
+- Respectful
+
+Follow this process:
+1) Diagnosis: how an AI will interpret the prompt (tone, audience, style) and where it will get generic.
+2) What's missing: audience, tone, format, constraints, references, examples (only what matters).
+3) Suggested improvements: concrete actions to make output vivid and on-brand (structure, beats, style notes).
+4) Golden Prompt: a single revised prompt that adds creative direction (audience, tone, style constraints) while preserving intent.
+
+Return ONLY valid JSON, no markdown, no code fences, no extra text.
+Schema:
+{
+  "diagnosis": ["..."],
+  "missing": ["..."],
+  "improvements": ["..."],
+  "golden": "..."
+}`;
+
 
 const SYSTEM_COACH = `You are Prompting Buddy Coach.
 You will be given up to 5 prior prompt-check runs (prompts and optional pasted AI replies).
