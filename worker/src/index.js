@@ -51,9 +51,7 @@ export default {
     const url = new URL(request.url);
 
     // CORS preflight
-    if (request.method === "OPTIONS") {
-  return new Response(null, { status: 204, headers: cors(origin) });
-}
+    if (request.method === 'OPTIONS') return corsPreflight(request, env);
 
     // Health
     if (url.pathname === '/' && request.method === 'GET') {
@@ -318,10 +316,9 @@ function corsHeaders(request, env) {
   const origin = request.headers.get('Origin') || '';
   const allowOrigin = originAllowed(origin, env) ? origin : '*';
   return {
-    'Access-Control-Allow-Origin': Origin,
+    'Access-Control-Allow-Origin': allowOrigin,
     'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-    'Access-Control-Allow-Headers': 'x-ou-pass,x-ou-token,Content-Type,Authorization',
-    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Allow-Headers': 'Content-Type,Authorization',
     'Vary': 'Origin'
   };
 }
