@@ -250,6 +250,9 @@
     } else if(route === "ideas") {
       app.appendChild(tpl("tpl-ideas"));
       initIdeas();
+    } else if(route === "extension") {
+      app.appendChild(tpl("tpl-extension"));
+      initExtension();
     } else if(route === "about") {
       app.appendChild(tpl("tpl-about"));
       initAbout();
@@ -1457,6 +1460,38 @@ function renderLines(el, arr){
         if(!inp.checked) return;
         applyTheme(t, v);
       });
+    });
+  }
+
+  function initExtension(){
+    const originEl = document.getElementById('extOrigin');
+    const endpointEl = document.getElementById('extEndpoint');
+    const copyBtn = document.getElementById('extCopyEndpoint');
+    const goBuddy = document.getElementById('extGoBuddy');
+
+    if(originEl) originEl.textContent = String(location.origin || '').trim() || '—';
+    if(endpointEl) endpointEl.textContent = ENDPOINT || '(not set — edit assets/data.js → house.endpoint)';
+
+    copyBtn?.addEventListener('click', async ()=>{
+      const txt = ENDPOINT || '';
+      if(!txt){ toast('Endpoint not set'); return; }
+      try{
+        await navigator.clipboard.writeText(txt);
+        toast('Copied ✅');
+      } catch {
+        const ta = document.createElement('textarea');
+        ta.value = txt;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try{ document.execCommand('copy'); toast('Copied ✅'); }catch{}
+        ta.remove();
+      }
+    });
+
+    goBuddy?.addEventListener('click', ()=>{
+      location.hash = 'buddy';
     });
   }
 
