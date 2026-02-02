@@ -51,7 +51,9 @@ export default {
     const url = new URL(request.url);
 
     // CORS preflight
-    if (request.method === 'OPTIONS') return corsPreflight(request, env);
+    if (request.method === "OPTIONS") {
+  return new Response(null, { status: 204, headers: cors(origin) });
+}
 
     // Health
     if (url.pathname === '/' && request.method === 'GET') {
