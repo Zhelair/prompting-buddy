@@ -1448,23 +1448,24 @@ function renderLines(el, arr){
     const copy = document.getElementById('extCopyLink');
 
     const url = (data.extensionDownloadUrl || "").trim();
+    const ver = (data.extensionVersion || "").trim();
 
     if(dl){
       dl.href = url || "#";
-      dl.classList.toggle('is-disabled', !url);
-      if(!url){
+      dl.classList.toggle('is-disabled', !url || url === "#");
+      if(!url || url === "#"){
         dl.addEventListener('click', (e)=>e.preventDefault());
       }
     }
 
     if(note){
-      note.innerHTML = url
-        ? `Current build: <strong>${escapeHtml(String(data.extensionVersion || ''))}</strong> — download link is set.`
-        : `Set <code>extensionDownloadUrl</code> in <code>assets/data.js</code> to show a real download link.`;
+      note.innerHTML = (url && url !== "#")
+        ? `Current build: <strong>${escapeHtml(ver || 'latest')}</strong> — ready to download.`
+        : `Owner note: set <code>extensionDownloadUrl</code> in <code>assets/data.js</code> (GitHub Releases link).`;
     }
 
     copy?.addEventListener('click', async ()=>{
-      if(!url){
+      if(!url || url === "#"){
         toast('No link set yet.');
         return;
       }

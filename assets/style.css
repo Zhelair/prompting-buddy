@@ -880,5 +880,5 @@ body[data-theme="terminal"] .nav__title{ opacity:.75; }
 .pc__lensSelect{max-width:260px;}
 
 
-/* Utility: disabled link/button look (used on Extension page when link is not set) */
+/* Utility: disabled look for links/buttons */
 .is-disabled{opacity:.55;pointer-events:none;}

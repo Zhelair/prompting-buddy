@@ -267,23 +267,24 @@
   <template id="tpl-extension">
     <section class="card">
       <div class="card__body">
-        <h2 class="card__title" style="margin-top:0">Chrome Extension</h2>
+        <h2 class="card__title" style="margin-top:0">Extension</h2>
         <p class="card__desc">
           Use Prompting Buddy as a sidebar on <strong>any</strong> website.
           Highlight text → right‑click → <strong>Send to Prompting Buddy</strong> → the sidebar opens with your text inside.
-          (Yes, it remembers your last stuff even after you close the browser.)
         </p>
 
         <div class="tips" style="margin-top:14px">
           <div class="tips__box">
-            <div class="tips__title">Install (2 minutes)</div>
+            <div class="tips__title">Install in 60 seconds</div>
             <ol class="tips__list" style="padding-left:18px">
-              <li>Download the extension .zip</li>
-              <li>Unzip it (you should see a folder with <code>manifest.json</code>)</li>
+              <li>Download the extension ZIP</li>
+              <li>Unzip it (you should see <code>manifest.json</code>)</li>
               <li>Open Chrome → <code>chrome://extensions</code></li>
-              <li>Turn on <strong>Developer mode</strong></li>
-              <li>Click <strong>Load unpacked</strong> → select the folder</li>
+              <li>Enable <strong>Developer mode</strong></li>
+              <li>Click <strong>Load unpacked</strong> → select the unzipped folder</li>
+              <li>(Optional) Pin the extension in the toolbar</li>
             </ol>
+
             <div class="card__actions" style="margin-top:10px">
               <a class="btn btn--primary" id="extDownloadBtn" href="#" target="_blank" rel="noopener">Download extension .zip</a>
               <button class="btn" id="extCopyLink" type="button">Copy link</button>
@@ -294,23 +295,24 @@
           <div class="tips__box tips__box--dont">
             <div class="tips__title">How to use</div>
             <ul class="tips__list">
-              <li><strong>Fast:</strong> select text → right‑click → “Send to Prompting Buddy”.</li>
-              <li><strong>Manual:</strong> click the PB icon → open the sidebar → paste any text.</li>
-              <li><strong>Same features:</strong> Buddy / Vault / Library work the same as the website.</li>
+              <li>Select text anywhere on a page.</li>
+              <li>Right‑click → <strong>Send to Prompting Buddy</strong>.</li>
+              <li>The sidebar opens, text is pasted → run Prompt Check.</li>
             </ul>
             <p class="settings__note" style="margin:10px 0 0">
-              Pro tip: pin the extension in the Chrome toolbar so it’s always one click away.
+              Same features as the web app: Buddy / Vault / Library.
             </p>
           </div>
         </div>
 
         <div class="card card--flat" style="margin-top:14px">
           <div class="card__body">
-            <h3 style="margin:0 0 8px">Why not the Chrome Web Store (yet)?</h3>
-            <p class="muted" style="margin:0">
-              For now this is a “developer mode” install, so you can ship updates fast.
-              Later we can publish it properly (Web Store) once the copy + screenshots + policies are ready.
-            </p>
+            <h3 style="margin:0 0 8px">Privacy</h3>
+            <ul class="tips__list" style="margin:0">
+              <li>No ads. No data selling.</li>
+              <li>Vault/Library live on your device.</li>
+              <li>Only the text you submit is sent to the PB API to generate results.</li>
+            </ul>
           </div>
         </div>
 

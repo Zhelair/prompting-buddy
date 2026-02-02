@@ -4,7 +4,7 @@ window.PB_DATA = {
   // Your BuyMeACoffee product or page URL
   supportUrl: "#",
 
-  // Chrome extension (sidebar) download link (zip). Put your GitHub Release / direct zip URL here.
+  // Chrome extension (sidebar) download link (zip) — GitHub Releases URL
   extensionDownloadUrl: "#",
   extensionVersion: "v0.1.3",
   aboutHtml: `
