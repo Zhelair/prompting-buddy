@@ -1441,6 +1441,36 @@ function renderLines(el, arr){
     return node;
   }
 
+  function initExtension(){
+    const endpointInput = document.getElementById('extEndpoint');
+    const copyBtn = document.getElementById('extCopyEndpoint');
+    const goBuddy = document.getElementById('extGoBuddy');
+    const status = document.getElementById('extStatus');
+
+    if(endpointInput) endpointInput.value = ENDPOINT || '';
+
+    copyBtn?.addEventListener('click', async ()=>{
+      const val = String(ENDPOINT || '').trim();
+      if(!val){ if(status) status.textContent = 'No endpoint configured in data.js'; return; }
+      try{
+        await navigator.clipboard.writeText(val);
+        if(status) status.textContent = 'Copied ✅';
+      } catch {
+        // fallback
+        const ta = document.createElement('textarea');
+        ta.value = val;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try{ document.execCommand('copy'); if(status) status.textContent = 'Copied ✅'; }catch{ if(status) status.textContent = 'Copy failed'; }
+        ta.remove();
+      }
+    });
+
+    goBuddy?.addEventListener('click', ()=>{ location.hash = 'buddy'; });
+  }
+
   function initAbout(){
     const box = document.getElementById('aboutBody');
     if(!box) return;
@@ -1460,38 +1490,6 @@ function renderLines(el, arr){
         if(!inp.checked) return;
         applyTheme(t, v);
       });
-    });
-  }
-
-  function initExtension(){
-    const originEl = document.getElementById('extOrigin');
-    const endpointEl = document.getElementById('extEndpoint');
-    const copyBtn = document.getElementById('extCopyEndpoint');
-    const goBuddy = document.getElementById('extGoBuddy');
-
-    if(originEl) originEl.textContent = String(location.origin || '').trim() || '—';
-    if(endpointEl) endpointEl.textContent = ENDPOINT || '(not set — edit assets/data.js → house.endpoint)';
-
-    copyBtn?.addEventListener('click', async ()=>{
-      const txt = ENDPOINT || '';
-      if(!txt){ toast('Endpoint not set'); return; }
-      try{
-        await navigator.clipboard.writeText(txt);
-        toast('Copied ✅');
-      } catch {
-        const ta = document.createElement('textarea');
-        ta.value = txt;
-        ta.style.position = 'fixed';
-        ta.style.left = '-9999px';
-        document.body.appendChild(ta);
-        ta.select();
-        try{ document.execCommand('copy'); toast('Copied ✅'); }catch{}
-        ta.remove();
-      }
-    });
-
-    goBuddy?.addEventListener('click', ()=>{
-      location.hash = 'buddy';
     });
   }
 
