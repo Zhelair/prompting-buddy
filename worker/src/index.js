@@ -318,7 +318,8 @@ function corsHeaders(request, env) {
   return {
     'Access-Control-Allow-Origin': allowOrigin,
     'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+    'Access-Control-Allow-Headers': 'Content-Type,x-ou-pass,x-ou-token,Authorization',
+    'Access-Control-Allow-Credentials': 'true',
     'Vary': 'Origin'
   };
 }
