@@ -250,6 +250,9 @@
     } else if(route === "ideas") {
       app.appendChild(tpl("tpl-ideas"));
       initIdeas();
+    } else if(route === "extension") {
+      app.appendChild(tpl("tpl-extension"));
+      initExtension();
     } else if(route === "about") {
       app.appendChild(tpl("tpl-about"));
       initAbout();
@@ -1438,7 +1441,43 @@ function renderLines(el, arr){
     return node;
   }
 
-  function initAbout(){
+  
+  function initExtension(){
+    const dl = document.getElementById('extDownloadBtn');
+    const note = document.getElementById('extDownloadNote');
+    const copy = document.getElementById('extCopyLink');
+
+    const url = (data.extensionDownloadUrl || "").trim();
+
+    if(dl){
+      dl.href = url || "#";
+      dl.classList.toggle('is-disabled', !url);
+      if(!url){
+        dl.addEventListener('click', (e)=>e.preventDefault());
+      }
+    }
+
+    if(note){
+      note.innerHTML = url
+        ? `Current build: <strong>${escapeHtml(String(data.extensionVersion || ''))}</strong> — download link is set.`
+        : `Set <code>extensionDownloadUrl</code> in <code>assets/data.js</code> to show a real download link.`;
+    }
+
+    copy?.addEventListener('click', async ()=>{
+      if(!url){
+        toast('No link set yet.');
+        return;
+      }
+      try{
+        await navigator.clipboard.writeText(url);
+        toast('Link copied ✅');
+      } catch {
+        toast('Copy failed.');
+      }
+    });
+  }
+
+function initAbout(){
     const box = document.getElementById('aboutBody');
     if(!box) return;
     box.innerHTML = data.aboutHtml || "";

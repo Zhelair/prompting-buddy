@@ -3,6 +3,10 @@ window.PB_DATA = {
   brand: "Prompting Buddy",
   // Your BuyMeACoffee product or page URL
   supportUrl: "#",
+
+  // Chrome extension (sidebar) download link (zip). Put your GitHub Release / direct zip URL here.
+  extensionDownloadUrl: "#",
+  extensionVersion: "v0.1.3",
   aboutHtml: `
   <div class="card">
     <div class="card__body">

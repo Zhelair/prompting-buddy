@@ -878,3 +878,7 @@ body[data-theme="terminal"] .nav__title{ opacity:.75; }
 .pc__lens{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:10px 0 12px;}
 .pc__lensLabel{margin:0;}
 .pc__lensSelect{max-width:260px;}
+
+
+/* Utility: disabled link/button look (used on Extension page when link is not set) */
+.is-disabled{opacity:.55;pointer-events:none;}
