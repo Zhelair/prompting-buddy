@@ -3,6 +3,8 @@ window.PB_DATA = {
   brand: "Prompting Buddy",
   // Your BuyMeACoffee product or page URL
   supportUrl: "#",
+  extZipUrl: "#",
+  extStoreUrl: "#",
   aboutHtml: `
   <div class="card">
     <div class="card__body">
@@ -80,6 +82,30 @@ window.PB_DATA = {
     </div>
   </div>
 `,
+
+  tipsHtml: `
+  <div class="block">
+    <h3 style="margin:0 0 8px">A simple “token-saving” workflow</h3>
+    <ol class="pc__list" style="margin:0; padding-left:18px">
+      <li>Write your prompt (rough is fine).</li>
+      <li>Run <strong>Prompt Check</strong> → copy the <strong>Golden Prompt</strong>.</li>
+      <li>Paste Golden into Claude/Suno/etc. (you just saved tokens on trial-and-error).</li>
+    </ol>
+  </div>
+
+  <div class="block">
+    <h3 style="margin:0 0 8px">When to use Vault vs Library</h3>
+    <ul class="pc__list" style="margin:0">
+      <li><strong>Vault</strong> = your last runs (quick rewind).</li>
+      <li><strong>Library</strong> = your curated best prompts (tagged, searchable, exportable).</li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3 style="margin:0 0 8px">Export tip</h3>
+    <p class="muted" style="margin:0">If you move devices, export Library JSON and import it on the new device. No accounts needed.</p>
+  </div>
+  `,
 
   libraryCategories: [
     "Daily drivers",

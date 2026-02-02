@@ -253,6 +253,9 @@
     } else if(route === "extension") {
       app.appendChild(tpl("tpl-extension"));
       initExtension();
+    } else if(route === "tips") {
+      app.appendChild(tpl("tpl-tips"));
+      initTips();
     } else if(route === "about") {
       app.appendChild(tpl("tpl-about"));
       initAbout();
@@ -1442,33 +1445,17 @@ function renderLines(el, arr){
   }
 
   function initExtension(){
-    const endpointInput = document.getElementById('extEndpoint');
-    const copyBtn = document.getElementById('extCopyEndpoint');
-    const goBuddy = document.getElementById('extGoBuddy');
-    const status = document.getElementById('extStatus');
+    const zipLink = document.getElementById('extZipLink');
+    const storeLink = document.getElementById('extStoreLink');
 
-    if(endpointInput) endpointInput.value = ENDPOINT || '';
+    if(zipLink) zipLink.href = (data.extZipUrl || '#');
+    if(storeLink) storeLink.href = (data.extStoreUrl || '#');
+  }
 
-    copyBtn?.addEventListener('click', async ()=>{
-      const val = String(ENDPOINT || '').trim();
-      if(!val){ if(status) status.textContent = 'No endpoint configured in data.js'; return; }
-      try{
-        await navigator.clipboard.writeText(val);
-        if(status) status.textContent = 'Copied ✅';
-      } catch {
-        // fallback
-        const ta = document.createElement('textarea');
-        ta.value = val;
-        ta.style.position = 'fixed';
-        ta.style.left = '-9999px';
-        document.body.appendChild(ta);
-        ta.select();
-        try{ document.execCommand('copy'); if(status) status.textContent = 'Copied ✅'; }catch{ if(status) status.textContent = 'Copy failed'; }
-        ta.remove();
-      }
-    });
-
-    goBuddy?.addEventListener('click', ()=>{ location.hash = 'buddy'; });
+  function initTips(){
+    const box = document.getElementById('tipsBody');
+    if(!box) return;
+    box.innerHTML = data.tipsHtml || "";
   }
 
   function initAbout(){
