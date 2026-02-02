@@ -250,9 +250,6 @@
     } else if(route === "ideas") {
       app.appendChild(tpl("tpl-ideas"));
       initIdeas();
-    } else if(route === "extension") {
-      app.appendChild(tpl("tpl-extension"));
-      initExtension();
     } else if(route === "about") {
       app.appendChild(tpl("tpl-about"));
       initAbout();
@@ -703,7 +700,7 @@ function renderLines(el, arr){
       const v = loadVault();
       if(!list) return;
       if(!v.length){
-        list.innerHTML = '<p class="muted">Run a few Prompt Checks to see something here.</p>';
+        list.innerHTML = '<p class="muted">No saved runs yet. Use Prompt Check first.</p>';
         return;
       }
       list.innerHTML = v.map((item, idx)=>{

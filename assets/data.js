@@ -8,7 +8,7 @@ window.PB_DATA = {
     <div class="card__body">
       <h2 style="margin:0 0 6px">About Prompting Buddy</h2>
       <p class="muted" style="margin:0 0 12px">
-        A privacy-first prompt helper. It improves prompts <em>before</em> you spend tokens.
+        A tiny privacy-first tool that helps you tighten prompts <em>before</em> you spend tokens.
         No accounts. Vault + Library live in your browser.
       </p>
 
@@ -16,7 +16,8 @@ window.PB_DATA = {
         <div class="card__body">
           <h3 style="margin:0 0 8px">Passphrase</h3>
           <p class="muted" style="margin:0 0 10px">
-            Support via BuyMeACoffee to get a passphrase. I may rotate it monthly.
+            Buy a passphrase on BuyMeACoffee. I may rotate the passphrase monthly.
+            Support keeps the project ad-free, evolving, and without data sharing.
           </p>
           <a class="btn btn--primary" id="pbSupportLink" href="#" target="_blank" rel="noopener">Get passphrase on BuyMeACoffee</a>
         </div>
@@ -34,7 +35,6 @@ window.PB_DATA = {
             <label class="check"><input type="radio" name="pbTheme" data-theme="glitter" data-variant="default"> Fancy Glitter</label>
             <label class="check"><input type="radio" name="pbTheme" data-theme="terminal" data-variant="default"> Terminal Hacker</label>
           </div>
-          <p class="muted" style="margin:10px 0 0">Pick a skin. Same brain inside.</p>
         </div>
       </div>
 
@@ -42,13 +42,13 @@ window.PB_DATA = {
         <div class="card__body">
           <h3 style="margin:0 0 8px">Privacy</h3>
           <p class="muted" style="margin:0">
-            Library + Vault are stored locally (localStorage). Your passphrase only unlocks the worker token — it’s not an “account”.
+            Library + Vault are stored locally (localStorage). Your passphrase unlocks a token for the worker — it’s not an “account”.
           </p>
         </div>
       </div>
     </div>
   </div>
-`,
+  `,
 
   libraryCategories: [
     "Daily drivers",
