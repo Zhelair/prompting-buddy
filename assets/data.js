@@ -46,7 +46,22 @@ window.PB_DATA = {
         </div>
       </div>
 
+      
       <div class="card card--flat" style="margin-top:10px">
+        <div class="card__body">
+          <h3 style="margin:0 0 8px">Reasoning lens: Auditor / Thinker / Creator</h3>
+          <p class="muted" style="margin:0 0 10px">
+            This changes the style of the feedback you get from Prompt Check — not the “truth”, just the <em>attitude</em>.
+          </p>
+          <ul class="pc__list" style="margin:0">
+            <li><strong>Auditor (Strict)</strong> — sharp and picky. Best when you want a clean final prompt that won’t waste tokens.</li>
+            <li><strong>Thinker (Balanced)</strong> — the default “smart friend” mode. Best for everyday prompts.</li>
+            <li><strong>Creator (Bold)</strong> — more playful + expansive. Best for brainstorming, story beats, marketing angles, variations.</li>
+          </ul>
+        </div>
+      </div>
+
+<div class="card card--flat" style="margin-top:10px">
         <div class="card__body">
           <h3 style="margin:0 0 8px">Passphrase</h3>
           <p class="muted" style="margin:0 0 10px">
@@ -85,27 +100,47 @@ window.PB_DATA = {
 
   tipsHtml: `
   <div class="block">
-    <h3 style="margin:0 0 8px">A simple “token-saving” workflow</h3>
+    <h3 style="margin:0 0 8px">3-minute “first win”</h3>
     <ol class="pc__list" style="margin:0; padding-left:18px">
-      <li>Write your prompt (rough is fine).</li>
-      <li>Run <strong>Prompt Check</strong> → copy the <strong>Golden Prompt</strong>.</li>
-      <li>Paste Golden into Claude/Suno/etc. (you just saved tokens on trial-and-error).</li>
+      <li>Paste a prompt in <strong>Buddy</strong> (rough is fine).</li>
+      <li>Pick a lens: <strong>Thinker</strong> if unsure.</li>
+      <li>Run <strong>Prompt Check</strong> → copy the <strong>Golden Prompt</strong> → paste into your AI tool.</li>
     </ol>
+    <p class="muted" style="margin:10px 0 0">If you do only one thing: copy Golden. That’s where the token savings are.</p>
   </div>
 
   <div class="block">
-    <h3 style="margin:0 0 8px">When to use Vault vs Library</h3>
+    <h3 style="margin:0 0 8px">Which lens should I use?</h3>
     <ul class="pc__list" style="margin:0">
-      <li><strong>Vault</strong> = your last runs (quick rewind).</li>
-      <li><strong>Library</strong> = your curated best prompts (tagged, searchable, exportable).</li>
+      <li><strong>Auditor</strong>: “Find every hole. Make it bulletproof.”</li>
+      <li><strong>Thinker</strong>: “Make it clear and usable.”</li>
+      <li><strong>Creator</strong>: “Give me options and angles.”</li>
     </ul>
   </div>
 
   <div class="block">
-    <h3 style="margin:0 0 8px">Export tip</h3>
-    <p class="muted" style="margin:0">If you move devices, export Library JSON and import it on the new device. No accounts needed.</p>
+    <h3 style="margin:0 0 8px">Vault vs Library (quick rule)</h3>
+    <ul class="pc__list" style="margin:0">
+      <li><strong>Vault</strong> = your recent attempts (last 10). Great for “what did I do earlier?”</li>
+      <li><strong>Library</strong> = your best prompts (tagged + searchable). Great for “my reusable templates”.</li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3 style="margin:0 0 8px">Make it portable</h3>
+    <p class="muted" style="margin:0">Export Library JSON → import on another device. No accounts. No drama.</p>
+  </div>
+
+  <div class="block">
+    <h3 style="margin:0 0 8px">TikTok / Reels ideas (quick)</h3>
+    <ul class="pc__list" style="margin:0">
+      <li>“Bad prompt → Golden prompt” (15s) — show only before/after.</li>
+      <li>“Auditor vs Creator” (20s) — same prompt, different lens.</li>
+      <li>“Vault → Library” (15s) — turn one good result into a reusable template.</li>
+    </ul>
   </div>
   `,
+
 
   libraryCategories: [
     "Daily drivers",
