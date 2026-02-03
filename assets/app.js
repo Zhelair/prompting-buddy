@@ -275,8 +275,18 @@
     const backdrop = frag.querySelector('#unlockBackdrop');
     const input = frag.querySelector('#unlockPass');
     const btn = frag.querySelector('#unlockDo');
+    const buy = frag.querySelector('#unlockBuy');
     const close = frag.querySelector('#unlockClose');
     const status = frag.querySelector('#unlockStatus');
+
+    // Wire "Get passphrase" button (optional)
+    try {
+      const url = (window.PB_DATA && window.PB_DATA.supportUrl) ? String(window.PB_DATA.supportUrl).trim() : "";
+      if(buy){
+        if(!url || url === "#") { buy.style.display = "none"; }
+        else { buy.setAttribute('href', url); }
+      }
+    } catch {}
 
     function cleanup(){ backdrop?.remove(); }
     close?.addEventListener('click', cleanup);
