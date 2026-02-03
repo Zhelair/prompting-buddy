@@ -89,8 +89,10 @@ a{color:inherit}button,a.navbtn{font:inherit}
 .panel__title{margin:0 0 10px;font-size:14px}
 .panel__note{margin:8px 0 10px;opacity:.80;line-height:1.35}
 .field{display:block;margin:10px 0}.field__label{display:block;font-size:12px;opacity:.75;margin-bottom:6px}
-.field__input,select,input[type=password]{width:100%;padding:10px 12px;border-radius:14px;border:1px solid rgba(0,0,0,.12);background:rgba(255,255,255,.95)}
-.output{width:100%;padding:10px 12px;border-radius:14px;border:1px solid rgba(0,0,0,.12);background:rgba(255,255,255,.95);resize:vertical}
+.field__input,select,input[type=password]{width:100%;padding:10px 12px;border-radius:14px;border:1px solid rgba(0,0,0,.12);background:rgba(255,255,255,.95);font-size:14px;line-height:1.45;}
+
+.output{width:100%;padding:10px 12px;border-radius:14px;border:1px solid rgba(0,0,0,.12);background:rgba(255,255,255,.95);resize:vertical;font-size:14px;line-height:1.45;}
+
 .panel__actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .settings__row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0}.settings__status{margin-top:8px;font-size:12px;opacity:.75}
 .fold{border:1px solid rgba(0,0,0,.10);border-radius:14px;padding:8px 10px;background:rgba(255,255,255,.85);margin:10px 0}
@@ -258,6 +260,7 @@ body[data-theme="retro"] .tips__box{
   color:#f0f0ff;
 }
 body[data-theme="retro"] .pc__pre,
+body[data-theme="retro"] .pre,
 body[data-theme="retro"] .output,
 body[data-theme="retro"] .field__input,
 body[data-theme="retro"] select,
@@ -879,3 +882,151 @@ body[data-theme="terminal"] .nav__title{ opacity:.75; }
 .pc__lens{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:10px 0 12px;}
 .pc__lensLabel{margin:0;}
 .pc__lensSelect{max-width:260px;}
+
+
+/* =============================
+   UI readability fixes (2026-02)
+   Focus: Neon Grid / Candy Console / Fancy Glitter / Terminal Hacker
+   ============================= */
+
+/* Retro: ensure long prompt blocks are dark so light text stays readable */
+body[data-theme="retro"] .pre{
+  background: rgba(0,0,0,.35);
+  border-color: rgba(255,255,255,.18);
+  color:#f0f0ff;
+}
+
+/* Fancy Glitter: make it a true light theme (dark text on bright surfaces) */
+body[data-theme="glitter"]{
+  --accent: var(--glit-teal);
+  color: var(--glit-ink);
+  background: linear-gradient(180deg, #f6f0ff 0%, #e9f3ff 45%, #f2fffe 100%);
+}
+body[data-theme="glitter"] .topbar,
+body[data-theme="glitter"] .footer{
+  background: rgba(255,255,255,.88);
+  color: var(--glit-ink);
+  border-color: rgba(18,182,176,.22);
+}
+body[data-theme="glitter"] .screen{
+  border-color: rgba(18,182,176,.20);
+  box-shadow: 0 30px 90px rgba(0,0,0,.25);
+}
+body[data-theme="glitter"] .screen__menu,
+body[data-theme="glitter"] .screen__content{
+  background: rgba(255,255,255,.86);
+  color: var(--glit-ink);
+  border-color: rgba(18,182,176,.18);
+}
+body[data-theme="glitter"] .menu__title{ color: rgba(11,36,48,.65); }
+body[data-theme="glitter"] .menu__item:hover{ background: rgba(18,182,176,.08); }
+body[data-theme="glitter"] .menu__item.is-active{
+  background: rgba(18,182,176,.12);
+  border-color: rgba(18,182,176,.28);
+}
+body[data-theme="glitter"] .navbtn{
+  background: rgba(255,255,255,.82);
+  border-color: rgba(11,36,48,.12);
+  color: var(--glit-ink);
+}
+body[data-theme="glitter"] .navbtn.is-active{
+  background: rgba(18,182,176,.14);
+  border-color: rgba(18,182,176,.35);
+}
+body[data-theme="glitter"] .card,
+body[data-theme="glitter"] .pc__section,
+body[data-theme="glitter"] .panel{
+  background: rgba(255,255,255,.88);
+  border-color: rgba(11,36,48,.10);
+  color: var(--glit-ink);
+}
+body[data-theme="glitter"] .muted,
+body[data-theme="glitter"] .pc__muted{ color: var(--glit-muted); }
+
+body[data-theme="glitter"] .btn{
+  background: rgba(18,182,176,.10);
+  border-color: rgba(18,182,176,.28);
+  color: var(--glit-ink);
+}
+body[data-theme="glitter"] .btn:hover{
+  background: rgba(18,182,176,.14);
+  border-color: rgba(18,182,176,.34);
+}
+body[data-theme="glitter"] .btn--primary{
+  background: rgba(18,182,176,.18);
+  border-color: rgba(18,182,176,.42);
+}
+body[data-theme="glitter"] .field__input,
+body[data-theme="glitter"] textarea,
+body[data-theme="glitter"] input[type=password],
+body[data-theme="glitter"] .output{
+  background: rgba(255,255,255,.95);
+  color: var(--glit-ink);
+  border-color: rgba(11,36,48,.12);
+}
+body[data-theme="glitter"] .pre,
+body[data-theme="glitter"] .pc__pre{
+  background: rgba(255,255,255,.92);
+  color: var(--glit-ink);
+  border-color: rgba(11,36,48,.10);
+}
+body[data-theme="glitter"] .modal{
+  background: rgba(255,255,255,.96) !important;
+  border-color: rgba(18,182,176,.25) !important;
+  color: var(--glit-ink) !important;
+}
+body[data-theme="glitter"] .modal__head{
+  background: rgba(255,255,255,.92) !important;
+  border-bottom-color: rgba(11,36,48,.10) !important;
+}
+
+/* Terminal Hacker: soften neon + lift contrast */
+body[data-theme="terminal"]{
+  --term-accent: rgba(26,205,128,1);
+  color:#e7fff0;
+  background:
+    radial-gradient(1200px 800px at 15% 10%, rgba(26,205,128,.14), transparent 55%),
+    radial-gradient(900px 650px at 85% 25%, rgba(66,190,255,.10), transparent 55%),
+    linear-gradient(180deg, #06140d 0%, #030b06 100%);
+}
+body[data-theme="terminal"] .topbar,
+body[data-theme="terminal"] .footer{
+  background:rgba(3,12,7,.86);
+  border-color:rgba(26,205,128,.18);
+}
+body[data-theme="terminal"] .screen{
+  border-color:rgba(26,205,128,.16);
+}
+body[data-theme="terminal"] .screen__menu,
+body[data-theme="terminal"] .screen__content{
+  background:rgba(3,12,7,.78);
+}
+body[data-theme="terminal"] .card{
+  background:rgba(8,26,16,.74);
+  border-color:rgba(26,205,128,.12);
+}
+body[data-theme="terminal"] .btn{
+  background:rgba(26,205,128,.10);
+  border-color:rgba(26,205,128,.22);
+}
+body[data-theme="terminal"] .btn:hover{
+  background:rgba(26,205,128,.14);
+  border-color:rgba(26,205,128,.30);
+}
+body[data-theme="terminal"] .btn--primary{
+  background:rgba(26,205,128,.18);
+  border-color:rgba(26,205,128,.38);
+}
+body[data-theme="terminal"] .field__input,
+body[data-theme="terminal"] select,
+body[data-theme="terminal"] textarea,
+body[data-theme="terminal"] .output{
+  color:#e7fff0;
+  background:rgba(0,0,0,.20);
+  border-color:rgba(26,205,128,.18);
+}
+body[data-theme="terminal"] .muted{ color:rgba(231,255,240,.72); }
+body[data-theme="terminal"] .menu__item.is-active{
+  background:rgba(26,205,128,.14);
+  border-color:rgba(26,205,128,.28);
+}
