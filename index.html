@@ -87,6 +87,7 @@
           <option value="thinker">Thinker</option>
           <option value="creator">Creator</option>
         </select>
+        <button class="btn btn--mini" id="pcLensHelp" type="button" aria-label="What is this?">What's this</button>
       </div>
 
       <div class="panel__actions">
@@ -171,6 +172,22 @@
 
       <div class="lib__filters">
         <label class="field field--inline">
+          <span class="field__label">Project</span>
+          <select class="field__input" id="libProject">
+            <option value="">All</option>
+          </select>
+        </label>
+
+        <label class="field field--inline">
+          <span class="field__label">Section</span>
+          <select class="field__input" id="libSection">
+            <option value="">All</option>
+          </select>
+        </label>
+
+        <button class="btn btn--mini" id="libManageProjects" type="button">Manage</button>
+
+        <label class="field field--inline">
           <span class="field__label">Category</span>
           <select class="field__input" id="libCat">
             <option value="">All</option>
@@ -206,6 +223,28 @@
           <span class="field__label">Category</span>
           <select class="field__input" id="libFieldCat"></select>
         </label>
+
+        <div class="lib__filters" style="margin:8px 0 0">
+          <label class="field field--inline">
+            <span class="field__label">Project</span>
+            <select class="field__input" id="libFieldProject"></select>
+          </label>
+
+          <label class="field field--inline">
+            <span class="field__label">Section</span>
+            <select class="field__input" id="libFieldSection"></select>
+          </label>
+
+          <label class="field field--inline">
+            <span class="field__label">Mode used</span>
+            <select class="field__input" id="libFieldMode">
+              <option value="">-</option>
+              <option value="auditor">Auditor</option>
+              <option value="thinker">Thinker</option>
+              <option value="creator">Creator</option>
+            </select>
+          </label>
+        </div>
 
         <label class="field">
           <span class="field__label">Tags</span>
