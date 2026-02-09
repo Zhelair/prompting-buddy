@@ -87,7 +87,9 @@
           <option value="thinker">Thinker</option>
           <option value="creator">Creator</option>
         </select>
-        <button class="btn btn--mini" id="pcLensHelp" type="button" aria-label="What is this?">What's this</button>
+        <button class="btn btn--mini pc__lensHelp" id="pcLensHelp" type="button" title="Auditor: reviews and improves an existing prompt.
+Thinker: explores options before writing.
+Creator: generates new prompts from scratch.">What's this?</button>
       </div>
 
       <div class="panel__actions">
@@ -98,6 +100,7 @@
       <div class="settings__status" id="pcStatus" aria-live="polite"></div>
 
       <div class="pc" id="pcOut" hidden>
+        <div class="pc__meta"><span class="badge" id="pcModeChip" hidden></span></div>
         <section class="pc__section">
           <div class="pc__h">Diagnosis</div>
           <div class="pb__scroll" id="pcDiagnosis"></div>
@@ -171,36 +174,36 @@
       </label>
 
       <div class="lib__filters">
-        <label class="field field--inline">
-          <span class="field__label">Project</span>
-          <select class="field__input" id="libProject">
-            <option value="">All</option>
-          </select>
-        </label>
+  <label class="field field--inline">
+    <span class="field__label">Project</span>
+    <select class="field__input" id="libProject">
+      <option value="">General</option>
+    </select>
+  </label>
 
-        <label class="field field--inline">
-          <span class="field__label">Section</span>
-          <select class="field__input" id="libSection">
-            <option value="">All</option>
-          </select>
-        </label>
+  <label class="field field--inline">
+    <span class="field__label">Section</span>
+    <select class="field__input" id="libSection">
+      <option value="">Final prompts</option>
+    </select>
+  </label>
 
-        <button class="btn btn--mini" id="libManageProjects" type="button">Manage</button>
+  <button class="btn btn--mini" id="libManage" type="button">Manage</button>
 
-        <label class="field field--inline">
-          <span class="field__label">Category</span>
-          <select class="field__input" id="libCat">
-            <option value="">All</option>
-          </select>
-        </label>
+  <label class="field field--inline">
+    <span class="field__label">Category</span>
+    <select class="field__input" id="libCat">
+      <option value="">All</option>
+    </select>
+  </label>
 
-        <label class="check">
-          <input id="libOnlyFav" type="checkbox" />
-          <span>Only favorites</span>
-        </label>
-      </div>
+  <label class="check">
+    <input id="libOnlyFav" type="checkbox" />
+    <span>Only favorites</span>
+  </label>
+</div>
 
-      <div class="settings__status" id="libStatus" aria-live="polite"></div>
+<div class="settings__status" id="libStatus" aria-live="polite"></div>
 
       <!-- Inline editor (keeps everything inside the main screen) -->
       <div class="block" id="libEditorWrap" hidden>
@@ -215,36 +218,44 @@
         </label>
 
         <label class="field">
-          <span class="field__label">Prompt</span>
-          <textarea class="output" id="libFieldText" rows="8" placeholder="Paste prompt text..."></textarea>
-        </label>
+  <span class="field__label">Golden Prompt</span>
+  <textarea class="output" id="libFieldGolden" rows="8" placeholder="Your refined, reusable prompt..."></textarea>
+</label>
 
-        <label class="field">
+<details class="details" id="libOrigWrap">
+  <summary class="details__summary">Original Prompt (optional)</summary>
+  <div class="details__body">
+    <label class="field" style="margin-top:8px">
+      <span class="field__label">Original Prompt</span>
+      <textarea class="output" id="libFieldOriginal" rows="6" placeholder="What you typed initially..."></textarea>
+    </label>
+  </div>
+</details>
+
+<div class="lib__editorMeta">
+  <label class="field field--inline">
+    <span class="field__label">Project</span>
+    <select class="field__input" id="libFieldProject"></select>
+  </label>
+
+  <label class="field field--inline">
+    <span class="field__label">Section</span>
+    <select class="field__input" id="libFieldSection"></select>
+  </label>
+
+  <label class="field field--inline">
+    <span class="field__label">Mode used</span>
+    <select class="field__input" id="libFieldMode">
+      <option value="">-</option>
+      <option value="auditor">Auditor</option>
+      <option value="thinker">Thinker</option>
+      <option value="creator">Creator</option>
+    </select>
+  </label>
+</div><label class="field">
           <span class="field__label">Category</span>
           <select class="field__input" id="libFieldCat"></select>
         </label>
-
-        <div class="lib__filters" style="margin:8px 0 0">
-          <label class="field field--inline">
-            <span class="field__label">Project</span>
-            <select class="field__input" id="libFieldProject"></select>
-          </label>
-
-          <label class="field field--inline">
-            <span class="field__label">Section</span>
-            <select class="field__input" id="libFieldSection"></select>
-          </label>
-
-          <label class="field field--inline">
-            <span class="field__label">Mode used</span>
-            <select class="field__input" id="libFieldMode">
-              <option value="">-</option>
-              <option value="auditor">Auditor</option>
-              <option value="thinker">Thinker</option>
-              <option value="creator">Creator</option>
-            </select>
-          </label>
-        </div>
 
         <label class="field">
           <span class="field__label">Tags</span>
@@ -474,5 +485,108 @@
 <!-- Cache-bust scripts so GitHub Pages / browser doesn't serve an older app.js -->
 <script src="assets/data.js?v=20260121a"></script>
 <script src="assets/app.js?v=20260121a"></script>
+<template id="tpl-saveToLibrary">
+  <div class="modal_backdrop" role="dialog" aria-modal="true">
+    <div class="modal modal--wide">
+      <div class="modal__head">
+        <strong>Save to Library</strong>
+        <button class="btn" data-act="close" type="button">Close</button>
+      </div>
+      <div class="modal__body">
+        <label class="field">
+          <span class="field__label">Title</span>
+          <input class="field__input" data-role="title" type="text" placeholder="Short name" />
+        </label>
+
+        <label class="field">
+          <span class="field__label">Golden Prompt</span>
+          <textarea class="output" data-role="golden" rows="8" placeholder="Golden prompt..."></textarea>
+        </label>
+
+        <details class="details" data-role="origDetails">
+          <summary class="details__summary">Original Prompt (optional)</summary>
+          <div class="details__body">
+            <label class="field" style="margin-top:8px">
+              <span class="field__label">Original Prompt</span>
+              <textarea class="output" data-role="original" rows="6" placeholder="Original prompt..."></textarea>
+            </label>
+          </div>
+        </details>
+
+        <div class="lib__editorMeta">
+          <label class="field field--inline">
+            <span class="field__label">Project</span>
+            <select class="field__input" data-role="project"></select>
+          </label>
+
+          <label class="field field--inline">
+            <span class="field__label">Section</span>
+            <select class="field__input" data-role="section"></select>
+          </label>
+
+          <label class="field field--inline">
+            <span class="field__label">Category</span>
+            <select class="field__input" data-role="cat"></select>
+          </label>
+        </div>
+
+        <label class="field">
+          <span class="field__label">Tags</span>
+          <input class="field__input" data-role="tags" type="text" placeholder="#writing #claude #coding" />
+        </label>
+
+        <label class="field">
+          <span class="field__label">AI model hint (optional)</span>
+          <input class="field__input" data-role="model" type="text" placeholder="e.g., DeepSeek, GPT, Claude" />
+        </label>
+
+        <label class="field">
+          <span class="field__label">Notes</span>
+          <textarea class="output" data-role="notes" rows="3" placeholder="Why it works, when to use it..."></textarea>
+        </label>
+
+        <div class="lib__metaLine muted" data-role="metaLine"></div>
+
+        <div class="panel__actions">
+          <button class="btn btn--primary" data-act="save" type="button">Save to Library</button>
+          <button class="btn" data-act="cancel" type="button">Cancel</button>
+        </div>
+        <div class="settings__status" data-role="status" aria-live="polite"></div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-manageProjects">
+  <div class="modal_backdrop" role="dialog" aria-modal="true">
+    <div class="modal modal--wide">
+      <div class="modal__head">
+        <strong>Manage Projects</strong>
+        <button class="btn" data-act="close" type="button">Close</button>
+      </div>
+      <div class="modal__body">
+        <div class="manageGrid">
+          <div>
+            <div class="manageTitle">Projects</div>
+            <div class="manageList" data-role="projects"></div>
+            <div class="panel__actions">
+              <button class="btn btn--mini" data-act="addProject" type="button">Add project</button>
+            </div>
+          </div>
+          <div>
+            <div class="manageTitle">Sections</div>
+            <div class="muted manageHint">Select a project to manage its sections.</div>
+            <div class="manageList" data-role="sections"></div>
+            <div class="panel__actions">
+              <button class="btn btn--mini" data-act="addSection" type="button">Add section</button>
+            </div>
+          </div>
+        </div>
+        <div class="settings__status" data-role="status" aria-live="polite"></div>
+      </div>
+    </div>
+  </div>
+</template>
+
 </body>
 </html>
