@@ -1946,6 +1946,7 @@ function renderLines(el, arr){
       setLS(LS.libSelSection, String(sectionSel.value||""));
       renderLibrary();
     });
+    initManageProjModal();
     manageProjectsBtn?.addEventListener('click', ()=>{ openManageProjModal(); });
 
     fProject?.addEventListener('change', ()=>{
