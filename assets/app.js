@@ -43,7 +43,8 @@
   }
   function setLS(key, value){
     try{ localStorage.setItem(key, JSON.stringify(value)); } catch {}
-  
+  }
+
   // --- Modals (Vault -> Library, Projects/Sections)
   const MODAL = {
     saveLib: { el: null },
@@ -333,7 +334,6 @@
       try{ window.dispatchEvent(new Event('pb_projects_changed')); }catch{}
     });
   }
-}
 
   // last-run caches (for persistence when navigating Buddy/Vault/About)
   const LS_LAST = {
