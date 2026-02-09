@@ -37,13 +37,6 @@
     coachHidden: "pb_last_coach_hidden_v1"
   };
 
-
-  // Library filter elements (set in initLibrary)
-  let projSel = null;
-  let sectSel = null;
-  let catSel = null;
-  let manageBtn = null;
-
   function isCoachHidden(){
     try{ return localStorage.getItem(LS_LAST.coachHidden) === '1'; }catch{ return false; }
   }
@@ -141,385 +134,6 @@
     try { localStorage.setItem(LS.library, JSON.stringify(Array.isArray(arr)?arr:[])); } catch {}
   }
 
-
-// --- Projects / Sections (local-only)
-const LS_PROJECTS = "pb_projects_v1";
-function defaultProjects(){
-  return [{
-    id: "p_general",
-    name: "General",
-    sections: [
-      { id: "s_research", name: "Research" },
-      { id: "s_drafts", name: "Prompt drafts" },
-      { id: "s_final", name: "Final prompts" },
-      { id: "s_marketing", name: "Marketing" },
-      { id: "s_automation", name: "Automation" }
-    ]
-  }];
-}
-function loadProjects(){
-  try{
-    const raw = localStorage.getItem(LS_PROJECTS);
-    const arr = raw ? JSON.parse(raw) : null;
-    if(Array.isArray(arr) && arr.length) return arr;
-  }catch{}
-  const d = defaultProjects();
-  try{ localStorage.setItem(LS_PROJECTS, JSON.stringify(d)); }catch{}
-  return d;
-}
-function saveProjects(arr){
-  try{ localStorage.setItem(LS_PROJECTS, JSON.stringify(Array.isArray(arr)?arr:defaultProjects())); }catch{}
-}
-function ensureProjectExists(projects, projectId){
-  const p = projects.find(x=>x && x.id===projectId);
-  return p ? p.id : (projects[0]?.id || "p_general");
-}
-function ensureSectionExists(project, sectionId){
-  const s = project?.sections?.find(x=>x && x.id===sectionId);
-  return s ? s.id : (project?.sections?.find(x=>x.id==="s_final")?.id || project?.sections?.[0]?.id || "s_final");
-}
-
-function normalizeLibraryItem(it, projects){
-  if(!it || typeof it!=="object") return null;
-  const pArr = projects || loadProjects();
-  const pid = ensureProjectExists(pArr, it.projectId || it.project || it.pid);
-  const proj = pArr.find(p=>p.id===pid) || pArr[0];
-  const sid = ensureSectionExists(proj, it.sectionId || it.section || it.sid);
-
-  // Back-compat: old items used { text }.
-  const golden = String(it.goldenPrompt || it.golden || it.text || "").trim();
-  const original = String(it.originalPrompt || it.prompt || "").trim();
-
-  return {
-    id: String(it.id || cryptoId()),
-    title: String(it.title || "Untitled").trim() || "Untitled",
-    goldenPrompt: golden,
-    originalPrompt: original,
-    notes: String(it.notes || "").trim(),
-    tags: String(it.tags || "").trim(),
-    model: String(it.model || "").trim(),
-    cat: String(it.cat || "").trim(),
-    fav: !!it.fav,
-    t: Number(it.t || it.createdAt || Date.now()),
-    projectId: pid,
-    sectionId: sid,
-    modeUsed: (it.modeUsed==="auditor"||it.modeUsed==="thinker"||it.modeUsed==="creator") ? it.modeUsed : (it.lensUsed||""),
-  };
-}
-
-function migrateLibraryToV2(){
-  const projects = loadProjects();
-  const lib = loadLibrary();
-  let changed = false;
-  const out = [];
-  for(const it of lib){
-    const norm = normalizeLibraryItem(it, projects);
-    if(!norm) continue;
-    // mark changed if old shape
-    if(!('goldenPrompt' in it) || ('text' in it) || !('projectId' in it) || !('sectionId' in it)) changed = true;
-    out.push(norm);
-  }
-  if(changed){
-    saveLibrary(out);
-  }
-  return out;
-}
-
-function escapeId(s){ return escapeHtml(String(s||"")); }
-
-function openModalFromTemplate(tplId){
-  const tpl = document.getElementById(tplId);
-  if(!tpl) throw new Error("Missing template: "+tplId);
-  const node = tpl.content.firstElementChild.cloneNode(true);
-  document.body.appendChild(node);
-  return node;
-}
-
-function closeModal(node){
-  try{ node?.remove(); }catch{}
-}
-
-function buildProjectOptions(sel, projects, selectedId){
-  if(!sel) return;
-  sel.innerHTML = "";
-  projects.forEach(p=>{
-    const o=document.createElement("option");
-    o.value=p.id;
-    o.textContent=p.name;
-    sel.appendChild(o);
-  });
-  if(selectedId) sel.value = selectedId;
-}
-function buildSectionOptions(sel, project, selectedId){
-  if(!sel) return;
-  sel.innerHTML = "";
-  (project?.sections||[]).forEach(s=>{
-    const o=document.createElement("option");
-    o.value=s.id;
-    o.textContent=s.name;
-    sel.appendChild(o);
-  });
-  if(selectedId) sel.value = selectedId;
-}
-
-function openSaveToLibraryModal(vaultItem){
-  const projects = loadProjects();
-  const modal = openModalFromTemplate("tpl-saveToLibrary");
-  const status = modal.querySelector('[data-role="status"]');
-  const titleI = modal.querySelector('[data-role="title"]');
-  const goldT = modal.querySelector('[data-role="golden"]');
-  const origT = modal.querySelector('[data-role="original"]');
-  const projS = modal.querySelector('[data-role="project"]');
-  const sectS = modal.querySelector('[data-role="section"]');
-  const catS  = modal.querySelector('[data-role="cat"]');
-  const tagsI = modal.querySelector('[data-role="tags"]');
-  const modelI= modal.querySelector('[data-role="model"]');
-  const notesT= modal.querySelector('[data-role="notes"]');
-  const metaLine = modal.querySelector('[data-role="metaLine"]');
-
-  const vPrompt = String(vaultItem?.prompt||"").trim();
-  const vGolden = String(vaultItem?.golden||"").trim();
-  const lens = (vaultItem?.modeUsed==="auditor"||vaultItem?.modeUsed==="thinker"||vaultItem?.modeUsed==="creator") ? vaultItem.modeUsed : "";
-
-  // title suggestion: first 60 chars of golden or prompt
-  const sugg = (vGolden || vPrompt).split(/\n/)[0].slice(0,80).trim();
-  if(titleI) titleI.value = sugg || "Untitled";
-  if(goldT) goldT.value = vGolden || vPrompt;
-  if(origT) origT.value = vPrompt;
-
-  buildProjectOptions(projS, projects, projects[0]?.id);
-  const proj = projects.find(p=>p.id===projS?.value) || projects[0];
-  buildSectionOptions(sectS, proj, proj?.sections?.find(s=>s.id==="s_final")?.id || proj?.sections?.[0]?.id);
-
-  // categories
-  try{
-    const data = window.PB_DATA || {};
-    const cats = Array.isArray(data.libraryCategories) && data.libraryCategories.length ? data.libraryCategories : ["Daily drivers","Writing","Coding","Research / OSINT","Visuals","Creators","Business","Life / Mood"];
-    catS.innerHTML = '<option value="">-</option>' + cats.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
-  }catch{
-    if(catS) catS.innerHTML = '<option value="">-</option>';
-  }
-
-  function setStatus(msg){ if(status) status.textContent = msg||""; }
-  function refreshSections(){
-    const p = projects.find(x=>x.id===projS?.value) || projects[0];
-    buildSectionOptions(sectS, p, p?.sections?.find(s=>s.id==="s_final")?.id || p?.sections?.[0]?.id);
-  }
-  projS?.addEventListener("change", refreshSections);
-
-  if(metaLine){
-    metaLine.textContent = lens ? ("Mode used: " + lens.toUpperCase()) : "";
-  }
-
-  modal.querySelectorAll('[data-act="close"],[data-act="cancel"]').forEach(b=>{
-    b.addEventListener("click", ()=>closeModal(modal));
-  });
-
-  modal.querySelector('[data-act="save"]')?.addEventListener("click", ()=>{
-    const projectsNow = loadProjects();
-    const pid = ensureProjectExists(projectsNow, String(projS?.value||""));
-    const projNow = projectsNow.find(p=>p.id===pid) || projectsNow[0];
-    const sid = ensureSectionExists(projNow, String(sectS?.value||""));
-
-    const title = String(titleI?.value||"").trim();
-    const goldenPrompt = String(goldT?.value||"").trim();
-    const originalPrompt = String(origT?.value||"").trim();
-
-    if(!title){ setStatus("Title is required."); return; }
-    if(!goldenPrompt){ setStatus("Golden Prompt is required."); return; }
-
-    const item = {
-      id: cryptoId(),
-      title,
-      goldenPrompt,
-      originalPrompt,
-      cat: String(catS?.value||"").trim(),
-      tags: String(tagsI?.value||"").trim(),
-      model: String(modelI?.value||"").trim(),
-      notes: String(notesT?.value||"").trim(),
-      fav: false,
-      t: Date.now(),
-      projectId: pid,
-      sectionId: sid,
-      modeUsed: lens
-    };
-
-    const lib = migrateLibraryToV2();
-    lib.unshift(item);
-    saveLibrary(lib);
-    setStatus("Saved ✅");
-    // refresh library UI if currently mounted
-    try{ window.__PB_REFRESH_LIBRARY && window.__PB_REFRESH_LIBRARY(); }catch{}
-    setTimeout(()=>closeModal(modal), 250);
-  });
-}
-
-function openManageProjectsModal(onChange){
-  const modal = openModalFromTemplate("tpl-manageProjects");
-  const status = modal.querySelector('[data-role="status"]');
-  const projList = modal.querySelector('[data-role="projects"]');
-  const secList = modal.querySelector('[data-role="sections"]');
-
-  let selectedProjectId = null;
-
-  function setStatus(msg){ if(status) status.textContent = msg||""; }
-
-  function render(){
-    const projects = loadProjects();
-    if(!selectedProjectId) selectedProjectId = projects[0]?.id || null;
-
-    projList.innerHTML = projects.map(p=>{
-      const active = p.id===selectedProjectId ? ' style="background:rgba(255,255,255,.06)"' : '';
-      return `<div class="manageRow"${active} data-pid="${escapeId(p.id)}">
-        <div class="manageRow__name">${escapeHtml(p.name)}</div>
-        <div class="manageRow__btns">
-          <button class="btn btn--mini" data-act="selectProject" data-pid="${escapeId(p.id)}" type="button">Select</button>
-          <button class="btn btn--mini" data-act="renameProject" data-pid="${escapeId(p.id)}" type="button">Rename</button>
-          <button class="btn btn--mini" data-act="deleteProject" data-pid="${escapeId(p.id)}" type="button">Delete</button>
-        </div>
-      </div>`;
-    }).join('') || '<p class="muted">No projects.</p>';
-
-    const cur = projects.find(p=>p.id===selectedProjectId) || projects[0];
-    if(!cur){
-      secList.innerHTML = '<p class="muted">Create a project first.</p>';
-    }else{
-      secList.innerHTML = (cur.sections||[]).map(s=>{
-        return `<div class="manageRow" data-sid="${escapeId(s.id)}">
-          <div class="manageRow__name">${escapeHtml(s.name)}</div>
-          <div class="manageRow__btns">
-            <button class="btn btn--mini" data-act="renameSection" data-sid="${escapeId(s.id)}" type="button">Rename</button>
-            <button class="btn btn--mini" data-act="deleteSection" data-sid="${escapeId(s.id)}" type="button">Delete</button>
-          </div>
-        </div>`;
-      }).join('') || '<p class="muted">No sections yet.</p>';
-    }
-  }
-
-  function refreshAndNotify(){
-    render();
-    try{ onChange && onChange(); }catch{}
-  }
-
-  modal.addEventListener("click", (e)=>{
-    const btn = e.target.closest("button[data-act]");
-    if(!btn) return;
-    const act = btn.getAttribute("data-act");
-    const pid = btn.getAttribute("data-pid");
-    const sid = btn.getAttribute("data-sid");
-
-    if(act==="selectProject"){
-      selectedProjectId = pid;
-      render();
-      return;
-    }
-    if(act==="addProject"){
-      const name = prompt("Project name");
-      if(!name) return;
-      const projects = loadProjects();
-      const id = "p_" + cryptoId().slice(0,8);
-      projects.push({ id, name: String(name).trim(), sections: defaultProjects()[0].sections.map(s=>({id:"s_"+cryptoId().slice(0,8), name:s.name})) });
-      saveProjects(projects);
-      selectedProjectId = id;
-      refreshAndNotify();
-      return;
-    }
-    if(act==="renameProject"){
-      const projects = loadProjects();
-      const p = projects.find(x=>x.id===pid);
-      if(!p) return;
-      const name = prompt("Rename project", p.name);
-      if(!name) return;
-      p.name = String(name).trim();
-      saveProjects(projects);
-      refreshAndNotify();
-      return;
-    }
-    if(act==="deleteProject"){
-      const projects = loadProjects();
-      if(projects.length<=1){ setStatus("Keep at least one project."); return; }
-      const p = projects.find(x=>x.id===pid);
-      if(!p) return;
-      const ok = confirm(`Delete project "${p.name}"? Prompts inside will move to General.`);
-      if(!ok) return;
-      const general = projects[0];
-      const keep = projects.filter(x=>x.id!==pid);
-      saveProjects(keep);
-      // move prompts
-      const lib = migrateLibraryToV2();
-      let moved = 0;
-      for(const it of lib){
-        if(it.projectId===pid){
-          it.projectId = general.id;
-          it.sectionId = ensureSectionExists(general, it.sectionId);
-          moved++;
-        }
-      }
-      if(moved) saveLibrary(lib);
-      selectedProjectId = general.id;
-      refreshAndNotify();
-      return;
-    }
-    if(act==="addSection"){
-      const projects = loadProjects();
-      const cur = projects.find(x=>x.id===selectedProjectId) || projects[0];
-      if(!cur) return;
-      const name = prompt("Section name");
-      if(!name) return;
-      cur.sections = Array.isArray(cur.sections)?cur.sections:[];
-      cur.sections.push({ id: "s_" + cryptoId().slice(0,8), name: String(name).trim() });
-      saveProjects(projects);
-      refreshAndNotify();
-      return;
-    }
-    if(act==="renameSection"){
-      const projects = loadProjects();
-      const cur = projects.find(x=>x.id===selectedProjectId) || projects[0];
-      const sec = cur?.sections?.find(x=>x.id===sid);
-      if(!sec) return;
-      const name = prompt("Rename section", sec.name);
-      if(!name) return;
-      sec.name = String(name).trim();
-      saveProjects(projects);
-      refreshAndNotify();
-      return;
-    }
-    if(act==="deleteSection"){
-      const projects = loadProjects();
-      const cur = projects.find(x=>x.id===selectedProjectId) || projects[0];
-      if(!cur) return;
-      const sec = cur.sections?.find(x=>x.id===sid);
-      if(!sec) return;
-      // safety: move prompts to Final
-      const ok = confirm(`Delete section "${sec.name}"? Prompts inside will move to Final prompts.`);
-      if(!ok) return;
-      const fallbackSid = ensureSectionExists(cur, "s_final");
-      const lib = migrateLibraryToV2();
-      let moved = 0;
-      for(const it of lib){
-        if(it.projectId===cur.id && it.sectionId===sid){
-          it.sectionId = fallbackSid;
-          moved++;
-        }
-      }
-      if(moved) saveLibrary(lib);
-      cur.sections = (cur.sections||[]).filter(x=>x.id!==sid);
-      saveProjects(projects);
-      refreshAndNotify();
-      return;
-    }
-    if(act==="close"){
-      closeModal(modal);
-      return;
-    }
-  });
-
-  modal.querySelectorAll('[data-act="close"]').forEach(b=>b.addEventListener("click", ()=>closeModal(modal)));
-
-  render();
-  return modal;
-}
-
   // Export/Import bundle (Vault + Library). Local-only “seatbelt”.
   function makeExportBundle(){
     return {
@@ -527,23 +141,14 @@ function openManageProjectsModal(onChange){
       exportedAt: new Date().toISOString(),
       vault: loadVault(),
       library: loadLibrary()
-    ,
-      projects: loadProjects()
     };
   }
   function applyImportBundle(bundle){
     if(!bundle || typeof bundle !== 'object') throw new Error('Invalid file.');
     const v = Array.isArray(bundle.vault) ? bundle.vault : [];
     const l = Array.isArray(bundle.library) ? bundle.library : [];
-    const p = Array.isArray(bundle.projects) ? bundle.projects : null;
-    if(p && p.length){
-      saveProjects(p);
-    } else {
-      loadProjects(); // ensure defaults
-    }
     saveVault(v);
     saveLibrary(l);
-    migrateLibraryToV2();
   }
 
   // --- Auth / token
@@ -657,24 +262,6 @@ function openManageProjectsModal(onChange){
     } else {
       app.appendChild(tpl("tpl-buddy"));
       initBuddy();
-
-    // Reasoning lens help
-    const lensHelpBtn = document.getElementById('pcLensHelp');
-    if (lensHelpBtn) {
-      lensHelpBtn.addEventListener('click', () => {
-        alert(
-          'Reasoning lens changes the STYLE of feedback, not the truth.
-
-' +
-          'Auditor: strict, finds holes, best when you want a clean final prompt.
-' +
-          'Thinker: balanced, practical default.
-' +
-          'Creator: playful + expansive, best for options and angles.'
-        );
-      });
-    }
-    initLensHelp();
     }
   }
 
@@ -764,7 +351,6 @@ function openManageProjectsModal(onChange){
     const copy = document.getElementById('pcCopyGolden');
     const ch = document.getElementById('pcChar');
     const chMax = document.getElementById('pcCharMax');
-    const modeChip = document.getElementById('pcModeChip');
 
     if(chMax) chMax.textContent = String(PROMPT_MAX_CHARS);
 
@@ -804,10 +390,6 @@ function openManageProjectsModal(onChange){
         if((norm.diagnosis?.length || norm.missing?.length || norm.improvements?.length || norm.golden) && out){
           // Re-render only (do not auto-open any modal when returning to Buddy).
           out.hidden = false;
-      try{
-        const m = getLens();
-        if(modeChip){ modeChip.hidden = false; modeChip.textContent = String(m||'').toUpperCase(); }
-      }catch{}
           renderLines(diag, norm.diagnosis);
           renderLines(miss, norm.missing);
           renderLines(sugg, norm.improvements);
@@ -839,10 +421,6 @@ function renderLines(el, arr){
     function renderResult(j){
       const norm = normalizePromptCheckPayload(j);
       out.hidden = false;
-      try{
-        const m = getLens();
-        if(modeChip){ modeChip.hidden = false; modeChip.textContent = String(m||'').toUpperCase(); }
-      }catch{}
       renderLines(diag, norm.diagnosis);
       renderLines(miss, norm.missing);
       renderLines(sugg, norm.improvements);
@@ -917,7 +495,6 @@ function renderLines(el, arr){
         try{ localStorage.setItem(LS_LAST.pc, JSON.stringify(norm)); }catch{}
         addVaultItem({
           t: Date.now(),
-          modeUsed: getLens(),
           prompt: text,
           golden: String(norm.golden || "").trim(),
           diagnosis: norm.diagnosis || [],
@@ -1151,7 +728,7 @@ function renderLines(el, arr){
         return `
           <article class="card card--flat vault__item" data-idx="${idx}">
             <div class="card__body">
-              <div class="vault__meta"><span class="muted">${ts}</span> ${item.modeUsed ? `<span class="badge" style="margin-left:8px">${escapeHtml(String(item.modeUsed).toUpperCase())}</span>` : ``}</div>
+              <div class="vault__meta"><span class="muted">${ts}</span></div>
               <div class="vault__grid">
                 <div>
                   <div class="vault__label">Prompt</div>
@@ -1162,7 +739,6 @@ function renderLines(el, arr){
                   <pre class="pre pre--sm" data-role="golden">${golden}</pre>
                   <div class="panel__actions">
                     <button class="btn btn--mini" data-act="copyGolden" type="button">Copy Golden</button>
-                    <button class="btn btn--mini" data-act="saveToLibrary" type="button">Save to Library</button>
                   </div>
                 </div>
               </div>
@@ -1194,10 +770,6 @@ function renderLines(el, arr){
             catch{ setCoachStatus("Copy failed."); }
             setTimeout(()=>setCoachStatus(""), 900);
           }
-          if(act === 'saveToLibrary') {
-  openSaveToLibraryModal(item);
-  return;
-}
           if(act === 'saveReply') {
             const ta = card.querySelector('textarea[data-role="aiReply"]');
             item.aiReply = String(ta?.value||"").trim();
@@ -1408,17 +980,14 @@ function renderLines(el, arr){
   }
 
   // --- Library
-  function initLibrary() {
+  function initLibrary(){
     const list = document.getElementById('libList');
     const addBtn = document.getElementById('libAdd');
     const exportBtn = document.getElementById('libExport');
     const importBtn = document.getElementById('libImport');
     const importFile = document.getElementById('libImportFile');
     const search = document.getElementById('libSearch');
-    projSel = document.getElementById('libProject');
-    sectSel = document.getElementById('libSection');
-    catSel = document.getElementById('libCategory');
-    manageBtn = document.getElementById('libManage');
+    const catSel = document.getElementById('libCat');
     const onlyFav = document.getElementById('libOnlyFav');
 
     // Inline editor (inside Library page)
@@ -1427,11 +996,7 @@ function renderLines(el, arr){
     const editorClose = document.getElementById('libEditorClose');
     const editorStatus = document.getElementById('libEditStatus');
     const fTitle = document.getElementById('libFieldTitle');
-    const fGolden = document.getElementById('libFieldGolden');
-    const fOriginal = document.getElementById('libFieldOriginal');
-    const fProject = document.getElementById('libFieldProject');
-    const fSection = document.getElementById('libFieldSection');
-    const fMode = document.getElementById('libFieldMode');
+    const fText = document.getElementById('libFieldText');
     const fCat = document.getElementById('libFieldCat');
     const fTags = document.getElementById('libFieldTags');
     const fModel = document.getElementById('libFieldModel');
@@ -1475,20 +1040,7 @@ function renderLines(el, arr){
       }
     }
 
-    function ensureProjectsInUI(){
-  const projects = loadProjects();
-  if(!projSel || !sectSel) return;
-  // Build project dropdown
-  buildProjectOptions(projSel, projects, projSel.value || projects[0]?.id);
-  const pid = ensureProjectExists(projects, String(projSel.value||""));
-  projSel.value = pid;
-  const proj = projects.find(p=>p.id===pid) || projects[0];
-  // Build section dropdown
-  buildSectionOptions(sectSel, proj, sectSel.value || ensureSectionExists(proj, "s_final"));
-  sectSel.value = ensureSectionExists(proj, String(sectSel.value||""));
-}
-
-function seedLibraryIfEmpty(){
+    function seedLibraryIfEmpty(){
       // Library should be user-owned only.
       // We still keep a seeded flag so we don't accidentally re-run older placeholder logic.
       try{
@@ -1587,43 +1139,26 @@ function seedLibraryIfEmpty(){
     function setEditStatus(m){ if(editorStatus) editorStatus.textContent = m || ''; }
 
     function openEditor(existing){
-  const projects = loadProjects();
-  const isEdit = !!(existing && existing.id);
-  const norm = existing ? normalizeLibraryItem(existing, projects) : null;
+      const isEdit = !!(existing && existing.id);
+      editingId = existing?.id || null;
+      editingCreatedAt = existing?.t || Date.now();
 
-  editingId = norm?.id || null;
-  editingCreatedAt = norm?.t || Date.now();
+      if(editorTitle) editorTitle.textContent = isEdit ? 'Edit prompt' : 'Add prompt';
+      if(fTitle) fTitle.value = existing?.title || '';
+      if(fText) fText.value = existing?.text || '';
+      if(fCat) fCat.value = existing?.cat || '';
+      if(fTags) fTags.value = existing?.tags || '';
+      if(fModel) fModel.value = existing?.model || '';
+      if(fNotes) fNotes.value = existing?.notes || '';
+      setEditStatus('');
 
-  if(editorTitle) editorTitle.textContent = isEdit ? 'Edit prompt' : 'Add prompt';
-  if(fTitle) fTitle.value = norm?.title || '';
-  if(fGolden) fGolden.value = norm?.goldenPrompt || '';
-  if(fOriginal) fOriginal.value = norm?.originalPrompt || '';
-  if(fCat) fCat.value = norm?.cat || '';
-  if(fTags) fTags.value = norm?.tags || '';
-  if(fModel) fModel.value = norm?.model || '';
-  if(fNotes) fNotes.value = norm?.notes || '';
-
-  // Project / Section
-  buildProjectOptions(fProject, projects, (norm?.projectId || (projSel?.value||'') || projects[0]?.id));
-  const proj = projects.find(p=>p.id===String(fProject?.value||"")) || projects[0];
-  buildSectionOptions(fSection, proj, (norm?.sectionId || (sectSel?.value||'') || proj?.sections?.find(s=>s.id==="s_final")?.id || proj?.sections?.[0]?.id));
-
-  fProject?.addEventListener("change", ()=>{
-    const projectsNow = loadProjects();
-    const p = projectsNow.find(x=>x.id===String(fProject?.value||"")) || projectsNow[0];
-    buildSectionOptions(fSection, p, p?.sections?.find(s=>s.id==="s_final")?.id || p?.sections?.[0]?.id);
-  }, { once: true });
-
-  if(fMode) fMode.value = norm?.modeUsed || '';
-
-  setEditStatus('');
-
-  if(editorWrap){
-    editorWrap.hidden = false;
-    editorWrap.scrollIntoView({ behavior:'smooth', block:'start' });
-  }
-  setTimeout(()=>{ fTitle?.focus(); }, 30);
-}
+      if(editorWrap){
+        editorWrap.hidden = false;
+        // keep it inside the main screen
+        editorWrap.scrollIntoView({ behavior:'smooth', block:'start' });
+      }
+      setTimeout(()=>{ fTitle?.focus(); }, 30);
+    }
 
     function closeEditor(){
       if(editorWrap) editorWrap.hidden = true;
@@ -1633,204 +1168,164 @@ function seedLibraryIfEmpty(){
     }
 
     function renderLibrary(){
-  ensureProjectsInUI();
-  const projects = loadProjects();
+      const q = String(search?.value || '').trim().toLowerCase();
+      const cat = String(catSel?.value || '').trim();
+      const favOnly = !!(onlyFav && onlyFav.checked);
 
-  const q = String(search?.value || '').trim().toLowerCase();
-  const cat = String(catSel?.value || '').trim();
-  const favOnly = !!(onlyFav && onlyFav.checked);
-  const pid = String(projSel?.value || '').trim();
-  const sid = String(sectSel?.value || '').trim();
+      const libAllRaw = loadLibrary().map(it=>{
+        if(!it || typeof it!=='object') return it;
+        return {
+          ...it,
+          cat: it.cat || "",
+          fav: !!it.fav
+        };
+      });
 
-  const libAllRaw = migrateLibraryToV2().map(it=>normalizeLibraryItem(it, projects)).filter(Boolean);
+      // Favorites first, then newest
+      libAllRaw.sort((a,b)=>{
+        const af = a?.fav ? 1 : 0;
+        const bf = b?.fav ? 1 : 0;
+        if(bf !== af) return bf - af;
+        return (b?.t||0) - (a?.t||0);
+      });
 
-  // Favorites first, then newest
-  libAllRaw.sort((a,b)=>{
-    const af = a?.fav ? 1 : 0;
-    const bf = b?.fav ? 1 : 0;
-    if(bf !== af) return bf - af;
-    return (b?.t||0) - (a?.t||0);
-  });
+      const libAll = libAllRaw;
 
-  const lib = libAllRaw.filter(it=>{
-    if(!it) return false;
-    if(pid && it.projectId !== pid) return false;
-    if(sid && it.sectionId !== sid) return false;
-    if(cat && String(it.cat||'') !== cat) return false;
-    if(favOnly && !it.fav) return false;
-    if(!q) return true;
-    const hay = [
-      it.title, it.goldenPrompt, it.originalPrompt,
-      it.tags, it.model, it.notes, it.cat
-    ].filter(Boolean).join(' ').toLowerCase();
-    return hay.includes(q);
-  });
+      const lib = libAll.filter(it=>{
+        if(!it) return false;
+        if(cat && String(it.cat||'') !== cat) return false;
+        if(favOnly && !it.fav) return false;
+        if(!q) return true;
+        const hay = [it?.title, it?.text, it?.tags, it?.model, it?.notes, it?.cat].filter(Boolean).join(' ').toLowerCase();
+        return hay.includes(q);
+      });
+      if(!list) return;
+      if(!lib.length){
+        list.innerHTML = (q || catSel?.value || (onlyFav && onlyFav.checked))
+          ? '<p class="muted">No matches. Try a different search.</p>'
+          : '<p class="muted">No saved prompts yet. Click “Add prompt”.</p>';
+        return;
+      }
 
-  if(!list) return;
-  if(!lib.length){
-    list.innerHTML = (q || cat || favOnly || pid || sid)
-      ? '<p class="muted">No matches. Try a different filter.</p>'
-      : '<p class="muted">No saved prompts yet. Click “Add prompt”.</p>';
-    return;
-  }
+      list.innerHTML = lib.map((item, idx)=>{
+        const dt = new Date(item.t || Date.now());
+        const ts = dt.toLocaleString();
+        const title = escapeHtml(String(item.title || 'Untitled'));
+        const tags = escapeHtml(String(item.tags || ''));
+        const model = escapeHtml(String(item.model || ''));
+        const cat = escapeHtml(String(item.cat || ''));
+        const notes = escapeHtml(String(item.notes || ''));
+        const text = escapeHtml(String(item.text || ''));
+        return `
+          <article class="card card--flat lib__item" data-id="${escapeHtml(String(item.id||""))}" data-cat="${cat}">
+            <div class="card__body">
+              <div class="lib__head">
+                <div>
+                  <div class="lib__title">${title}</div>
+                  <div class="lib__meta">
+                    <span class="chip chip--time">🕒 ${ts}</span>
+                    ${cat ? `<span class="chip chip--cat"><span class="chip__dot"></span>${cat}</span>` : ''}
+                    ${model ? `<span class="chip chip--model">🤖 ${model}</span>` : ''}
+                    ${tags ? `<span class="chip chip--tags">🏷️ ${tags}</span>` : ''}
+                  </div>
+                </div>
+                <div class="lib__actions">
+                  <button class="btn btn--mini btn--star" data-act="fav" type="button">${item.fav ? "★" : "☆"}</button>
+                  <button class="btn btn--mini" data-act="copy" type="button">Copy</button>
+                  <button class="btn btn--mini" data-act="send" type="button">Send to Buddy</button>
+                  <button class="btn btn--mini" data-act="edit" type="button">Edit</button>
+                  <button class="btn btn--mini" data-act="del" type="button">Delete</button>
+                </div>
+              </div>
 
-  function projectName(id){
-    return projects.find(p=>p.id===id)?.name || "General";
-  }
-  function sectionName(pid, sid){
-    const p = projects.find(p=>p.id===pid) || projects[0];
-    return p?.sections?.find(s=>s.id===sid)?.name || "Final prompts";
-  }
-
-  list.innerHTML = lib.map((item)=>{
-    const dt = new Date(item.t || Date.now());
-    const ts = dt.toLocaleString();
-    const title = escapeHtml(String(item.title || 'Untitled'));
-    const tags = escapeHtml(String(item.tags || ''));
-    const model = escapeHtml(String(item.model || ''));
-    const cat = escapeHtml(String(item.cat || ''));
-    const notes = escapeHtml(String(item.notes || ''));
-    const golden = escapeHtml(String(item.goldenPrompt || ''));
-    const proj = escapeHtml(projectName(item.projectId));
-    const sec = escapeHtml(sectionName(item.projectId, item.sectionId));
-    const mode = escapeHtml(String(item.modeUsed || '').toUpperCase());
-
-    const preview = golden ? golden.slice(0, 240) + (golden.length > 240 ? '…' : '') : '';
-
-    return `
-      <article class="card card--flat lib__item" data-id="${escapeHtml(String(item.id||""))}" data-cat="${cat}">
-        <div class="card__body">
-          <div class="lib__top">
-            <div class="lib__titleRow">
-              <div class="lib__title">${title}</div>
-              <div class="lib__meta muted">${escapeHtml(ts)}</div>
+              ${notes ? `<div class="lib__notes">${notes}</div>` : ''}
+              <pre class="pre pre--sm lib__pre">${text}</pre>
             </div>
+          </article>
+        `;
+      }).join('');
 
-            <div class="lib__chips">
-              ${proj ? `<span class="chip">📁 ${proj}</span>` : ``}
-              ${sec ? `<span class="chip">🗂️ ${sec}</span>` : ``}
-              ${mode ? `<span class="chip">🎛️ ${mode}</span>` : ``}
-              ${cat ? `<span class="chip chip--cat">📂 ${cat}</span>` : ``}
-              ${model ? `<span class="chip">🤖 ${model}</span>` : ``}
-              ${tags ? `<span class="chip chip--tags">🏷️ ${tags}</span>` : ``}
-            </div>
+      list.querySelectorAll('button[data-act]').forEach(btn=>{
+        btn.addEventListener('click', async ()=>{
+          const card = btn.closest('[data-id]');
+          const id = String(card?.getAttribute('data-id')||'');
+          const libAll = loadLibrary();
+          const item = libAll.find(x=>x && String(x.id)===id);
+          if(!item) return;
 
-            <div class="lib__actions">
-              <button class="btn btn--mini btn--star" data-act="fav" type="button">${item.fav ? "★" : "☆"}</button>
-              <button class="btn btn--mini" data-act="copy" type="button">Copy Golden</button>
-              <button class="btn btn--mini" data-act="send" type="button">Send to Buddy</button>
-              <button class="btn btn--mini" data-act="edit" type="button">Edit</button>
-              <button class="btn btn--mini" data-act="del" type="button">Delete</button>
-            </div>
-          </div>
+          const act = btn.getAttribute('data-act');
 
-          ${preview ? `<pre class="pre pre--sm" style="margin-top:10px">${preview}</pre>` : ``}
+          if(act === 'fav'){
+            const next = libAll.map(x=>{
+              if(!x || String(x.id)!==id) return x;
+              return { ...x, fav: !x.fav };
+            });
+            saveLibrary(next);
+            renderLibrary();
+            setStatus('Saved ✅');
+            setTimeout(()=>setStatus(''), 700);
+            return;
+          }
 
-          ${notes ? `<div class="muted" style="margin-top:10px">${notes}</div>` : ``}
-        </div>
-      </article>
-    `;
-  }).join('');
-
-  list.querySelectorAll('button[data-act]').forEach(btn=>{
-    btn.addEventListener('click', async ()=>{
-      const card = btn.closest('[data-id]');
-      const id = String(card?.getAttribute('data-id')||"");
-      const libAll = migrateLibraryToV2().map(it=>normalizeLibraryItem(it, projects)).filter(Boolean);
-      const item = libAll.find(x=>x && String(x.id)===id);
-      if(!item) return;
-
-      const act = btn.getAttribute('data-act');
-
-      if(act === 'fav'){
-        const next = libAll.map(x=>{
-          if(!x || String(x.id)!==id) return x;
-          return { ...x, fav: !x.fav };
+          if(act === 'copy'){
+            try{ await navigator.clipboard.writeText(String(item.text||"")); setStatus('Copied ✅'); }
+            catch{ setStatus('Copy failed.'); }
+            setTimeout(()=>setStatus(''), 900);
+          }
+          if(act === 'send'){
+            setDraftPrompt(String(item.text||""));
+            location.hash = 'buddy';
+          }
+          if(act === 'edit'){
+            openEditor(item);
+          }
+          if(act === 'del'){
+            if(!confirm('Delete this prompt from Library?')) return;
+            const next = libAll.filter(x=>x && String(x.id)!==id);
+            saveLibrary(next);
+            renderLibrary();
+            setStatus('Deleted ✅');
+            setTimeout(()=>setStatus(''), 900);
+          }
         });
-        saveLibrary(next);
-        renderLibrary();
-        setStatus('Saved ✅');
-        setTimeout(()=>setStatus(''), 700);
-        return;
-      }
+      });
+    }
 
-      if(act === 'copy'){
-        try{ await navigator.clipboard.writeText(String(item.goldenPrompt||"")); setStatus('Copied ✅'); }
-        catch{ setStatus('Copy failed.'); }
-        setTimeout(()=>setStatus(''), 700);
-        return;
-      }
-
-      if(act === 'send'){
-        setDraftPrompt(String(item.goldenPrompt||""));
-        location.hash = 'buddy';
-        return;
-      }
-
-      if(act === 'edit'){
-        openEditor(item);
-        return;
-      }
-
-      if(act === 'del'){
-        if(!confirm('Delete this prompt from Library?')) return;
-        const next = libAll.filter(x=>x && String(x.id)!==id);
-        saveLibrary(next);
-        renderLibrary();
-        setStatus('Deleted.');
-        setTimeout(()=>setStatus(''), 700);
-        return;
-      }
-    });
-  });
-}
-
-addBtn?.addEventListener('click', ()=>openEditor(null));
+    // Editor buttons
+    addBtn?.addEventListener('click', ()=>openEditor(null));
     editorClose?.addEventListener('click', closeEditor);
     btnCancel?.addEventListener('click', closeEditor);
 
     btnSave?.addEventListener('click', ()=>{
-  const projects = loadProjects();
-  const pid = ensureProjectExists(projects, String(fProject?.value||projects[0]?.id||""));
-  const proj = projects.find(p=>p.id===pid) || projects[0];
-  const sid = ensureSectionExists(proj, String(fSection?.value||""));
+      const item = {
+        id: editingId || `lib_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+        t: editingCreatedAt || Date.now(),
+        title: String(fTitle?.value || '').trim(),
+        text: String(fText?.value || '').trim(),
+        cat: String(fCat?.value || '').trim(),
+        tags: String(fTags?.value || '').trim(),
+        model: String(fModel?.value || '').trim(),
+        notes: String(fNotes?.value || '').trim(),
+        fav: false
+      };
+      if(!item.text){ setEditStatus('Prompt text is required.'); return; }
+      if(!item.title){ item.title = item.text.split(/\n|\r/)[0].slice(0,48) || 'Untitled'; }
 
-  const item = {
-    id: editingId || `lib_${Date.now()}_${Math.random().toString(16).slice(2)}`,
-    t: editingCreatedAt || Date.now(),
-    title: String(fTitle?.value || '').trim(),
-    goldenPrompt: String(fGolden?.value || '').trim(),
-    originalPrompt: String(fOriginal?.value || '').trim(),
-    cat: String(fCat?.value || '').trim(),
-    tags: String(fTags?.value || '').trim(),
-    model: String(fModel?.value || '').trim(),
-    notes: String(fNotes?.value || '').trim(),
-    fav: false,
-    projectId: pid,
-    sectionId: sid,
-    modeUsed: (String(fMode?.value||'').trim() || '')
-  };
-
-  if(!item.goldenPrompt){ setEditStatus('Golden Prompt is required.'); return; }
-  if(!item.title){
-    item.title = item.goldenPrompt.split(/\n|\r/)[0].slice(0,80) || 'Untitled';
-  }
-
-  const libAll = migrateLibraryToV2();
-  const idx = libAll.findIndex(x=>x && x.id === item.id);
-  if(idx >= 0){
-    const prev = libAll[idx] || {};
-    item.fav = !!prev.fav;
-    libAll[idx] = item;
-  } else {
-    libAll.unshift(item);
-  }
-  saveLibrary(libAll);
-  renderLibrary();
-  setStatus(editingId ? 'Saved ✅' : 'Added ✅');
-  setTimeout(()=>setStatus(''), 900);
-  closeEditor();
-});
+      const libAll = loadLibrary();
+      const idx = libAll.findIndex(x=>x && x.id === item.id);
+      if(idx >= 0){
+        const prev = libAll[idx] || {};
+        item.fav = !!prev.fav;
+        libAll[idx] = item;
+      } else {
+        libAll.unshift(item);
+      }
+      saveLibrary(libAll);
+      renderLibrary();
+      setStatus(editingId ? 'Saved ✅' : 'Added ✅');
+      setTimeout(()=>setStatus(''), 900);
+      closeEditor();
+    });
 
     search?.addEventListener('input', ()=>renderLibrary());
     catSel?.addEventListener('change', ()=>renderLibrary());
@@ -1871,32 +1366,7 @@ addBtn?.addEventListener('click', ()=>openEditor(null));
       try{ importFile.value = ''; }catch{}
     });
 
-    window.__PB_REFRESH_LIBRARY = renderLibrary;
-
     ensureCategoriesInUI();
-// Projects + Sections
-ensureProjectsInUI();
-projSel?.addEventListener('change', ()=>{
-  ensureProjectsInUI();
-  renderLibrary();
-});
-sectSel?.addEventListener('change', ()=>renderLibrary());
-manageBtn?.addEventListener('click', ()=>{
-  openManageProjectsModal(()=>{
-    ensureProjectsInUI();
-    renderLibrary();
-    // also refresh editor dropdowns if open
-    if(!editorWrap?.hidden){
-      const projects = loadProjects();
-      buildProjectOptions(fProject, projects, String(fProject?.value||projects[0]?.id||""));
-      const p = projects.find(x=>x.id===String(fProject?.value||"")) || projects[0];
-      buildSectionOptions(fSection, p, String(fSection?.value||ensureSectionExists(p,"s_final")));
-    }
-  });
-});
-
-migrateLibraryToV2();
-
     seedLibraryIfEmpty();
     renderLibrary();
   }
@@ -2019,17 +1489,6 @@ migrateLibraryToV2();
       });
     });
   }
-
-
-function cryptoId(){
-  try{
-    const a = new Uint8Array(8);
-    crypto.getRandomValues(a);
-    return Array.from(a).map(b=>b.toString(16).padStart(2,'0')).join('');
-  }catch{
-    return (Date.now().toString(16) + Math.random().toString(16).slice(2));
-  }
-}
 
   function escapeHtml(s){
     return String(s)
