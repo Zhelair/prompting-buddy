@@ -24,11 +24,26 @@
     tokenExp: "pb_token_exp",
     vault: "pb_vault_v1",
     library: "pb_library_v1",
+    projects: "pb_projects_v1",
     ideas: "pb_ideas_v1",
     draftPrompt: "pb_draft_prompt_v1",
     theme: "pb_theme",
-    variant: (t)=>`pb_theme_variant_${t}`
+    variant: (t)=>`pb_theme_variant_${t}`,
+    libSelProject: "pb_lib_sel_project_v1",
+    libSelSection: "pb_lib_sel_section_v1"
   };
+
+  // Tiny localStorage helpers (defensive, because we never want a bad JSON to brick the app).
+  function getLS(key, fallback){
+    try{
+      const raw = localStorage.getItem(key);
+      if(!raw) return fallback;
+      return JSON.parse(raw);
+    } catch { return fallback; }
+  }
+  function setLS(key, value){
+    try{ localStorage.setItem(key, JSON.stringify(value)); } catch {}
+  }
 
   // last-run caches (for persistence when navigating Buddy/Vault/About)
   const LS_LAST = {
@@ -134,21 +149,65 @@
     try { localStorage.setItem(LS.library, JSON.stringify(Array.isArray(arr)?arr:[])); } catch {}
   }
 
+  // --- Projects (OneNote-ish structure for Library)
+  // Shape: [{ id, name, sections:[{id,name}] }]
+  function defaultProjects(){
+    const pid = `p_${Date.now()}`;
+    return [
+      {
+        id: pid,
+        name: "General",
+        sections: [
+          { id: `${pid}_s_research`, name: "Research" },
+          { id: `${pid}_s_drafts`, name: "Prompt drafts" },
+          { id: `${pid}_s_final`, name: "Final prompts" },
+          { id: `${pid}_s_marketing`, name: "Marketing" },
+          { id: `${pid}_s_auto`, name: "Automation" }
+        ]
+      }
+    ];
+  }
+  function loadProjects(){
+    const p = getLS(LS.projects, null);
+    if(Array.isArray(p) && p.length) return p;
+    const d = defaultProjects();
+    setLS(LS.projects, d);
+    return d;
+  }
+  function saveProjects(arr){
+    setLS(LS.projects, Array.isArray(arr)?arr:[]);
+  }
+  function getSelectedProjectId(){
+    try{ return String(localStorage.getItem(LS.libSelProject) || ""); }catch{ return ""; }
+  }
+  function setSelectedProjectId(id){
+    try{ localStorage.setItem(LS.libSelProject, String(id||"")); }catch{}
+  }
+  function getSelectedSectionId(){
+    try{ return String(localStorage.getItem(LS.libSelSection) || ""); }catch{ return ""; }
+  }
+  function setSelectedSectionId(id){
+    try{ localStorage.setItem(LS.libSelSection, String(id||"")); }catch{}
+  }
+
   // Export/Import bundle (Vault + Library). Local-only “seatbelt”.
   function makeExportBundle(){
     return {
       schema: "pb_export_v1",
       exportedAt: new Date().toISOString(),
       vault: loadVault(),
-      library: loadLibrary()
+      library: loadLibrary(),
+      projects: loadProjects()
     };
   }
   function applyImportBundle(bundle){
     if(!bundle || typeof bundle !== 'object') throw new Error('Invalid file.');
     const v = Array.isArray(bundle.vault) ? bundle.vault : [];
     const l = Array.isArray(bundle.library) ? bundle.library : [];
+    const p = Array.isArray(bundle.projects) ? bundle.projects : null;
     saveVault(v);
     saveLibrary(l);
+    if(p && p.length) saveProjects(p);
   }
 
   // --- Auth / token
@@ -351,6 +410,7 @@
     const copy = document.getElementById('pcCopyGolden');
     const ch = document.getElementById('pcChar');
     const chMax = document.getElementById('pcCharMax');
+    const lensHelp = document.getElementById('pcLensHelp');
 
     if(chMax) chMax.textContent = String(PROMPT_MAX_CHARS);
 
@@ -366,6 +426,16 @@
     }catch{}
     lensSel?.addEventListener('change', ()=>{
       try{ localStorage.setItem(LS_LENS, getLens()); }catch{}
+    });
+
+    lensHelp?.addEventListener('click', ()=>{
+      // Tiny “what's this” helper (keep details in About).
+      const msg =
+        "Auditor - strict, finds holes and wasted tokens.\n"+
+        "Thinker - balanced, makes it clear and usable.\n"+
+        "Creator - bold, adds options and angles.\n\n"+
+        "More details in About.";
+      alert(msg);
     });
 
 
@@ -496,6 +566,7 @@ function renderLines(el, arr){
         addVaultItem({
           t: Date.now(),
           prompt: text,
+          modeUsed: getLens(),
           golden: String(norm.golden || "").trim(),
           diagnosis: norm.diagnosis || [],
           missing: norm.missing || [],
@@ -725,10 +796,15 @@ function renderLines(el, arr){
         const prompt = escapeHtml(String(item.prompt||""));
         const golden = escapeHtml(String(item.golden||""));
         const ai = escapeHtml(String(item.aiReply||""));
+        const mode = String(item.modeUsed||'').trim().toLowerCase();
+        const modeNice = mode ? (mode==='auditor'?'Auditor':mode==='creator'?'Creator':'Thinker') : '';
         return `
           <article class="card card--flat vault__item" data-idx="${idx}">
             <div class="card__body">
-              <div class="vault__meta"><span class="muted">${ts}</span></div>
+              <div class="vault__meta">
+                <span class="muted">${ts}</span>
+                ${modeNice ? `<span class="chip chip--mode">${escapeHtml(modeNice)}</span>` : ''}
+              </div>
               <div class="vault__grid">
                 <div>
                   <div class="vault__label">Prompt</div>
@@ -739,6 +815,7 @@ function renderLines(el, arr){
                   <pre class="pre pre--sm" data-role="golden">${golden}</pre>
                   <div class="panel__actions">
                     <button class="btn btn--mini" data-act="copyGolden" type="button">Copy Golden</button>
+                    <button class="btn btn--mini" data-act="saveToLibrary" type="button">Save to Library</button>
                   </div>
                 </div>
               </div>
@@ -777,6 +854,28 @@ function renderLines(el, arr){
             saveVault(v);
             setCoachStatus("Saved ✅");
             setTimeout(()=>setCoachStatus(""), 900);
+          }
+
+          if(act === 'saveToLibrary') {
+            const txt = String(item.golden||"").trim();
+            if(!txt){ setCoachStatus('No Golden Prompt to save.'); setTimeout(()=>setCoachStatus(''), 900); return; }
+            const lib = loadLibrary();
+            const titleBase = (String(item.prompt||'').trim().split('\n')[0] || 'From Vault').slice(0, 60);
+            lib.unshift({
+              id: `lib_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+              t: Date.now(),
+              title: titleBase,
+              text: txt,
+              tags: "#from-vault",
+              model: "",
+              notes: "",
+              cat: "General",
+              fav: false,
+              modeUsed: String(item.modeUsed||"")
+            });
+            saveLibrary(lib);
+            setCoachStatus('Saved to Library ✅');
+            setTimeout(()=>setCoachStatus(''), 900);
           }
         });
       });
@@ -987,6 +1086,9 @@ function renderLines(el, arr){
     const importBtn = document.getElementById('libImport');
     const importFile = document.getElementById('libImportFile');
     const search = document.getElementById('libSearch');
+    const projectSel = document.getElementById('libProject');
+    const sectionSel = document.getElementById('libSection');
+    const manageProjectsBtn = document.getElementById('libManageProjects');
     const catSel = document.getElementById('libCat');
     const onlyFav = document.getElementById('libOnlyFav');
 
@@ -998,6 +1100,9 @@ function renderLines(el, arr){
     const fTitle = document.getElementById('libFieldTitle');
     const fText = document.getElementById('libFieldText');
     const fCat = document.getElementById('libFieldCat');
+    const fProject = document.getElementById('libFieldProject');
+    const fSection = document.getElementById('libFieldSection');
+    const fMode = document.getElementById('libFieldMode');
     const fTags = document.getElementById('libFieldTags');
     const fModel = document.getElementById('libFieldModel');
     const fNotes = document.getElementById('libFieldNotes');
@@ -1037,6 +1142,159 @@ function renderLines(el, arr){
           o.textContent = c;
           fCat.appendChild(o);
         });
+      }
+    }
+
+    function ensureProjectsInUI(){
+      const projects = loadProjects();
+      // Filters
+      if(projectSel){
+        // keep first option (All)
+        while(projectSel.options.length > 1) projectSel.remove(1);
+        projects.forEach(p=>{
+          const o = document.createElement('option');
+          o.value = p.id;
+          o.textContent = p.name;
+          projectSel.appendChild(o);
+        });
+      }
+      if(sectionSel){
+        while(sectionSel.options.length > 1) sectionSel.remove(1);
+        const pid = String(projectSel?.value||getLS(LS.libSelProject, "")||"");
+        const proj = projects.find(p=>p.id===pid) || null;
+        (proj?.sections||[]).forEach(s=>{
+          const o = document.createElement('option');
+          o.value = s.id;
+          o.textContent = s.name;
+          sectionSel.appendChild(o);
+        });
+      }
+      // Editor
+      if(fProject){
+        while(fProject.options.length) fProject.remove(0);
+        const oAll = document.createElement('option');
+        oAll.value = "";
+        oAll.textContent = "General";
+        fProject.appendChild(oAll);
+        projects.forEach(p=>{
+          const o = document.createElement('option');
+          o.value = p.id;
+          o.textContent = p.name;
+          fProject.appendChild(o);
+        });
+      }
+      if(fSection){
+        while(fSection.options.length) fSection.remove(0);
+        const o0 = document.createElement('option');
+        o0.value = "";
+        o0.textContent = "";
+        fSection.appendChild(o0);
+        const pid = String(fProject?.value||"");
+        const proj = projects.find(p=>p.id===pid) || null;
+        (proj?.sections||[]).forEach(s=>{
+          const o = document.createElement('option');
+          o.value = s.id;
+          o.textContent = s.name;
+          fSection.appendChild(o);
+        });
+      }
+    }
+
+    function manageProjectsDialog(){
+      // Lightweight (no new UI) - uses prompt/confirm so we can ship fast.
+      let projects = loadProjects();
+      const menu =
+        "Projects (Library)\n"+
+        "1 - Add project\n"+
+        "2 - Rename project\n"+
+        "3 - Delete project\n"+
+        "4 - Edit sections of a project\n"+
+        "Cancel - close";
+      const choice = prompt(menu, "4");
+      if(!choice) return;
+
+      const pickProject = ()=>{
+        const listTxt = projects.map((p,i)=>`${i+1}. ${p.name}`).join("\n") || "(none)";
+        const num = prompt("Pick a project:\n"+listTxt, "1");
+        const idx = Math.max(0, (parseInt(num,10)||1)-1);
+        return projects[idx] || null;
+      };
+
+      if(choice === "1"){
+        const name = String(prompt("New project name:", "New project")||"").trim();
+        if(!name) return;
+        projects.unshift({ id:`p_${Date.now()}_${Math.random().toString(16).slice(2)}`, name, sections:[] });
+        saveProjects(projects);
+        return;
+      }
+
+      if(choice === "2"){
+        const p = pickProject();
+        if(!p) return;
+        const name = String(prompt("Rename project:", p.name)||"").trim();
+        if(!name) return;
+        projects = projects.map(x=>x.id===p.id ? { ...x, name } : x);
+        saveProjects(projects);
+        return;
+      }
+
+      if(choice === "3"){
+        const p = pickProject();
+        if(!p) return;
+        if(!confirm(`Delete project “${p.name}”? Prompts won't be deleted, they will just lose their project/section.`)) return;
+        // Remove project
+        projects = projects.filter(x=>x.id!==p.id);
+        saveProjects(projects.length ? projects : defaultProjects());
+        // Unlink prompts
+        const lib = loadLibrary().map(it=> (it && it.projectId===p.id) ? { ...it, projectId:"", sectionId:"" } : it);
+        saveLibrary(lib);
+        return;
+      }
+
+      if(choice === "4"){
+        const p = pickProject();
+        if(!p) return;
+        let sections = Array.isArray(p.sections) ? [...p.sections] : [];
+        const sMenu =
+          `Sections for “${p.name}”\n`+
+          "1 - Add section\n"+
+          "2 - Rename section\n"+
+          "3 - Delete section\n"+
+          "Cancel - close";
+        const sChoice = prompt(sMenu, "1");
+        if(!sChoice) return;
+
+        const pickSection = ()=>{
+          const listTxt = sections.map((s,i)=>`${i+1}. ${s.name}`).join("\n") || "(none)";
+          const num = prompt("Pick a section:\n"+listTxt, "1");
+          const idx = Math.max(0, (parseInt(num,10)||1)-1);
+          return sections[idx] || null;
+        };
+
+        if(sChoice === "1"){
+          const name = String(prompt("New section name:", "New section")||"").trim();
+          if(!name) return;
+          sections.push({ id:`s_${Date.now()}_${Math.random().toString(16).slice(2)}`, name });
+        }
+        if(sChoice === "2"){
+          const s = pickSection();
+          if(!s) return;
+          const name = String(prompt("Rename section:", s.name)||"").trim();
+          if(!name) return;
+          sections = sections.map(x=>x.id===s.id ? { ...x, name } : x);
+        }
+        if(sChoice === "3"){
+          const s = pickSection();
+          if(!s) return;
+          if(!confirm(`Delete section “${s.name}”? Prompts won't be deleted, they will just lose their section.`)) return;
+          sections = sections.filter(x=>x.id!==s.id);
+          const lib = loadLibrary().map(it=> (it && it.projectId===p.id && it.sectionId===s.id) ? { ...it, sectionId:"" } : it);
+          saveLibrary(lib);
+        }
+
+        projects = projects.map(x=>x.id===p.id ? { ...x, sections } : x);
+        saveProjects(projects);
+        return;
       }
     }
 
@@ -1147,6 +1405,10 @@ function renderLines(el, arr){
       if(fTitle) fTitle.value = existing?.title || '';
       if(fText) fText.value = existing?.text || '';
       if(fCat) fCat.value = existing?.cat || '';
+      if(fProject) fProject.value = existing?.projectId || '';
+      ensureProjectsInUI();
+      if(fSection) fSection.value = existing?.sectionId || '';
+      if(fMode) fMode.value = existing?.modeUsed || '';
       if(fTags) fTags.value = existing?.tags || '';
       if(fModel) fModel.value = existing?.model || '';
       if(fNotes) fNotes.value = existing?.notes || '';
@@ -1170,7 +1432,13 @@ function renderLines(el, arr){
     function renderLibrary(){
       const q = String(search?.value || '').trim().toLowerCase();
       const cat = String(catSel?.value || '').trim();
+      const selP = String(projectSel?.value || '').trim();
+      const selS = String(sectionSel?.value || '').trim();
       const favOnly = !!(onlyFav && onlyFav.checked);
+
+      const projects = loadProjects();
+      const projectName = (pid)=> (projects.find(p=>p.id===pid)?.name || "");
+      const sectionName = (pid,sid)=> (projects.find(p=>p.id===pid)?.sections||[]).find(s=>s.id===sid)?.name || "";
 
       const libAllRaw = loadLibrary().map(it=>{
         if(!it || typeof it!=='object') return it;
@@ -1194,9 +1462,11 @@ function renderLines(el, arr){
       const lib = libAll.filter(it=>{
         if(!it) return false;
         if(cat && String(it.cat||'') !== cat) return false;
+        if(selP && String(it.projectId||"") !== selP) return false;
+        if(selS && String(it.sectionId||"") !== selS) return false;
         if(favOnly && !it.fav) return false;
         if(!q) return true;
-        const hay = [it?.title, it?.text, it?.tags, it?.model, it?.notes, it?.cat].filter(Boolean).join(' ').toLowerCase();
+        const hay = [it?.title, it?.text, it?.tags, it?.model, it?.notes, it?.cat, projectName(it.projectId), sectionName(it.projectId,it.sectionId), it?.modeUsed].filter(Boolean).join(' ').toLowerCase();
         return hay.includes(q);
       });
       if(!list) return;
@@ -1214,6 +1484,10 @@ function renderLines(el, arr){
         const tags = escapeHtml(String(item.tags || ''));
         const model = escapeHtml(String(item.model || ''));
         const cat = escapeHtml(String(item.cat || ''));
+        const pName = escapeHtml(projectName(String(item.projectId||"")));
+        const sName = escapeHtml(sectionName(String(item.projectId||""), String(item.sectionId||"")));
+        const mode = String(item.modeUsed||"").toLowerCase();
+        const modeNice = mode ? (mode==='auditor'?'Auditor':mode==='creator'?'Creator':'Thinker') : '';
         const notes = escapeHtml(String(item.notes || ''));
         const text = escapeHtml(String(item.text || ''));
         return `
@@ -1224,7 +1498,10 @@ function renderLines(el, arr){
                   <div class="lib__title">${title}</div>
                   <div class="lib__meta">
                     <span class="chip chip--time">🕒 ${ts}</span>
+                    ${modeNice ? `<span class="chip chip--mode">🎛️ ${modeNice}</span>` : ''}
                     ${cat ? `<span class="chip chip--cat"><span class="chip__dot"></span>${cat}</span>` : ''}
+                    ${pName ? `<span class="chip chip--proj">📁 ${pName}</span>` : ''}
+                    ${sName ? `<span class="chip chip--sec">🗂️ ${sName}</span>` : ''}
                     ${model ? `<span class="chip chip--model">🤖 ${model}</span>` : ''}
                     ${tags ? `<span class="chip chip--tags">🏷️ ${tags}</span>` : ''}
                   </div>
@@ -1303,6 +1580,9 @@ function renderLines(el, arr){
         title: String(fTitle?.value || '').trim(),
         text: String(fText?.value || '').trim(),
         cat: String(fCat?.value || '').trim(),
+        projectId: String(fProject?.value || '').trim(),
+        sectionId: String(fSection?.value || '').trim(),
+        modeUsed: String(fMode?.value || '').trim(),
         tags: String(fTags?.value || '').trim(),
         model: String(fModel?.value || '').trim(),
         notes: String(fNotes?.value || '').trim(),
@@ -1330,6 +1610,28 @@ function renderLines(el, arr){
     search?.addEventListener('input', ()=>renderLibrary());
     catSel?.addEventListener('change', ()=>renderLibrary());
     onlyFav?.addEventListener('change', ()=>renderLibrary());
+    projectSel?.addEventListener('change', ()=>{
+      setLS(LS.libSelProject, String(projectSel.value||""));
+      // reset section when project changes
+      if(sectionSel) sectionSel.value = "";
+      setLS(LS.libSelSection, "");
+      ensureProjectsInUI();
+      renderLibrary();
+    });
+    sectionSel?.addEventListener('change', ()=>{
+      setLS(LS.libSelSection, String(sectionSel.value||""));
+      renderLibrary();
+    });
+    manageProjectsBtn?.addEventListener('click', ()=>{
+      manageProjectsDialog();
+      ensureProjectsInUI();
+      renderLibrary();
+    });
+
+    fProject?.addEventListener('change', ()=>{
+      // refresh editor sections list
+      ensureProjectsInUI();
+    });
 
     exportBtn?.addEventListener('click', ()=>{
       try{
@@ -1367,6 +1669,7 @@ function renderLines(el, arr){
     });
 
     ensureCategoriesInUI();
+    ensureProjectsInUI();
     seedLibraryIfEmpty();
     renderLibrary();
   }

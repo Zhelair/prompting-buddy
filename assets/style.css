@@ -883,6 +883,10 @@ body[data-theme="terminal"] .nav__title{ opacity:.75; }
 .pc__lensLabel{margin:0;}
 .pc__lensSelect{max-width:260px;}
 
+.chip{display:inline-flex;align-items:center;padding:2px 8px;border:1px solid rgba(0,0,0,0.12);border-radius:999px;font-size:12px;line-height:18px;background:rgba(255,255,255,0.75);}
+.chip--mode{margin-left:10px;}
+.vault__meta{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+
 
 /* =============================
    UI readability fixes (2026-02)
