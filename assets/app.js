@@ -2196,12 +2196,16 @@ function renderLines(el, arr){
     return { mistakes: [], fixes: [], metaPrompt: String(maybe||"") };
   }
 
-  // nav 
+  // nav
   // init modals
-  initSaveLibModal();
-  initManageProjModal();
-wiring
-  document.querySelectorAll('[data-route]').forEach(btn=>{
+  function _pbInitModals(){
+    try{ initSaveLibModal(); }catch(e){ console.warn("initSaveLibModal failed", e); }
+    try{ initManageProjModal(); }catch(e){ console.warn("initManageProjModal failed", e); }
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", _pbInitModals);
+  else _pbInitModals();
+
+document.querySelectorAll('[data-route]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       const r = btn.getAttribute('data-route') || 'buddy';
       location.hash = r;
@@ -2230,6 +2234,9 @@ wiring
         renderLibrary();
       }catch{}
     });
+
+    window.initSaveLibModal = initSaveLibModal;
+    window.initManageProjModal = initManageProjModal;
 
     window.addEventListener('pb_library_changed', ()=>{
       try{ renderLibrary(); }catch{}
