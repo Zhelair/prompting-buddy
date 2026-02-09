@@ -37,6 +37,13 @@
     coachHidden: "pb_last_coach_hidden_v1"
   };
 
+
+  // Library filter elements (set in initLibrary)
+  let projSel = null;
+  let sectSel = null;
+  let catSel = null;
+  let manageBtn = null;
+
   function isCoachHidden(){
     try{ return localStorage.getItem(LS_LAST.coachHidden) === '1'; }catch{ return false; }
   }
@@ -650,6 +657,24 @@ function openManageProjectsModal(onChange){
     } else {
       app.appendChild(tpl("tpl-buddy"));
       initBuddy();
+
+    // Reasoning lens help
+    const lensHelpBtn = document.getElementById('pcLensHelp');
+    if (lensHelpBtn) {
+      lensHelpBtn.addEventListener('click', () => {
+        alert(
+          'Reasoning lens changes the STYLE of feedback, not the truth.
+
+' +
+          'Auditor: strict, finds holes, best when you want a clean final prompt.
+' +
+          'Thinker: balanced, practical default.
+' +
+          'Creator: playful + expansive, best for options and angles.'
+        );
+      });
+    }
+    initLensHelp();
     }
   }
 
@@ -1383,14 +1408,17 @@ function renderLines(el, arr){
   }
 
   // --- Library
-  function initLibrary(){
+  function initLibrary() {
     const list = document.getElementById('libList');
     const addBtn = document.getElementById('libAdd');
     const exportBtn = document.getElementById('libExport');
     const importBtn = document.getElementById('libImport');
     const importFile = document.getElementById('libImportFile');
     const search = document.getElementById('libSearch');
-    const catSel = document.getElementById('libCat');
+    projSel = document.getElementById('libProject');
+    sectSel = document.getElementById('libSection');
+    catSel = document.getElementById('libCategory');
+    manageBtn = document.getElementById('libManage');
     const onlyFav = document.getElementById('libOnlyFav');
 
     // Inline editor (inside Library page)
