@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Prompting Buddy</title>
-  <link rel="stylesheet" href="assets/style.css?v=20260209c" />
+  <link rel="stylesheet" href="assets/style.css" />
 </head>
 <body data-theme="modern" data-variant="default">
 
@@ -202,38 +202,7 @@
 
       <div class="settings__status" id="libStatus" aria-live="polite"></div>
 
-      
-      <!-- Projects & Sections manager (inline, no popup) -->
-      <div class="block" id="pbManageProjModal" hidden>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
-          <strong>Projects & sections</strong>
-          <button class="btn btn--mini" type="button" data-modal-close="manageProj">Close</button>
-        </div>
-
-        <div class="grid2" style="margin-top:10px">
-          <div>
-            <div class="modal__sub">Projects</div>
-            <div class="modal__list" id="pbProjList"></div>
-            <div class="modal__row">
-              <input class="field__input" id="pbNewProjectName" type="text" placeholder="New project name" />
-              <button class="btn btn--mini" id="pbAddProjectBtn" type="button">Add</button>
-            </div>
-          </div>
-
-          <div>
-            <div class="modal__sub">Sections (selected project)</div>
-            <div class="modal__hint muted" id="pbSectionsHint">Select a project on the left.</div>
-            <div class="modal__list" id="pbSectionList"></div>
-            <div class="modal__row">
-              <input class="field__input" id="pbNewSectionName" type="text" placeholder="New section name" />
-              <button class="btn btn--mini" id="pbAddSectionBtn" type="button">Add</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="settings__status" id="pbManageProjStatus" aria-live="polite"></div>
-      </div>
-<!-- Inline editor (keeps everything inside the main screen) -->
+      <!-- Inline editor (keeps everything inside the main screen) -->
       <div class="block" id="libEditorWrap" hidden>
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
           <strong id="libEditorTitle">Edit prompt</strong>
@@ -508,8 +477,8 @@
 </template>
 
 <!-- Cache-bust scripts so GitHub Pages / browser doesn't serve an older app.js -->
-<script src="assets/data.js?v=20260209c"></script>
-<script src="assets/app.js?v=20260209c"></script>
+<script src="assets/data.js?v=20260121a"></script>
+<script src="assets/app.js?v=20260121a"></script>
 
   <!-- Save to Library modal (Vault -> Library) -->
   <div class="modal_backdrop" id="pbSaveLibModal" hidden>
@@ -553,5 +522,43 @@
       <div class="settings__status" id="pbSaveLibStatus" aria-live="polite"></div>
     </div>
   </div>
+
+  <!-- Manage Projects & Sections modal -->
+  <div class="modal_backdrop" id="pbManageProjModal" hidden>
+    <div class="modal_backdrop__shim" data-modal-close="manageProj"></div>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pbManageProjTitle">
+      <div class="modal__head">
+        <div class="modal__title" id="pbManageProjTitle">Manage projects & sections</div>
+        <button class="btn btn--mini" type="button" data-modal-close="manageProj">✕</button>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <div class="modal__sub">Projects</div>
+          <div class="modal__list" id="pbProjList"></div>
+          <div class="modal__row">
+            <input class="field__input" id="pbNewProjectName" type="text" placeholder="New project name" />
+            <button class="btn btn--mini" id="pbAddProjectBtn" type="button">Add</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="modal__sub">Sections (selected project)</div>
+          <div class="modal__hint muted" id="pbSectionsHint">Select a project on the left.</div>
+          <div class="modal__list" id="pbSectionList"></div>
+          <div class="modal__row">
+            <input class="field__input" id="pbNewSectionName" type="text" placeholder="New section name" />
+            <button class="btn btn--mini" id="pbAddSectionBtn" type="button">Add</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal__actions">
+        <button class="btn" type="button" data-modal-close="manageProj">Close</button>
+      </div>
+      <div class="settings__status" id="pbManageProjStatus" aria-live="polite"></div>
+    </div>
+  </div>
+
 </body>
 </html>

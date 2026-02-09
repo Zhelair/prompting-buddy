@@ -43,8 +43,7 @@
   }
   function setLS(key, value){
     try{ localStorage.setItem(key, JSON.stringify(value)); } catch {}
-  }
-
+  
   // --- Modals (Vault -> Library, Projects/Sections)
   const MODAL = {
     saveLib: { el: null },
@@ -334,6 +333,7 @@
       try{ window.dispatchEvent(new Event('pb_projects_changed')); }catch{}
     });
   }
+}
 
   // last-run caches (for persistence when navigating Buddy/Vault/About)
   const LS_LAST = {
@@ -1946,7 +1946,6 @@ function renderLines(el, arr){
       setLS(LS.libSelSection, String(sectionSel.value||""));
       renderLibrary();
     });
-    initManageProjModal();
     manageProjectsBtn?.addEventListener('click', ()=>{ openManageProjModal(); });
 
     fProject?.addEventListener('change', ()=>{
@@ -2197,16 +2196,12 @@ function renderLines(el, arr){
     return { mistakes: [], fixes: [], metaPrompt: String(maybe||"") };
   }
 
-  // nav
+  // nav 
   // init modals
-  function _pbInitModals(){
-    try{ initSaveLibModal(); }catch(e){ console.warn("initSaveLibModal failed", e); }
-    try{ initManageProjModal(); }catch(e){ console.warn("initManageProjModal failed", e); }
-  }
-  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", _pbInitModals);
-  else _pbInitModals();
-
-document.querySelectorAll('[data-route]').forEach(btn=>{
+  initSaveLibModal();
+  initManageProjModal();
+wiring
+  document.querySelectorAll('[data-route]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       const r = btn.getAttribute('data-route') || 'buddy';
       location.hash = r;
@@ -2235,9 +2230,6 @@ document.querySelectorAll('[data-route]').forEach(btn=>{
         renderLibrary();
       }catch{}
     });
-
-    window.initSaveLibModal = initSaveLibModal;
-    window.initManageProjModal = initManageProjModal;
 
     window.addEventListener('pb_library_changed', ()=>{
       try{ renderLibrary(); }catch{}
