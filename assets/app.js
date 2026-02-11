@@ -27,6 +27,7 @@
     projects: "pb_projects_v1",
     ideas: "pb_ideas_v1",
     draftPrompt: "pb_draft_prompt_v1",
+    draftForce: "pb_draft_force_v1",
     theme: "pb_theme",
     variant: (t)=>`pb_theme_variant_${t}`,
     libSelProject: "pb_lib_sel_project_v1",
@@ -43,297 +44,7 @@
   }
   function setLS(key, value){
     try{ localStorage.setItem(key, JSON.stringify(value)); } catch {}
-  
-  // --- Modals (Vault -> Library, Projects/Sections)
-  const MODAL = {
-    saveLib: { el: null },
-    manageProj: { el: null }
-  };
-
-  function qid(id){ return document.getElementById(id); }
-
-  // Save-to-Library (Vault -> Library)
-  let _pendingVaultForLibrary = null;
-
-  function openSaveLibModal(vaultItem){
-    _pendingVaultForLibrary = vaultItem || null;
-
-    const modal = qid('pbSaveLibModal');
-    const fTitle = qid('pbSaveLibFieldTitle');
-    const fProject = qid('pbSaveLibFieldProject');
-    const fSection = qid('pbSaveLibFieldSection');
-    const fGolden = qid('pbSaveLibFieldGolden');
-    const fOriginal = qid('pbSaveLibFieldOriginal');
-    const status = qid('pbSaveLibStatus');
-
-    if(!modal || !fTitle || !fProject || !fSection || !fGolden || !fOriginal) return;
-
-    // Fill fields
-    const golden = String(vaultItem?.golden || '').trim();
-    const original = String(vaultItem?.prompt || '').trim();
-    const titleBase = (original.split('\n')[0] || 'From Vault').slice(0, 60);
-
-    fTitle.value = titleBase;
-    fGolden.value = golden;
-    fOriginal.value = original;
-
-    // Projects + Sections
-    const projects = loadProjects();
-    // Default: first project, section "Final prompts" if exists
-    while(fProject.options.length) fProject.remove(0);
-    projects.forEach(p=>{
-      const o = document.createElement('option');
-      o.value = p.id;
-      o.textContent = p.name;
-      fProject.appendChild(o);
-    });
-    const defaultPid = projects[0]?.id || '';
-    fProject.value = defaultPid;
-
-    const fillSections = ()=>{
-      while(fSection.options.length) fSection.remove(0);
-      const pid = String(fProject.value || '');
-      const proj = projects.find(p=>p.id===pid) || null;
-      const secs = (proj?.sections || []);
-      secs.forEach(s=>{
-        const o = document.createElement('option');
-        o.value = s.id;
-        o.textContent = s.name;
-        fSection.appendChild(o);
-      });
-      const finalSec = secs.find(s=>String(s.name).toLowerCase()==='final prompts');
-      fSection.value = finalSec?.id || secs[0]?.id || '';
-    };
-    fillSections();
-    fProject.onchange = fillSections;
-
-    if(status) status.textContent = '';
-    modal.hidden = false;
-    setTimeout(()=>{ try{ fTitle.focus(); fTitle.select(); }catch{} }, 30);
   }
-
-  function closeSaveLibModal(){
-    const modal = qid('pbSaveLibModal');
-    if(modal) modal.hidden = true;
-    _pendingVaultForLibrary = null;
-  }
-
-  function initSaveLibModal(){
-    const modal = qid('pbSaveLibModal');
-    if(!modal) return;
-
-    modal.querySelectorAll('[data-modal-close="saveLib"]').forEach(el=>{
-      el.addEventListener('click', closeSaveLibModal);
-    });
-
-    const btn = qid('pbSaveLibDoSave');
-    const status = qid('pbSaveLibStatus');
-    btn?.addEventListener('click', ()=>{
-      const vaultItem = _pendingVaultForLibrary;
-      const fTitle = qid('pbSaveLibFieldTitle');
-      const fProject = qid('pbSaveLibFieldProject');
-      const fSection = qid('pbSaveLibFieldSection');
-      const fGolden = qid('pbSaveLibFieldGolden');
-      const fOriginal = qid('pbSaveLibFieldOriginal');
-
-      const golden = String(fGolden?.value || '').trim();
-      if(!golden){
-        if(status) status.textContent = 'Golden Prompt is empty.';
-        return;
-      }
-
-      const lib = loadLibrary();
-      lib.unshift({
-        id: `lib_${Date.now()}_${Math.random().toString(16).slice(2)}`,
-        createdAt: Date.now(),
-        title: String(fTitle?.value || '').trim() || 'From Vault',
-        goldenPrompt: golden,
-        originalPrompt: String(fOriginal?.value || '').trim(),
-        projectId: String(fProject?.value || '').trim(),
-        sectionId: String(fSection?.value || '').trim(),
-        category: 'General',
-        tags: '#from-vault',
-        lensUsed: String(vaultItem?.modeUsed || ''),
-        notes: '',
-        favorite: false,
-        model: ''
-      });
-      saveLibrary(lib);
-      if(status) status.textContent = 'Saved ✅';
-      setTimeout(()=>{ closeSaveLibModal(); try{ location.hash = 'library'; }catch{} }, 350);
-    });
-  }
-
-  // Manage Projects & Sections (UI modal)
-  let _manageSelectedProjectId = '';
-
-  function openManageProjModal(){
-    const modal = qid('pbManageProjModal');
-    if(!modal) return;
-    _manageSelectedProjectId = '';
-    renderManageProjModal();
-    modal.hidden = false;
-  }
-  function closeManageProjModal(){
-    const modal = qid('pbManageProjModal');
-    if(modal) modal.hidden = true;
-  }
-
-  function renderManageProjModal(){
-    const listP = qid('pbProjList');
-    const listS = qid('pbSectionList');
-    const hint = qid('pbSectionsHint');
-    const status = qid('pbManageProjStatus');
-
-    const projects = loadProjects();
-
-    if(listP){
-      listP.innerHTML = projects.map(p=>{
-        const active = (_manageSelectedProjectId === p.id) ? ' style="outline:2px solid rgba(0,0,0,.18)"' : '';
-        return `
-          <div class="row row--tight" data-pid="${escapeHtml(p.id)}"${active}>
-            <button class="btn btn--mini" data-act="pick" data-pid="${escapeHtml(p.id)}" type="button">Select</button>
-            <div class="row__grow"><strong>${escapeHtml(p.name)}</strong></div>
-            <button class="btn btn--mini" data-act="renameP" data-pid="${escapeHtml(p.id)}" type="button">Rename</button>
-            <button class="btn btn--mini" data-act="delP" data-pid="${escapeHtml(p.id)}" type="button">Delete</button>
-          </div>
-        `;
-      }).join('') || '<p class="muted">No projects yet.</p>';
-
-      listP.querySelectorAll('button[data-act]').forEach(b=>{
-        b.addEventListener('click', ()=>{
-          const act = b.getAttribute('data-act');
-          const pid = String(b.getAttribute('data-pid')||'');
-          let projs = loadProjects();
-
-          if(act === 'pick'){
-            _manageSelectedProjectId = pid;
-            renderManageProjModal();
-            return;
-          }
-          if(act === 'renameP'){
-            const p = projs.find(x=>x.id===pid);
-            if(!p) return;
-            const name = String(prompt('Rename project:', p.name)||'').trim();
-            if(!name) return;
-            projs = projs.map(x=>x.id===pid ? { ...x, name } : x);
-            saveProjects(projs);
-            renderManageProjModal();
-            try{ window.dispatchEvent(new Event('pb_projects_changed')); }catch{}
-            return;
-          }
-          if(act === 'delP'){
-            const p = projs.find(x=>x.id===pid);
-            if(!p) return;
-            if(!confirm(`Delete project "${p.name}"? Prompts won't be deleted - they will just lose project/section.`)) return;
-            projs = projs.filter(x=>x.id!==pid);
-            saveProjects(projs.length ? projs : defaultProjects());
-            // unlink prompts
-            const lib = loadLibrary().map(it=> (it && it.projectId===pid) ? { ...it, projectId:"", sectionId:"" } : it);
-            saveLibrary(lib);
-            if(_manageSelectedProjectId === pid) _manageSelectedProjectId = '';
-            renderManageProjModal();
-            try{ window.dispatchEvent(new Event('pb_projects_changed')); }catch{}
-            renderLibrary?.();
-            return;
-          }
-        });
-      });
-    }
-
-    const selProj = projects.find(p=>p.id===_manageSelectedProjectId) || null;
-    if(hint) hint.style.display = selProj ? 'none' : 'block';
-
-    if(listS){
-      if(!selProj){
-        listS.innerHTML = '';
-      } else {
-        const secs = Array.isArray(selProj.sections) ? selProj.sections : [];
-        listS.innerHTML = secs.map(s=>{
-          return `
-            <div class="row row--tight">
-              <div class="row__grow"><strong>${escapeHtml(s.name)}</strong></div>
-              <button class="btn btn--mini" data-act="renameS" data-sid="${escapeHtml(s.id)}" type="button">Rename</button>
-              <button class="btn btn--mini" data-act="delS" data-sid="${escapeHtml(s.id)}" type="button">Delete</button>
-            </div>
-          `;
-        }).join('') || '<p class="muted">No sections yet.</p>';
-
-        listS.querySelectorAll('button[data-act]').forEach(b=>{
-          b.addEventListener('click', ()=>{
-            const act = b.getAttribute('data-act');
-            const sid = String(b.getAttribute('data-sid')||'');
-            let projs = loadProjects();
-            const p = projs.find(x=>x.id===_manageSelectedProjectId);
-            if(!p) return;
-            let secs = Array.isArray(p.sections) ? [...p.sections] : [];
-
-            if(act === 'renameS'){
-              const s = secs.find(x=>x.id===sid);
-              if(!s) return;
-              const name = String(prompt('Rename section:', s.name)||'').trim();
-              if(!name) return;
-              secs = secs.map(x=>x.id===sid ? { ...x, name } : x);
-            }
-            if(act === 'delS'){
-              const s = secs.find(x=>x.id===sid);
-              if(!s) return;
-              if(!confirm(`Delete section "${s.name}"?`)) return;
-              secs = secs.filter(x=>x.id!==sid);
-              // unlink prompts using this section
-              const lib = loadLibrary().map(it=> (it && it.projectId===_manageSelectedProjectId && it.sectionId===sid) ? { ...it, sectionId:"" } : it);
-              saveLibrary(lib);
-            }
-            projs = projs.map(x=> x.id===_manageSelectedProjectId ? { ...x, sections: secs } : x);
-            saveProjects(projs);
-            renderManageProjModal();
-            try{ window.dispatchEvent(new Event('pb_projects_changed')); }catch{}
-            renderLibrary?.();
-          });
-        });
-      }
-    }
-
-    if(status) status.textContent = '';
-  }
-
-  function initManageProjModal(){
-    const modal = qid('pbManageProjModal');
-    if(!modal) return;
-    modal.querySelectorAll('[data-modal-close="manageProj"]').forEach(el=>{
-      el.addEventListener('click', closeManageProjModal);
-    });
-
-    qid('pbAddProjectBtn')?.addEventListener('click', ()=>{
-      const inp = qid('pbNewProjectName');
-      const name = String(inp?.value||'').trim();
-      if(!name) return;
-      const projs = loadProjects();
-      projs.unshift({ id:`p_${Date.now()}_${Math.random().toString(16).slice(2)}`, name, sections:[] });
-      saveProjects(projs);
-      if(inp) inp.value = '';
-      renderManageProjModal();
-      try{ window.dispatchEvent(new Event('pb_projects_changed')); }catch{}
-    });
-
-    qid('pbAddSectionBtn')?.addEventListener('click', ()=>{
-      const inp = qid('pbNewSectionName');
-      const name = String(inp?.value||'').trim();
-      if(!name) return;
-      if(!_manageSelectedProjectId) return;
-      const projs = loadProjects();
-      const p = projs.find(x=>x.id===_manageSelectedProjectId);
-      if(!p) return;
-      const secs = Array.isArray(p.sections) ? [...p.sections] : [];
-      secs.push({ id:`s_${Date.now()}_${Math.random().toString(16).slice(2)}`, name });
-      const next = projs.map(x=> x.id===_manageSelectedProjectId ? { ...x, sections: secs } : x);
-      saveProjects(next);
-      if(inp) inp.value = '';
-      renderManageProjModal();
-      try{ window.dispatchEvent(new Event('pb_projects_changed')); }catch{}
-    });
-  }
-}
 
   // last-run caches (for persistence when navigating Buddy/Vault/About)
   const LS_LAST = {
@@ -380,6 +91,18 @@
 
   function setDraftPrompt(v){
     try{ localStorage.setItem(LS.draftPrompt, String(v||"")); }catch{}
+  }
+  function setDraftPromptForce(v){
+    // Used when user clicks "Send to Buddy" from Library/Vault.
+    // This should overwrite whatever is currently in the Buddy textarea.
+    setDraftPrompt(v);
+    try{ localStorage.setItem(LS.draftForce, "1"); }catch{}
+  }
+  function getDraftForce(){
+    try{ return localStorage.getItem(LS.draftForce)==="1"; }catch{ return false; }
+  }
+  function clearDraftForce(){
+    try{ localStorage.removeItem(LS.draftForce); }catch{}
   }
   function getDraftPrompt(){
     try{ return String(localStorage.getItem(LS.draftPrompt) || ""); }catch{ return ""; }
@@ -432,56 +155,11 @@
     try {
       const raw = localStorage.getItem(LS.library);
       const arr = raw ? JSON.parse(raw) : [];
-      const list = Array.isArray(arr) ? arr : [];
-      // migrate legacy shapes safely
-      return list.map((it)=>{
-        if(!it || typeof it !== 'object') return null;
-        const createdAt = Number(it.createdAt || it.t || Date.now());
-        const goldenPrompt = String(it.goldenPrompt || it.golden || it.text || "").trim();
-        const originalPrompt = String(it.originalPrompt || it.prompt || "").trim();
-        return {
-          id: String(it.id || `lib_${createdAt}_${Math.random().toString(16).slice(2)}`),
-          createdAt,
-          title: String(it.title || "Untitled"),
-          goldenPrompt,
-          originalPrompt,
-          projectId: String(it.projectId || ""),
-          sectionId: String(it.sectionId || ""),
-          category: String(it.category || it.cat || ""),
-          tags: String(it.tags || ""),
-          lensUsed: String(it.lensUsed || it.modeUsed || ""),
-          notes: String(it.notes || ""),
-          favorite: !!(it.favorite ?? it.fav),
-          // keep optional fields if present (won't break v1)
-          model: String(it.model || "")
-        };
-      }).filter(Boolean);
+      return Array.isArray(arr) ? arr : [];
     } catch { return []; }
   }
   function saveLibrary(arr){
-    try {
-      const list = Array.isArray(arr) ? arr : [];
-      const norm = list.map(it=>{
-        if(!it || typeof it !== 'object') return null;
-        const createdAt = Number(it.createdAt || it.t || Date.now());
-        return {
-          id: String(it.id || `lib_${createdAt}_${Math.random().toString(16).slice(2)}`),
-          createdAt,
-          title: String(it.title || "Untitled"),
-          goldenPrompt: String(it.goldenPrompt || it.text || "").trim(),
-          originalPrompt: String(it.originalPrompt || it.prompt || "").trim(),
-          projectId: String(it.projectId || ""),
-          sectionId: String(it.sectionId || ""),
-          category: String(it.category || it.cat || ""),
-          tags: String(it.tags || ""),
-          lensUsed: String(it.lensUsed || it.modeUsed || ""),
-          notes: String(it.notes || ""),
-          favorite: !!(it.favorite ?? it.fav),
-          model: String(it.model || "")
-        };
-      }).filter(Boolean);
-      localStorage.setItem(LS.library, JSON.stringify(norm));
-    } catch {}
+    try { localStorage.setItem(LS.library, JSON.stringify(Array.isArray(arr)?arr:[])); } catch {}
   }
 
   // --- Projects (OneNote-ish structure for Library)
@@ -780,10 +458,17 @@
       if(ch) ch.textContent = String(n);
       return n;
     }
-    // Restore draft so switching Buddy/Vault/About doesn't erase what you're typing
-    if(prompt && !prompt.value){
+    // Restore draft so switching tabs doesn't erase what you're typing.
+    // If we arrived via "Send to Buddy", we force overwrite once.
+    if(prompt){
       const draft = getDraftPrompt();
-      if(draft) prompt.value = draft;
+      const force = getDraftForce();
+      if(draft && (force || !prompt.value)){
+        prompt.value = draft;
+        if(force){
+          try{ localStorage.removeItem(LS.draftForce); }catch{}
+        }
+      }
     }
 
     // Restore last Prompt Check output so switching tabs doesn't wipe results
@@ -1126,7 +811,7 @@ function renderLines(el, arr){
         return;
       }
       list.innerHTML = v.map((item, idx)=>{
-        const dt = new Date(item.createdAt || Date.now());
+        const dt = new Date(item.t || Date.now());
         const ts = dt.toLocaleString();
         const prompt = escapeHtml(String(item.prompt||""));
         const golden = escapeHtml(String(item.golden||""));
@@ -1194,8 +879,23 @@ function renderLines(el, arr){
           if(act === 'saveToLibrary') {
             const txt = String(item.golden||"").trim();
             if(!txt){ setCoachStatus('No Golden Prompt to save.'); setTimeout(()=>setCoachStatus(''), 900); return; }
-            openSaveLibModal(item);
-            return;
+            const lib = loadLibrary();
+            const titleBase = (String(item.prompt||'').trim().split('\n')[0] || 'From Vault').slice(0, 60);
+            lib.unshift({
+              id: `lib_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+              t: Date.now(),
+              title: titleBase,
+              text: txt,
+              tags: "#from-vault",
+              model: "",
+              notes: "",
+              cat: "General",
+              fav: false,
+              modeUsed: String(item.modeUsed||"")
+            });
+            saveLibrary(lib);
+            setCoachStatus('Saved to Library ✅');
+            setTimeout(()=>setCoachStatus(''), 900);
           }
         });
       });
@@ -1418,8 +1118,7 @@ function renderLines(el, arr){
     const editorClose = document.getElementById('libEditorClose');
     const editorStatus = document.getElementById('libEditStatus');
     const fTitle = document.getElementById('libFieldTitle');
-    const fGolden = document.getElementById('libFieldGolden');
-    const fOriginal = document.getElementById('libFieldOriginal');
+    const fText = document.getElementById('libFieldText');
     const fCat = document.getElementById('libFieldCat');
     const fProject = document.getElementById('libFieldProject');
     const fSection = document.getElementById('libFieldSection');
@@ -1650,7 +1349,7 @@ function renderLines(el, arr){
         model: x.model,
         notes: x.notes,
         cat: x.cat,
-        favorite: false
+        fav: false
       }));
     }
 
@@ -1724,13 +1423,12 @@ function renderLines(el, arr){
 
       if(editorTitle) editorTitle.textContent = isEdit ? 'Edit prompt' : 'Add prompt';
       if(fTitle) fTitle.value = existing?.title || '';
-      if(fGolden) fGolden.value = existing?.goldenPrompt || existing?.text || '';
-      if(fOriginal) fOriginal.value = existing?.originalPrompt || existing?.prompt || '';
+      if(fText) fText.value = existing?.text || '';
       if(fCat) fCat.value = existing?.cat || '';
       if(fProject) fProject.value = existing?.projectId || '';
       ensureProjectsInUI();
       if(fSection) fSection.value = existing?.sectionId || '';
-      if(fMode) fMode.value = existing?.lensUsed || existing?.modeUsed || '';
+      if(fMode) fMode.value = existing?.modeUsed || '';
       if(fTags) fTags.value = existing?.tags || '';
       if(fModel) fModel.value = existing?.model || '';
       if(fNotes) fNotes.value = existing?.notes || '';
@@ -1766,15 +1464,15 @@ function renderLines(el, arr){
         if(!it || typeof it!=='object') return it;
         return {
           ...it,
-          category: it.category || it.cat || "",
-          favorite: !!(it.favorite ?? it.fav)
+          cat: it.cat || "",
+          fav: !!it.fav
         };
       });
 
       // Favorites first, then newest
       libAllRaw.sort((a,b)=>{
-        const af = a?.favorite ? 1 : 0;
-        const bf = b?.favorite ? 1 : 0;
+        const af = a?.fav ? 1 : 0;
+        const bf = b?.fav ? 1 : 0;
         if(bf !== af) return bf - af;
         return (b?.t||0) - (a?.t||0);
       });
@@ -1783,12 +1481,12 @@ function renderLines(el, arr){
 
       const lib = libAll.filter(it=>{
         if(!it) return false;
-        if(cat && String(it.category||'') !== cat) return false;
+        if(cat && String(it.cat||'') !== cat) return false;
         if(selP && String(it.projectId||"") !== selP) return false;
         if(selS && String(it.sectionId||"") !== selS) return false;
         if(favOnly && !it.fav) return false;
         if(!q) return true;
-        const hay = [it?.title, it?.goldenPrompt, it?.originalPrompt, it?.tags, it?.model, it?.notes, it?.category, projectName(it.projectId), sectionName(it.projectId,it.sectionId), it?.lensUsed].filter(Boolean).join(' ').toLowerCase();
+        const hay = [it?.title, it?.text, it?.tags, it?.model, it?.notes, it?.cat, projectName(it.projectId), sectionName(it.projectId,it.sectionId), it?.modeUsed].filter(Boolean).join(' ').toLowerCase();
         return hay.includes(q);
       });
       if(!list) return;
@@ -1800,18 +1498,18 @@ function renderLines(el, arr){
       }
 
       list.innerHTML = lib.map((item, idx)=>{
-        const dt = new Date(item.createdAt || Date.now());
+        const dt = new Date(item.t || Date.now());
         const ts = dt.toLocaleString();
         const title = escapeHtml(String(item.title || 'Untitled'));
         const tags = escapeHtml(String(item.tags || ''));
         const model = escapeHtml(String(item.model || ''));
-        const cat = escapeHtml(String(item.category || ''));
+        const cat = escapeHtml(String(item.cat || ''));
         const pName = escapeHtml(projectName(String(item.projectId||"")));
         const sName = escapeHtml(sectionName(String(item.projectId||""), String(item.sectionId||"")));
-        const mode = String(item.lensUsed||"").toLowerCase();
+        const mode = String(item.modeUsed||"").toLowerCase();
         const modeNice = mode ? (mode==='auditor'?'Auditor':mode==='creator'?'Creator':'Thinker') : '';
         const notes = escapeHtml(String(item.notes || ''));
-        const text = escapeHtml(String(item.goldenPrompt || item.originalPrompt || ''));
+        const text = escapeHtml(String(item.text || ''));
         return `
           <article class="card card--flat lib__item" data-id="${escapeHtml(String(item.id||""))}" data-cat="${cat}">
             <div class="card__body">
@@ -1829,7 +1527,7 @@ function renderLines(el, arr){
                   </div>
                 </div>
                 <div class="lib__actions">
-                  <button class="btn btn--mini btn--star" data-act="fav" type="button">${item.favorite ? "★" : "☆"}</button>
+                  <button class="btn btn--mini btn--star" data-act="fav" type="button">${item.fav ? "★" : "☆"}</button>
                   <button class="btn btn--mini" data-act="copy" type="button">Copy</button>
                   <button class="btn btn--mini" data-act="send" type="button">Send to Buddy</button>
                   <button class="btn btn--mini" data-act="edit" type="button">Edit</button>
@@ -1839,7 +1537,6 @@ function renderLines(el, arr){
 
               ${notes ? `<div class="lib__notes">${notes}</div>` : ''}
               <pre class="pre pre--sm lib__pre">${text}</pre>
-              ${item.originalPrompt ? `<details class="details details--soft" style="margin-top:10px"><summary>Original Prompt</summary><pre class="pre pre--sm" style="margin-top:10px">${escapeHtml(String(item.originalPrompt||""))}</pre></details>` : ""}
             </div>
           </article>
         `;
@@ -1858,7 +1555,7 @@ function renderLines(el, arr){
           if(act === 'fav'){
             const next = libAll.map(x=>{
               if(!x || String(x.id)!==id) return x;
-              return { ...x, favorite: !x.favorite };
+              return { ...x, fav: !x.fav };
             });
             saveLibrary(next);
             renderLibrary();
@@ -1868,12 +1565,12 @@ function renderLines(el, arr){
           }
 
           if(act === 'copy'){
-            try{ await navigator.clipboard.writeText(String(item.goldenPrompt||item.originalPrompt||"")); setStatus('Copied ✅'); }
+            try{ await navigator.clipboard.writeText(String(item.text||"")); setStatus('Copied ✅'); }
             catch{ setStatus('Copy failed.'); }
             setTimeout(()=>setStatus(''), 900);
           }
           if(act === 'send'){
-            setDraftPrompt(String(item.text||""));
+            setDraftPromptForce(String(item.text||""));
             location.hash = 'buddy';
           }
           if(act === 'edit'){
@@ -1899,27 +1596,26 @@ function renderLines(el, arr){
     btnSave?.addEventListener('click', ()=>{
       const item = {
         id: editingId || `lib_${Date.now()}_${Math.random().toString(16).slice(2)}`,
-        createdAt: editingCreatedAt || Date.now(),
+        t: editingCreatedAt || Date.now(),
         title: String(fTitle?.value || '').trim(),
-        goldenPrompt: String(fGolden?.value || '').trim(),
-        originalPrompt: String(fOriginal?.value || '').trim(),
-        category: String(fCat?.value || '').trim(),
+        text: String(fText?.value || '').trim(),
+        cat: String(fCat?.value || '').trim(),
         projectId: String(fProject?.value || '').trim(),
         sectionId: String(fSection?.value || '').trim(),
-        lensUsed: String(fMode?.value || '').trim(),
+        modeUsed: String(fMode?.value || '').trim(),
         tags: String(fTags?.value || '').trim(),
         model: String(fModel?.value || '').trim(),
         notes: String(fNotes?.value || '').trim(),
-        favorite: false
+        fav: false
       };
-      if(!item.goldenPrompt){ setEditStatus('Golden Prompt is required.'); return; }
-      if(!item.title){ item.title = item.goldenPrompt.split(/\n|\r/)[0].slice(0,48) || 'Untitled'; }
+      if(!item.text){ setEditStatus('Prompt text is required.'); return; }
+      if(!item.title){ item.title = item.text.split(/\n|\r/)[0].slice(0,48) || 'Untitled'; }
 
       const libAll = loadLibrary();
       const idx = libAll.findIndex(x=>x && x.id === item.id);
       if(idx >= 0){
         const prev = libAll[idx] || {};
-        item.favorite = !!prev.favorite;
+        item.fav = !!prev.fav;
         libAll[idx] = item;
       } else {
         libAll.unshift(item);
@@ -1946,7 +1642,11 @@ function renderLines(el, arr){
       setLS(LS.libSelSection, String(sectionSel.value||""));
       renderLibrary();
     });
-    manageProjectsBtn?.addEventListener('click', ()=>{ openManageProjModal(); });
+    manageProjectsBtn?.addEventListener('click', ()=>{
+      manageProjectsDialog();
+      ensureProjectsInUI();
+      renderLibrary();
+    });
 
     fProject?.addEventListener('change', ()=>{
       // refresh editor sections list
@@ -2196,11 +1896,7 @@ function renderLines(el, arr){
     return { mistakes: [], fixes: [], metaPrompt: String(maybe||"") };
   }
 
-  // nav 
-  // init modals
-  initSaveLibModal();
-  initManageProjModal();
-wiring
+  // nav wiring
   document.querySelectorAll('[data-route]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       const r = btn.getAttribute('data-route') || 'buddy';
@@ -2217,21 +1913,4 @@ wiring
   window.addEventListener('hashchange', boot);
   boot();
 
-
-    // React to project/library changes from modals
-    window.addEventListener('pb_projects_changed', ()=>{
-      try{
-        const prevP = String(projectSel?.value||"");
-        ensureProjectsInUI();
-        // keep selection if possible
-        if(projectSel && prevP) projectSel.value = prevP;
-        // refresh sections after project refresh
-        ensureProjectsInUI();
-        renderLibrary();
-      }catch{}
-    });
-
-    window.addEventListener('pb_library_changed', ()=>{
-      try{ renderLibrary(); }catch{}
-    });
 })();

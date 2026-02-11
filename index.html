@@ -215,14 +215,9 @@
         </label>
 
         <label class="field">
-          <span class="field__label">Golden Prompt</span>
-          <textarea class="output" id="libFieldGolden" rows="7" placeholder="Your optimized prompt..."></textarea>
+          <span class="field__label">Prompt</span>
+          <textarea class="output" id="libFieldText" rows="8" placeholder="Paste prompt text..."></textarea>
         </label>
-
-        <details class="details details--soft" id="libOriginalWrap">
-          <summary>Original Prompt (optional)</summary>
-          <textarea class="output" id="libFieldOriginal" rows="6" placeholder="Original prompt (optional)..."></textarea>
-        </details>
 
         <label class="field">
           <span class="field__label">Category</span>
@@ -241,8 +236,8 @@
           </label>
 
           <label class="field field--inline">
-            <span class="field__label">Lens used (readonly)</span>
-            <select class="field__input" id="libFieldMode" disabled>
+            <span class="field__label">Mode used</span>
+            <select class="field__input" id="libFieldMode">
               <option value="">-</option>
               <option value="auditor">Auditor</option>
               <option value="thinker">Thinker</option>
@@ -479,86 +474,5 @@
 <!-- Cache-bust scripts so GitHub Pages / browser doesn't serve an older app.js -->
 <script src="assets/data.js?v=20260121a"></script>
 <script src="assets/app.js?v=20260121a"></script>
-
-  <!-- Save to Library modal (Vault -> Library) -->
-  <div class="modal_backdrop" id="pbSaveLibModal" hidden>
-    <div class="modal_backdrop__shim" data-modal-close="saveLib"></div>
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pbSaveLibTitle">
-      <div class="modal__head">
-        <div class="modal__title" id="pbSaveLibTitle">Save to Library</div>
-        <button class="btn btn--mini" type="button" data-modal-close="saveLib">✕</button>
-      </div>
-
-      <label class="field">
-        <span class="field__label">Title</span>
-        <input class="field__input" id="pbSaveLibFieldTitle" type="text" />
-      </label>
-
-      <div class="grid2">
-        <label class="field field--inline">
-          <span class="field__label">Project</span>
-          <select class="field__input" id="pbSaveLibFieldProject"></select>
-        </label>
-        <label class="field field--inline">
-          <span class="field__label">Section</span>
-          <select class="field__input" id="pbSaveLibFieldSection"></select>
-        </label>
-      </div>
-
-      <label class="field">
-        <span class="field__label">Golden Prompt</span>
-        <textarea class="output" id="pbSaveLibFieldGolden" rows="6"></textarea>
-      </label>
-
-      <details class="details details--soft">
-        <summary>Original Prompt</summary>
-        <textarea class="output" id="pbSaveLibFieldOriginal" rows="5"></textarea>
-      </details>
-
-      <div class="modal__actions">
-        <button class="btn btn--primary" id="pbSaveLibDoSave" type="button">Save</button>
-        <button class="btn" type="button" data-modal-close="saveLib">Cancel</button>
-      </div>
-      <div class="settings__status" id="pbSaveLibStatus" aria-live="polite"></div>
-    </div>
-  </div>
-
-  <!-- Manage Projects & Sections modal -->
-  <div class="modal_backdrop" id="pbManageProjModal" hidden>
-    <div class="modal_backdrop__shim" data-modal-close="manageProj"></div>
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pbManageProjTitle">
-      <div class="modal__head">
-        <div class="modal__title" id="pbManageProjTitle">Manage projects & sections</div>
-        <button class="btn btn--mini" type="button" data-modal-close="manageProj">✕</button>
-      </div>
-
-      <div class="grid2">
-        <div>
-          <div class="modal__sub">Projects</div>
-          <div class="modal__list" id="pbProjList"></div>
-          <div class="modal__row">
-            <input class="field__input" id="pbNewProjectName" type="text" placeholder="New project name" />
-            <button class="btn btn--mini" id="pbAddProjectBtn" type="button">Add</button>
-          </div>
-        </div>
-
-        <div>
-          <div class="modal__sub">Sections (selected project)</div>
-          <div class="modal__hint muted" id="pbSectionsHint">Select a project on the left.</div>
-          <div class="modal__list" id="pbSectionList"></div>
-          <div class="modal__row">
-            <input class="field__input" id="pbNewSectionName" type="text" placeholder="New section name" />
-            <button class="btn btn--mini" id="pbAddSectionBtn" type="button">Add</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="modal__actions">
-        <button class="btn" type="button" data-modal-close="manageProj">Close</button>
-      </div>
-      <div class="settings__status" id="pbManageProjStatus" aria-live="polite"></div>
-    </div>
-  </div>
-
 </body>
 </html>
