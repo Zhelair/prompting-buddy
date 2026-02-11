@@ -256,6 +256,11 @@ The value of "golden" must NOT contain "{" or "}" characters.
 Output only JSON. No extra text.
 No markdown, no backticks, no code fences.
 Do not include the characters ``` anywhere in the output.
+"diagnosis" must contain 1–3 short items (each under 250 characters).
+"missing" must contain 1–3 short items (each under 250 characters).
+"improvements" must contain 1–3 short items (each under 250 characters).
+"golden" must be under 1200 characters.
+Keep output concise. Do not exceed necessary length.
 Use EXACTLY these keys and no others:
 "diagnosis": array of strings
 "missing": array of strings
@@ -299,6 +304,11 @@ The value of "golden" must NOT contain "{" or "}" characters.
 Output only JSON. No extra text.
 No markdown, no backticks, no code fences.
 Do not include the characters ``` anywhere in the output.
+"diagnosis" must contain 1–3 short items (each under 250 characters).
+"missing" must contain 1–3 short items (each under 250 characters).
+"improvements" must contain 1–3 short items (each under 250 characters).
+"golden" must be under 1200 characters.
+Keep output concise. Do not exceed necessary length.
 Use EXACTLY these keys and no others:
 "diagnosis": array of strings
 "missing": array of strings
@@ -342,6 +352,11 @@ The value of "golden" must NOT contain "{" or "}" characters.
 Output only JSON. No extra text.
 No markdown, no backticks, no code fences.
 Do not include the characters ``` anywhere in the output.
+"diagnosis" must contain 1–3 short items (each under 250 characters).
+"missing" must contain 1–3 short items (each under 250 characters).
+"improvements" must contain 1–3 short items (each under 250 characters).
+"golden" must be under 1200 characters.
+Keep output concise. Do not exceed necessary length.
 Use EXACTLY these keys and no others:
 "diagnosis": array of strings
 "missing": array of strings
