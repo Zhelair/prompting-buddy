@@ -27,6 +27,7 @@
     projects: "pb_projects_v1",
     ideas: "pb_ideas_v1",
     draftPrompt: "pb_draft_prompt_v1",
+    draftForce: "pb_draft_force_v1",
     theme: "pb_theme",
     variant: (t)=>`pb_theme_variant_${t}`,
     libSelProject: "pb_lib_sel_project_v1",
@@ -90,6 +91,18 @@
 
   function setDraftPrompt(v){
     try{ localStorage.setItem(LS.draftPrompt, String(v||"")); }catch{}
+  }
+  function setDraftPromptForce(v){
+    // Used when user clicks "Send to Buddy" from Library/Vault.
+    // This should overwrite whatever is currently in the Buddy textarea.
+    setDraftPrompt(v);
+    try{ localStorage.setItem(LS.draftForce, "1"); }catch{}
+  }
+  function getDraftForce(){
+    try{ return localStorage.getItem(LS.draftForce)==="1"; }catch{ return false; }
+  }
+  function clearDraftForce(){
+    try{ localStorage.removeItem(LS.draftForce); }catch{}
   }
   function getDraftPrompt(){
     try{ return String(localStorage.getItem(LS.draftPrompt) || ""); }catch{ return ""; }
@@ -445,10 +458,17 @@
       if(ch) ch.textContent = String(n);
       return n;
     }
-    // Restore draft so switching Buddy/Vault/About doesn't erase what you're typing
-    if(prompt && !prompt.value){
+    // Restore draft so switching tabs doesn't erase what you're typing.
+    // If we arrived via "Send to Buddy", we force overwrite once.
+    if(prompt){
       const draft = getDraftPrompt();
-      if(draft) prompt.value = draft;
+      const force = getDraftForce();
+      if(draft && (force || !prompt.value)){
+        prompt.value = draft;
+        if(force){
+          try{ localStorage.removeItem(LS.draftForce); }catch{}
+        }
+      }
     }
 
     // Restore last Prompt Check output so switching tabs doesn't wipe results
@@ -1550,7 +1570,7 @@ function renderLines(el, arr){
             setTimeout(()=>setStatus(''), 900);
           }
           if(act === 'send'){
-            setDraftPrompt(String(item.text||""));
+            setDraftPromptForce(String(item.text||""));
             location.hash = 'buddy';
           }
           if(act === 'edit'){
