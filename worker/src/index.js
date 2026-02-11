@@ -92,7 +92,6 @@ export default {
 
       let body = {};
       try { body = await request.json(); } catch { body = {}; }
-      const passphrase = String(body.passphrase || '').trim();
       if (!passphrase) return corsJson(request, env, 400, { error: 'missing_passphrase' });
 
       const allowed = getAllowedPassphrases(env);
