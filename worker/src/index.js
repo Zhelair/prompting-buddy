@@ -249,7 +249,7 @@ Follow this process:
 4) Golden Prompt: a single revised prompt, preserving intent.
 
 
-Return ONLY a single valid JSON object.
+Return ONLY valid JSON, no markdown, no code fences, no extra text.
 
 Hard rules:
 Output only JSON. No extra text.
@@ -292,6 +292,23 @@ Follow this process:
 4) Golden Prompt: a single revised prompt that encourages exploration (options, tradeoffs, criteria) while preserving intent.
 
 Return ONLY valid JSON, no markdown, no code fences, no extra text.
+
+Hard rules:
+Output only JSON. No extra text.
+No markdown, no backticks, no code fences.
+Do not include the characters ``` anywhere in the output.
+Use EXACTLY these keys and no others:
+"diagnosis": array of strings
+"missing": array of strings
+"improvements": array of strings
+"golden": string
+
+Do NOT put JSON inside any field.
+"golden" must be plain text only. It must NOT contain JSON, braces that start an object, or the words "diagnosis", "missing", "improvements" as labels.
+
+If you break any rule, output exactly:
+{"diagnosis":["FORMAT_ERROR"],"missing":[],"improvements":[],"golden":"FORMAT_ERROR"}
+
 Schema:
 {
   "diagnosis": ["..."],
@@ -317,6 +334,23 @@ Follow this process:
 4) Golden Prompt: a single revised prompt that adds creative direction (audience, tone, style constraints) while preserving intent.
 
 Return ONLY valid JSON, no markdown, no code fences, no extra text.
+
+Hard rules:
+Output only JSON. No extra text.
+No markdown, no backticks, no code fences.
+Do not include the characters ``` anywhere in the output.
+Use EXACTLY these keys and no others:
+"diagnosis": array of strings
+"missing": array of strings
+"improvements": array of strings
+"golden": string
+
+Do NOT put JSON inside any field.
+"golden" must be plain text only. It must NOT contain JSON, braces that start an object, or the words "diagnosis", "missing", "improvements" as labels.
+
+If you break any rule, output exactly:
+{"diagnosis":["FORMAT_ERROR"],"missing":[],"improvements":[],"golden":"FORMAT_ERROR"}
+
 Schema:
 {
   "diagnosis": ["..."],
