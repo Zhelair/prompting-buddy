@@ -252,6 +252,7 @@ Follow this process:
 Return ONLY valid JSON, no markdown, no code fences, no extra text.
 
 Hard rules:
+The value of "golden" must NOT contain "{" or "}" characters.
 Output only JSON. No extra text.
 No markdown, no backticks, no code fences.
 Do not include the characters ``` anywhere in the output.
@@ -294,6 +295,7 @@ Follow this process:
 Return ONLY valid JSON, no markdown, no code fences, no extra text.
 
 Hard rules:
+The value of "golden" must NOT contain "{" or "}" characters.
 Output only JSON. No extra text.
 No markdown, no backticks, no code fences.
 Do not include the characters ``` anywhere in the output.
@@ -336,6 +338,7 @@ Follow this process:
 Return ONLY valid JSON, no markdown, no code fences, no extra text.
 
 Hard rules:
+The value of "golden" must NOT contain "{" or "}" characters.
 Output only JSON. No extra text.
 No markdown, no backticks, no code fences.
 Do not include the characters ``` anywhere in the output.
