@@ -18,6 +18,7 @@
   const promptsLimitEl = document.getElementById("promptsLimit");
   const coachLeftEl = document.getElementById("coachLeft");
   const coachLimitEl = document.getElementById("coachLimit");
+  const pcCapCharsEl = document.getElementById("pcCapChars");
 
   const LS = {
     token: "pb_token",
@@ -112,6 +113,7 @@
   if(year) year.textContent = String(nowYear());
   if(footerSupport) footerSupport.href = data.supportUrl || "#";
   if(brandName) brandName.textContent = data.brand || "Prompting Buddy";
+  if(pcCapCharsEl) pcCapCharsEl.textContent = `${PROMPT_MAX_CHARS.toLocaleString()} characters`;
 
   // --- Theme (same mechanism as main app, lightweight)
   function getTheme(){
@@ -908,32 +910,6 @@ function renderLines(el, arr){
       setCoachStatus("Vault reset ✅");
       setTimeout(()=>setCoachStatus(""), 900);
     });
-
-    function parseJsonFromText(txt){
-      if(!txt) return null;
-      const s = String(txt).trim();
-      // Strip common code fences
-      const noFence = s
-        .replace(/^```(?:json)?\s*/i, "")
-        .replace(/```\s*$/i, "");
-      // Try direct JSON first (with a tiny bit of leniency)
-      const tryParse = (str) => {
-        const repaired = String(str)
-          // remove trailing commas before } or ]
-          .replace(/,\s*([}\]])/g, "$1")
-          // normalize smart quotes (rare, but happens)
-          .replace(/[“”]/g, '"')
-          .replace(/[‘’]/g, "'")
-          .trim();
-        try { return JSON.parse(repaired); } catch { return null; }
-      };
-      const direct = tryParse(noFence);
-      if(direct) return direct;
-      // Otherwise, extract the first {...} block
-      const m = noFence.match(/\{[\s\S]*\}/);
-      if(!m) return null;
-      return tryParse(m[0]);
-    }
 
     function normalizeCoachPayload(maybe){
       // Accept object or string; try to end up with {mistakes:[], fixes:[], metaPrompt:""}
@@ -1825,14 +1801,70 @@ function renderLines(el, arr){
   // -------- Shared parsers (must be top-level so Buddy + Vault can both use them) --------
   function parseJsonFromText(txt){
     if(!txt) return null;
-    const s = String(txt).trim();
-    const noFence = s
-      .replace(/^```(?:json)?\s*/i, "")
-      .replace(/```\s*$/i, "");
-    try{ return JSON.parse(noFence); }catch{}
-    const m = noFence.match(/\{[\s\S]*\}/);
-    if(!m) return null;
-    try{ return JSON.parse(m[0]); }catch{ return null; }
+    const raw = String(txt);
+
+    const repair = (str)=>{
+      return String(str)
+        .replace(/^[\uFEFF\s]+/, '') // BOM / leading spaces
+        .replace(/,\s*([}\]])/g, '$1') // trailing commas
+        .replace(/[“”]/g, '"') // smart quotes
+        .replace(/[‘’]/g, "'")
+        .trim();
+    };
+
+    const tryParse = (str)=>{
+      try{ return JSON.parse(repair(str)); }catch{ return null; }
+    };
+
+    // 1) Prefer fenced JSON blocks: ```json ... ```
+    const fenceJson = raw.match(/```\s*json\s*\n([\s\S]*?)\n```/i);
+    if(fenceJson && fenceJson[1]){
+      const parsed = tryParse(fenceJson[1]);
+      if(parsed) return parsed;
+    }
+
+    // 2) Any fenced block: ``` ... ```
+    const fenceAny = raw.match(/```\s*([\s\S]*?)\s*```/);
+    if(fenceAny && fenceAny[1]){
+      const parsed = tryParse(fenceAny[1]);
+      if(parsed) return parsed;
+    }
+
+    // 3) Direct parse (sometimes server returns pure JSON)
+    const direct = tryParse(raw);
+    if(direct) return direct;
+
+    // 4) Extract first balanced {...} object (quote-aware)
+    const s = raw;
+    const start = s.indexOf('{');
+    if(start < 0) return null;
+
+    let depth = 0;
+    let inStr = false;
+    let esc = false;
+    for(let i = start; i < s.length; i++){
+      const ch = s[i];
+      if(inStr){
+        if(esc){ esc = false; continue; }
+        if(ch === '\\'){ esc = true; continue; }
+        if(ch === '"'){ inStr = false; continue; }
+        continue;
+      } else {
+        if(ch === '"'){ inStr = true; continue; }
+        if(ch === '{'){ depth++; }
+        if(ch === '}'){
+          depth--;
+          if(depth === 0){
+            const chunk = s.slice(start, i+1);
+            const parsed = tryParse(chunk);
+            if(parsed) return parsed;
+            return null;
+          }
+        }
+      }
+    }
+
+    return null;
   }
 
   function normalizePromptCheckPayload(maybe){
