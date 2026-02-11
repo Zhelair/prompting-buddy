@@ -255,6 +255,8 @@ Hard rules:
 The value of "golden" must NOT contain "{" or "}" characters.
 Output only JSON. No extra text.
 No markdown, no backticks, no code fences.
+If "golden" contains "{" or "}" then you MUST output FORMAT_ERROR instead of any other content.
+If you are about to include "{" or "}" anywhere in "golden", STOP and output FORMAT_ERROR JSON only.
 Do not include the characters ``` anywhere in the output.
 "diagnosis" must contain 1–3 short items (each under 250 characters).
 "missing" must contain 1–3 short items (each under 250 characters).
@@ -303,6 +305,8 @@ Hard rules:
 The value of "golden" must NOT contain "{" or "}" characters.
 Output only JSON. No extra text.
 No markdown, no backticks, no code fences.
+If "golden" contains "{" or "}" then you MUST output FORMAT_ERROR instead of any other content.
+If you are about to include "{" or "}" anywhere in "golden", STOP and output FORMAT_ERROR JSON only.
 Do not include the characters ``` anywhere in the output.
 "diagnosis" must contain 1–3 short items (each under 250 characters).
 "missing" must contain 1–3 short items (each under 250 characters).
@@ -351,6 +355,8 @@ Hard rules:
 The value of "golden" must NOT contain "{" or "}" characters.
 Output only JSON. No extra text.
 No markdown, no backticks, no code fences.
+If "golden" contains "{" or "}" then you MUST output FORMAT_ERROR instead of any other content.
+If you are about to include "{" or "}" anywhere in "golden", STOP and output FORMAT_ERROR JSON only.
 Do not include the characters ``` anywhere in the output.
 "diagnosis" must contain 1–3 short items (each under 250 characters).
 "missing" must contain 1–3 short items (each under 250 characters).
