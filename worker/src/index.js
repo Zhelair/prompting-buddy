@@ -255,6 +255,9 @@ Hard rules:
 The value of "golden" must NOT contain "{" or "}" characters.
 Output only JSON. No extra text.
 No markdown, no backticks, no code fences.
+"golden" must be under 1200 characters.
+"golden" must be a single paragraph. No line breaks.
+Do NOT include examples, templates, headings, numbering, or multi-section formatting inside "golden".
 If "golden" contains "{" or "}" then you MUST output FORMAT_ERROR instead of any other content.
 If you are about to include "{" or "}" anywhere in "golden", STOP and output FORMAT_ERROR JSON only.
 Do not include the characters ``` anywhere in the output.
@@ -305,6 +308,9 @@ Hard rules:
 The value of "golden" must NOT contain "{" or "}" characters.
 Output only JSON. No extra text.
 No markdown, no backticks, no code fences.
+"golden" must be under 1200 characters.
+"golden" must be a single paragraph. No line breaks.
+Do NOT include examples, templates, headings, numbering, or multi-section formatting inside "golden".
 If "golden" contains "{" or "}" then you MUST output FORMAT_ERROR instead of any other content.
 If you are about to include "{" or "}" anywhere in "golden", STOP and output FORMAT_ERROR JSON only.
 Do not include the characters ``` anywhere in the output.
