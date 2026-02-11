@@ -12,8 +12,8 @@
 //  - TIMEZONE (default Europe/Sofia)
 //  - DAILY_PROMPT_LIMIT (default 30)
 //  - DAILY_COACH_LIMIT (default 5)
-//  - PROMPT_MAX_CHARS (default 5000)
-//  - COACH_MAX_CHARS (default 8000)
+//  - PROMPT_MAX_CHARS (default 20000)
+//  - COACH_MAX_CHARS (default 20000)
 //  - TOKEN_TTL_DAYS (default 30)
 //
 // Expected binding:
@@ -132,7 +132,7 @@ export default {
         const systemPrompt = lens === 'thinker' ? SYSTEM_PROMPT_CHECK_THINKER : lens === 'creator' ? SYSTEM_PROMPT_CHECK_CREATOR : SYSTEM_PROMPT_CHECK_AUDITOR;
 
 
-        const maxChars = Number(env.PROMPT_MAX_CHARS || 5000);
+        const maxChars = Number(env.PROMPT_MAX_CHARS || 20000);
         const clipped = prompt.length > maxChars ? prompt.slice(0, maxChars) : prompt;
 
         const pLimit = Number(env.DAILY_PROMPT_LIMIT || 30);
@@ -159,7 +159,7 @@ export default {
         const last = items.slice(0, 5);
         if (!last.length) return corsJson(request, env, 400, { error: 'missing_items' });
 
-        const maxChars = Number(env.COACH_MAX_CHARS || 8000);
+        const maxChars = Number(env.COACH_MAX_CHARS || 20000);
         const chunks = [];
         for (let i = 0; i < last.length; i++) {
           const p = String(last[i]?.prompt || '').trim();
