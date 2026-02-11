@@ -64,6 +64,27 @@ export default {
 
     // --- /unlock
     if (url.pathname === '/unlock') {
+    // Read passphrase from header
+    const passphrase = request.headers.get('x-ou-pass');
+    if (!passphrase || !passphrase.trim()) {
+      return new Response(JSON.stringify({ error: 'missing_passphrase' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders(request, env) }
+      });
+    }
+
+    const allowedPasses = (env.ALLOWED_PASSPHRASES || '')
+      .split(',')
+      .map(p => p.trim())
+      .filter(Boolean);
+
+    if (!allowedPasses.includes(passphrase.trim())) {
+      return new Response(JSON.stringify({ error: 'invalid_passphrase' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders(request, env) }
+      });
+    }
+
       if (request.method !== 'POST') return corsJson(request, env, 405, { error: 'use_post' });
 
       const origin = request.headers.get('Origin') || '';
