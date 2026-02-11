@@ -7,6 +7,10 @@
   const PROMPT_MAX_CHARS = Number(house.promptMaxChars || 5000);
   const COACH_MAX_CHARS = Number(house.coachMaxChars || 8000);
 
+  const formatInt = (n)=>{ try{ return Number(n||0).toLocaleString(); }catch{ return String(n||0); } };
+
+  try{ const el = document.getElementById('pbPromptCap'); if(el) el.textContent = formatInt(PROMPT_MAX_CHARS); }catch{}
+
   const app = document.getElementById("app");
   const year = document.getElementById("year");
   const footerSupport = document.getElementById("footerSupport");
@@ -458,15 +462,6 @@
       if(ch) ch.textContent = String(n);
       return n;
     }
-
-// Show real cap from config (avoid stale hardcoded text in HTML)
-try{
-  const capEl = document.getElementById('pcCapChars');
-  if(capEl && window.PB_DATA?.house?.promptMaxChars){
-    capEl.textContent = new Intl.NumberFormat().format(window.PB_DATA.house.promptMaxChars);
-  }
-}catch{}
-
     // Restore draft so switching tabs doesn't erase what you're typing.
     // If we arrived via "Send to Buddy", we force overwrite once.
     if(prompt){
@@ -919,114 +914,69 @@ function renderLines(el, arr){
     });
 
     function parseJsonFromText(txt){
-  if(!txt) return null;
-  const s0 = String(txt);
+      if(!txt) return null;
+      const s0 = String(txt).trim();
+      if(!s0) return null;
 
-  // 1) Prefer fenced JSON blocks anywhere in the text.
-  //    Example: ```json { ... } ```
-  const fenceMatch = s0.match(/```\s*json\s*([\s\S]*?)```/i) || s0.match(/```\s*([\s\S]*?)```/i);
-  const candidateFromFence = fenceMatch ? fenceMatch[1] : null;
+      const tryParse = (str) => {
+        if(!str) return null;
+        const repaired = String(str)
+          // remove trailing commas before } or ]
+          .replace(/,\s*([}\]])/g, "$1")
+          // normalize smart quotes
+          .replace(/[“”]/g, '"')
+          .replace(/[‘’]/g, "'")
+          .trim();
+        try { return JSON.parse(repaired); } catch { return null; }
+      };
 
-  // 2) Otherwise try to extract the first balanced {...} JSON object.
-  const extractBalancedObject = (s) => {
-    const str = String(s);
-    const start = str.indexOf('{');
-    if(start === -1) return null;
-
-    let depth = 0;
-    let inString = false;
-    let escape = false;
-
-    for(let i=start;i<str.length;i++){
-      const ch = str[i];
-      if(inString){
-        if(escape){ escape = false; continue; }
-        if(ch === '\\'){ escape = true; continue; }
-        if(ch === '"'){ inString = false; continue; }
-        continue;
-      } else {
-        if(ch === '"'){ inString = true; continue; }
-        if(ch === '{') depth++;
-        if(ch === '}'){
-          depth--;
-          if(depth === 0){
-            return str.slice(start, i+1);
-          }
-        }
+      // 1) Prefer fenced JSON blocks if present
+      const fenceMatch = s0.match(/```\s*json\s*([\s\S]*?)```/i) || s0.match(/```\s*([\s\S]*?)```/i);
+      if(fenceMatch && fenceMatch[1]){
+        const fromFence = tryParse(fenceMatch[1]);
+        if(fromFence) return fromFence;
       }
-    }
-    return null;
-  };
 
-  const tryParse = (str) => {
-    if(!str) return null;
-    const repaired = String(str)
-      // remove trailing commas before } or ]
-      .replace(/,\s*([}\]])/g, "$1")
-      // normalize smart quotes
-      .replace(/[“”]/g, '"')
-      .replace(/[‘’]/g, "'")
-      .trim();
-    try { return JSON.parse(repaired); } catch { return null; }
-  };
-
-  // Try fence first
-  const fromFence = tryParse(candidateFromFence);
-  if(fromFence) return fromFence;
-
-  // Try direct parse (in case it already is clean JSON)
-  const direct = tryParse(s0.trim());
-  if(direct) return direct;
-
-  // Try balanced object extraction
-  const balanced = extractBalancedObject(s0);
-  if(!balanced) return null;
-  return tryParse(balanced);
-} else {
-        if(ch === '"'){ inString = true; continue; }
-        if(ch === '{') depth++;
-        if(ch === '}'){
-          depth--;
-          if(depth === 0){
-            return str.slice(start, i+1);
-          }
-        }
-      }
-    }
-    return null;
-  };
-
-  const tryParse = (str) => {
-    if(!str) return null;
-    const repaired = String(str)
-      // remove trailing commas before } or ]
-      .replace(/,\s*([}\]])/g, "$1")
-      // normalize smart quotes
-      .replace(/[“”]/g, '"')
-      .replace(/[‘’]/g, "'")
-      .trim();
-    try { return JSON.parse(repaired); } catch { return null; }
-  };
-
-  // Try fence first
-  const fromFence = tryParse(candidateFromFence);
-  if(fromFence) return fromFence;
-
-  // Try direct parse (in case it already is clean JSON)
-  const direct = tryParse(s0.trim());
-  if(direct) return direct;
-
-  // Try balanced object extraction
-  const balanced = extractBalancedObject(s0);
-  if(!balanced) return null;
-  return tryParse(balanced);
-};
-      const direct = tryParse(noFence);
+      // 2) Try direct parse
+      const direct = tryParse(s0);
       if(direct) return direct;
-      // Otherwise, extract the first {...} block
-      const m = noFence.match(/\{[\s\S]*\}/);
-      if(!m) return null;
-      return tryParse(m[0]);
+
+      // 3) Try to extract the first balanced {...} JSON object (quote-aware)
+      const extractBalancedObject = (str) => {
+        let start = -1;
+        let depth = 0;
+        let inString = false;
+        let escaped = false;
+
+        for(let i=0;i<str.length;i++){
+          const ch = str[i];
+
+          if(inString){
+            if(escaped){ escaped = false; continue; }
+            if(ch === '\\'){ escaped = true; continue; }
+            if(ch === '"'){ inString = false; continue; }
+            continue;
+          } else {
+            if(ch === '"'){ inString = true; continue; }
+            if(ch === '{'){
+              if(depth === 0) start = i;
+              depth++;
+              continue;
+            }
+            if(ch === '}'){
+              if(depth > 0) depth--;
+              if(depth === 0 && start !== -1){
+                return str.slice(start, i+1);
+              }
+            }
+          }
+        }
+        return null;
+      };
+
+      const balanced = extractBalancedObject(s0);
+      if(!balanced) return null;
+      return tryParse(balanced);
     }
 
     function normalizeCoachPayload(maybe){
@@ -1050,9 +1000,10 @@ function renderLines(el, arr){
     function normalizePromptCheckPayload(maybe){
       // Accept:
       // 1) {diagnosis:[], missing:[], improvements:[], golden:""}
-      // 2) {text:"```json {...}```"} or {raw:"..."}
+      // 2) {text:"..."} or {raw:"..."}
       // 3) a raw string
       let obj = maybe;
+
       if(obj && typeof obj === 'object'){
         // If the worker wraps the model output as text, try to parse that.
         if((!obj.diagnosis && !obj.golden) && typeof obj.text === 'string'){
@@ -1064,39 +1015,34 @@ function renderLines(el, arr){
           if(parsed && typeof parsed === 'object') obj = parsed;
         }
       }
-      if(typeof obj === 'string') obj = parseJsonFromText(obj) || { diagnosis: [obj] };
+
+      if(typeof obj === 'string'){
+        obj = parseJsonFromText(obj) || { diagnosis: [obj] };
+      }
 
       const diagnosis = Array.isArray(obj?.diagnosis) ? obj.diagnosis : (obj?.diagnosis ? [String(obj.diagnosis)] : []);
       const missing = Array.isArray(obj?.missing) ? obj.missing : (obj?.missing ? [String(obj.missing)] : []);
       const improvements = Array.isArray(obj?.improvements) ? obj.improvements : (obj?.improvements ? [String(obj.improvements)] : []);
       const golden = typeof obj?.golden === 'string' ? obj.golden : (typeof obj?.goldenPrompt === 'string' ? obj.goldenPrompt : '');
-      // If the model "double-wrapped" JSON inside the golden field, salvage it.
-// This happens when outer JSON is valid but diagnosis/missing/improvements are empty,
-// and golden contains another JSON object (often inside ```json fences).
-const maybeNested = (typeof golden === 'string' && /"diagnosis"\s*:|\bdiagnosis\b\s*:/.test(golden) && (golden.includes('```') || golden.includes('{')))
-  ? parseJsonFromText(golden)
-  : null;
 
-if(maybeNested && typeof maybeNested === 'object'){
-  const nd = Array.isArray(maybeNested.diagnosis) ? maybeNested.diagnosis : null;
-  const nm = Array.isArray(maybeNested.missing) ? maybeNested.missing : null;
-  const ni = Array.isArray(maybeNested.improvements) ? maybeNested.improvements : null;
-  const ng = (typeof maybeNested.golden === 'string') ? maybeNested.golden : (typeof maybeNested.goldenPrompt === 'string' ? maybeNested.goldenPrompt : null);
+      // Salvage: sometimes the model "double-wraps" the real JSON inside the golden field as a string.
+      const outerLooksEmpty = !(diagnosis.length || missing.length || improvements.length);
+      const goldenLooksLikeJson = (typeof golden === 'string') && (golden.includes('```') || golden.includes('{')) && (/"diagnosis"\s*:|\bdiagnosis\b\s*:/i.test(golden));
+      if(outerLooksEmpty && goldenLooksLikeJson){
+        const nested = parseJsonFromText(golden);
+        if(nested && typeof nested === 'object'){
+          const nd = Array.isArray(nested.diagnosis) ? nested.diagnosis : (nested.diagnosis ? [String(nested.diagnosis)] : []);
+          const nm = Array.isArray(nested.missing) ? nested.missing : (nested.missing ? [String(nested.missing)] : []);
+          const ni = Array.isArray(nested.improvements) ? nested.improvements : (nested.improvements ? [String(nested.improvements)] : []);
+          const ng = typeof nested.golden === 'string' ? nested.golden : (typeof nested.goldenPrompt === 'string' ? nested.goldenPrompt : '');
 
-  // Only override if it looks like the nested object is the real payload.
-  const nestedHasSignal = (nd && nd.length) || (nm && nm.length) || (ni && ni.length) || (ng && ng.length);
-  const outerLooksEmpty = !(diagnosis?.length || missing?.length || improvements?.length);
-  if(nestedHasSignal && outerLooksEmpty){
-    return {
-      diagnosis: nd || [],
-      missing: nm || [],
-      improvements: ni || [],
-      golden: ng || '',
-      _raw: obj,
-      _nested: maybeNested
-    };
-  }
-}
+          const nestedHasSignal = (nd.length || nm.length || ni.length || (ng && ng.trim().length));
+          if(nestedHasSignal){
+            return { diagnosis: nd, missing: nm, improvements: ni, golden: ng || '', _raw: obj, _nested: nested };
+          }
+        }
+      }
+
       return { diagnosis, missing, improvements, golden, _raw: obj };
     }
 
@@ -1945,70 +1891,16 @@ if(maybeNested && typeof maybeNested === 'object'){
 
   // -------- Shared parsers (must be top-level so Buddy + Vault can both use them) --------
   function parseJsonFromText(txt){
-  if(!txt) return null;
-  const s0 = String(txt);
-
-  // 1) Prefer fenced JSON blocks anywhere in the text.
-  //    Example: ```json { ... } ```
-  const fenceMatch = s0.match(/```\s*json\s*([\s\S]*?)```/i) || s0.match(/```\s*([\s\S]*?)```/i);
-  const candidateFromFence = fenceMatch ? fenceMatch[1] : null;
-
-  // 2) Otherwise try to extract the first balanced {...} JSON object.
-  const extractBalancedObject = (s) => {
-    const str = String(s);
-    const start = str.indexOf('{');
-    if(start === -1) return null;
-
-    let depth = 0;
-    let inString = false;
-    let escape = false;
-
-    for(let i=start;i<str.length;i++){
-      const ch = str[i];
-      if(inString){
-        if(escape){ escape = false; continue; }
-        if(ch === '\\'){ escape = true; continue; }
-        if(ch === '"'){ inString = false; continue; }
-        continue;
-      } else {
-        if(ch === '"'){ inString = true; continue; }
-        if(ch === '{') depth++;
-        if(ch === '}'){
-          depth--;
-          if(depth === 0){
-            return str.slice(start, i+1);
-          }
-        }
-      }
-    }
-    return null;
-  };
-
-  const tryParse = (str) => {
-    if(!str) return null;
-    const repaired = String(str)
-      // remove trailing commas before } or ]
-      .replace(/,\s*([}\]])/g, "$1")
-      // normalize smart quotes
-      .replace(/[“”]/g, '"')
-      .replace(/[‘’]/g, "'")
-      .trim();
-    try { return JSON.parse(repaired); } catch { return null; }
-  };
-
-  // Try fence first
-  const fromFence = tryParse(candidateFromFence);
-  if(fromFence) return fromFence;
-
-  // Try direct parse (in case it already is clean JSON)
-  const direct = tryParse(s0.trim());
-  if(direct) return direct;
-
-  // Try balanced object extraction
-  const balanced = extractBalancedObject(s0);
-  if(!balanced) return null;
-  return tryParse(balanced);
-}
+    if(!txt) return null;
+    const s = String(txt).trim();
+    const noFence = s
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/```\s*$/i, "");
+    try{ return JSON.parse(noFence); }catch{}
+    const m = noFence.match(/\{[\s\S]*\}/);
+    if(!m) return null;
+    try{ return JSON.parse(m[0]); }catch{ return null; }
+  }
 
   function normalizePromptCheckPayload(maybe){
     const unwrap = (x)=>{
