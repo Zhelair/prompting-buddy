@@ -154,8 +154,10 @@ window.PB_DATA = {
   ],
   house: {
     endpoint: "https://prompting-buddy-house.nik-sales-737.workers.dev",
-    dailyPromptLimit: 30,
-    dailyCoachLimit: 5,
+    // Daily limits shown in UI (and used as client-side fallback if /status returns no limits).
+    // If your Worker enforces different limits, update the Worker too.
+    dailyPromptLimit: 100,
+    dailyCoachLimit: 20,
     // Prompt Check input cap (client-side). Buddy textarea itself can be any size,
     // but we use this to guard requests sent to the Worker.
     promptMaxChars: 20000,

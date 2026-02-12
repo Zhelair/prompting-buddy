@@ -286,14 +286,27 @@
         }
       });
       // expected: { prompt: {used,limit,left}, coach: {used,limit,left} }
-      const p = st && st.prompt ? st.prompt : { used:0, limit:DAILY_PROMPT_LIMIT, left:DAILY_PROMPT_LIMIT };
-      const c = st && st.coach ? st.coach : { used:0, limit:DAILY_COACH_LIMIT, left:DAILY_COACH_LIMIT };
+      // Some backends may return 0/0 when a token is valid but not provisioned.
+      // In that case we fall back to client defaults so the UI never shows 0/0.
+      function sanitizeQuota(q, fallbackLimit){
+        const used = Number(q?.used ?? 0) || 0;
+        let limit = Number(q?.limit ?? fallbackLimit) || 0;
+        if(limit <= 0) limit = fallbackLimit;
+        let left = (q && q.left != null) ? Number(q.left) : (limit - used);
+        if(!Number.isFinite(left)) left = Math.max(0, limit - used);
+        // Clamp
+        left = Math.max(0, Math.min(limit, left));
+        return { used, limit, left };
+      }
+
+      const p = sanitizeQuota(st && st.prompt ? st.prompt : null, DAILY_PROMPT_LIMIT);
+      const c = sanitizeQuota(st && st.coach ? st.coach : null, DAILY_COACH_LIMIT);
       pillPrompts.hidden = false;
       pillCoach.hidden = false;
-      promptsLeftEl.textContent = String(p.left ?? Math.max(0, (p.limit||DAILY_PROMPT_LIMIT) - (p.used||0)));
-      promptsLimitEl.textContent = String(p.limit ?? DAILY_PROMPT_LIMIT);
-      coachLeftEl.textContent = String(c.left ?? Math.max(0, (c.limit||DAILY_COACH_LIMIT) - (c.used||0)));
-      coachLimitEl.textContent = String(c.limit ?? DAILY_COACH_LIMIT);
+      promptsLeftEl.textContent = String(p.left);
+      promptsLimitEl.textContent = String(p.limit);
+      coachLeftEl.textContent = String(c.left);
+      coachLimitEl.textContent = String(c.limit);
     } catch {
       // token probably invalid
       pillPrompts.hidden = true;
