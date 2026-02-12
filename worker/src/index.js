@@ -255,17 +255,15 @@ Hard rules:
 The value of "golden" must NOT contain "{" or "}" characters.
 Output only JSON. No extra text.
 No markdown, no backticks, no code fences.
-"golden" must be under 1200 characters.
-"golden" must be a single paragraph. No line breaks.
-Do NOT include examples, templates, headings, numbering, or multi-section formatting inside "golden".
-If "golden" contains "{" or "}" then you MUST output FORMAT_ERROR instead of any other content.
-If you are about to include "{" or "}" anywhere in "golden", STOP and output FORMAT_ERROR JSON only.
-Do not include the characters ``` anywhere in the output.
 "diagnosis" must contain 1–3 short items (each under 250 characters).
 "missing" must contain 1–3 short items (each under 250 characters).
 "improvements" must contain 1–3 short items (each under 250 characters).
 "golden" must be under 1200 characters.
 Keep output concise. Do not exceed necessary length.
+If "golden" contains "{" or "}" then you MUST output FORMAT_ERROR instead of any other content.
+If you are about to include "{" or "}" anywhere in "golden", STOP and output FORMAT_ERROR JSON only.
+Do not include the characters ``` anywhere in the output.
+
 Use EXACTLY these keys and no others:
 "diagnosis": array of strings
 "missing": array of strings
@@ -308,17 +306,15 @@ Hard rules:
 The value of "golden" must NOT contain "{" or "}" characters.
 Output only JSON. No extra text.
 No markdown, no backticks, no code fences.
-"golden" must be under 1200 characters.
-"golden" must be a single paragraph. No line breaks.
-Do NOT include examples, templates, headings, numbering, or multi-section formatting inside "golden".
-If "golden" contains "{" or "}" then you MUST output FORMAT_ERROR instead of any other content.
-If you are about to include "{" or "}" anywhere in "golden", STOP and output FORMAT_ERROR JSON only.
-Do not include the characters ``` anywhere in the output.
 "diagnosis" must contain 1–3 short items (each under 250 characters).
 "missing" must contain 1–3 short items (each under 250 characters).
 "improvements" must contain 1–3 short items (each under 250 characters).
 "golden" must be under 1200 characters.
 Keep output concise. Do not exceed necessary length.
+If "golden" contains "{" or "}" then you MUST output FORMAT_ERROR instead of any other content.
+If you are about to include "{" or "}" anywhere in "golden", STOP and output FORMAT_ERROR JSON only.
+Do not include the characters ``` anywhere in the output.
+
 Use EXACTLY these keys and no others:
 "diagnosis": array of strings
 "missing": array of strings
@@ -361,14 +357,15 @@ Hard rules:
 The value of "golden" must NOT contain "{" or "}" characters.
 Output only JSON. No extra text.
 No markdown, no backticks, no code fences.
-If "golden" contains "{" or "}" then you MUST output FORMAT_ERROR instead of any other content.
-If you are about to include "{" or "}" anywhere in "golden", STOP and output FORMAT_ERROR JSON only.
-Do not include the characters ``` anywhere in the output.
 "diagnosis" must contain 1–3 short items (each under 250 characters).
 "missing" must contain 1–3 short items (each under 250 characters).
 "improvements" must contain 1–3 short items (each under 250 characters).
 "golden" must be under 1200 characters.
 Keep output concise. Do not exceed necessary length.
+If "golden" contains "{" or "}" then you MUST output FORMAT_ERROR instead of any other content.
+If you are about to include "{" or "}" anywhere in "golden", STOP and output FORMAT_ERROR JSON only.
+Do not include the characters ``` anywhere in the output.
+
 Use EXACTLY these keys and no others:
 "diagnosis": array of strings
 "missing": array of strings
@@ -388,7 +385,6 @@ Schema:
   "improvements": ["..."],
   "golden": "..."
 }`;
-
 
 const SYSTEM_COACH = `You are Prompting Buddy Coach.
 You will be given up to 5 prior prompt-check runs (prompts and optional pasted AI replies).
