@@ -889,8 +889,7 @@ function renderLines(el, arr){
               return;
             }
             const lib = loadLibrary();
-            const titleBase = (originalTxt.split('
-')[0] || 'From Vault').slice(0, 60);
+            const titleBase = (originalTxt.split('\n')[0] || 'From Vault').slice(0, 60);
             lib.unshift({
               id: `lib_${Date.now()}_${Math.random().toString(16).slice(2)}`,
               t: Date.now(),
