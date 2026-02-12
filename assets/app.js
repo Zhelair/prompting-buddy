@@ -257,7 +257,7 @@
     const res = await fetch(url, {
       method,
       headers,
-      body: body!=null ? JSON.stringify(body) : null
+      body: body==null ? null : (typeof body === "string" ? body : JSON.stringify(body))
     });
     const txt = await res.text();
     let j = null;
@@ -390,9 +390,10 @@
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "Accept": "application/json",
             "X-OU-PASS": pass
           },
-          body: {}
+          body: { passphrase: pass, pass: pass, code: pass, key: pass }
         });
         if(j && j.token){
           setToken(j.token, j.expiresAt);
