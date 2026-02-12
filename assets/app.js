@@ -881,15 +881,26 @@ function renderLines(el, arr){
           }
 
           if(act === 'saveToLibrary') {
-            const txt = String(item.golden||"").trim();
-            if(!txt){ setCoachStatus('No Golden Prompt to save.'); setTimeout(()=>setCoachStatus(''), 900); return; }
+            const goldenTxt = String(item.golden||"").trim();
+            const originalTxt = String(item.prompt||"").trim();
+            if(!goldenTxt){
+              setCoachStatus('No Golden Prompt to save.');
+              setTimeout(()=>setCoachStatus(''), 900);
+              return;
+            }
             const lib = loadLibrary();
-            const titleBase = (String(item.prompt||'').trim().split('\n')[0] || 'From Vault').slice(0, 60);
+            const titleBase = (originalTxt.split('
+')[0] || 'From Vault').slice(0, 60);
             lib.unshift({
               id: `lib_${Date.now()}_${Math.random().toString(16).slice(2)}`,
               t: Date.now(),
               title: titleBase,
-              text: txt,
+              // v2 fields
+              golden: goldenTxt,
+              prompt: "",
+              original: originalTxt,
+              // legacy fallback (kept for older versions / exports)
+              text: goldenTxt,
               tags: "#from-vault",
               model: "",
               notes: "",
@@ -1175,10 +1186,15 @@ function renderLines(el, arr){
     const search = document.getElementById('libSearch');
     const projectSel = document.getElementById('libProject');
     const sectionSel = document.getElementById('libSection');
+    // Workspace UI (v2)
+    const wsProjects = document.getElementById('libWsProjects');
+    const wsAddProject = document.getElementById('libWsAddProject');
+    const wsManage = document.getElementById('libWsManage');
+    const wsCrumb = document.getElementById('libWsCrumb');
+    const wsSections = document.getElementById('libWsSections');
     const manageProjectsBtn = document.getElementById('libManageProjects');
     const catSel = document.getElementById('libCat');
     const onlyFav = document.getElementById('libOnlyFav');
-    const projectBar = document.getElementById('libProjectBar');
 
     // Inline editor (inside Library page)
     const editorWrap = document.getElementById('libEditorWrap');
@@ -1187,7 +1203,7 @@ function renderLines(el, arr){
     const editorStatus = document.getElementById('libEditStatus');
     const fTitle = document.getElementById('libFieldTitle');
     const fGolden = document.getElementById('libFieldGolden');
-    const fPrompt = document.getElementById('libFieldPrompt');
+    const fPromptW = document.getElementById('libFieldPrompt');
     const fOriginal = document.getElementById('libFieldOriginal');
     const fCat = document.getElementById('libFieldCat');
     const fProject = document.getElementById('libFieldProject');
@@ -1204,7 +1220,7 @@ function renderLines(el, arr){
 
     const CATS = Array.isArray(data.libraryCategories) && data.libraryCategories.length
       ? data.libraryCategories.slice(0,50)
-      : ["General","Daily drivers","Writing","Coding","Research / OSINT","Visuals","Creators","Business","Life / Mood"];
+      : ["Daily drivers","Writing","Coding","Research / OSINT","Visuals","Creators","Business","Life / Mood"];
 
     const LS_LIB_SEEDED = "pb_library_seeded_v1";
     const LS_IDEAS_SEEDED = "pb_ideas_seeded_v1";
@@ -1213,6 +1229,11 @@ function renderLines(el, arr){
       if(!catSel || !fCat) return;
       // Category filter dropdown
       if(catSel.options.length <= 1){
+        // Add 'General' as a real category filter option
+        const g = document.createElement('option');
+        g.value = 'General';
+        g.textContent = 'General';
+        catSel.appendChild(g);
         CATS.forEach(c=>{
           const o = document.createElement('option');
           o.value = c;
@@ -1222,13 +1243,10 @@ function renderLines(el, arr){
       }
       // Editor dropdown
       if(fCat.options.length === 0){
-        const hasGeneral = CATS.some(x=>String(x).toLowerCase()==='general');
-        if(!hasGeneral){
-          const o0 = document.createElement('option');
-          o0.value = "";
-          o0.textContent = "General";
-          fCat.appendChild(o0);
-        }
+        const o0 = document.createElement('option');
+        o0.value = "";
+        o0.textContent = "General";
+        fCat.appendChild(o0);
         CATS.forEach(c=>{
           const o = document.createElement('option');
           o.value = c;
@@ -1240,26 +1258,6 @@ function renderLines(el, arr){
 
     function ensureProjectsInUI(){
       const projects = loadProjects();
-      // Quick project bar (Teams-like switching)
-      if(projectBar){
-        const active = String(projectSel?.value || '').trim();
-        const btn = (id, name)=>{
-          const isA = id === active;
-          return `<button class="lib__pbtn${isA?" is-active":""}" data-pid="${escapeHtml(id)}" type="button">${escapeHtml(name)}</button>`;
-        };
-        projectBar.innerHTML = btn('', 'All') + projects.map(p=>btn(p.id, p.name)).join('');
-        projectBar.querySelectorAll('button[data-pid]').forEach(b=>{
-          b.addEventListener('click', ()=>{
-            const pid = String(b.getAttribute('data-pid')||'');
-            if(projectSel) projectSel.value = pid;
-            setLS(LS.libSelProject, pid);
-            if(sectionSel) sectionSel.value = "";
-            setLS(LS.libSelSection, "");
-            ensureProjectsInUI();
-            renderLibrary();
-          });
-        });
-      }
       // Filters
       if(projectSel){
         // keep first option (All)
@@ -1285,10 +1283,10 @@ function renderLines(el, arr){
       // Editor
       if(fProject){
         while(fProject.options.length) fProject.remove(0);
-        const oAll = document.createElement('option');
-        oAll.value = "";
-        oAll.textContent = "General";
-        fProject.appendChild(oAll);
+        const oNone = document.createElement('option');
+        oNone.value = "";
+        oNone.textContent = "(none)";
+        fProject.appendChild(oNone);
         projects.forEach(p=>{
           const o = document.createElement('option');
           o.value = p.id;
@@ -1311,130 +1309,357 @@ function renderLines(el, arr){
           fSection.appendChild(o);
         });
       }
-      renderProjectBar();
     }
 
-    function renderProjectBar(){
-      if(!projectBar) return;
+    function openModal({title, bodyHtml, onMount}){
+      // Minimal modal (no window.prompt).
+      const back = document.createElement('div');
+      back.className = 'pbmodal__backdrop';
+      back.innerHTML = `
+        <div class="pbmodal" role="dialog" aria-modal="true">
+          <div class="pbmodal__hd">
+            <strong>${escapeHtml(String(title||''))}</strong>
+            <button class="btn btn--mini" data-act="close" type="button">Close</button>
+          </div>
+          <div class="pbmodal__bd">${bodyHtml||''}</div>
+          <div class="pbmodal__ft">
+            <button class="btn" data-act="close" type="button">Cancel</button>
+            <button class="btn btn--primary" data-act="ok" type="button">OK</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(back);
+      const close = ()=>{ try{ back.remove(); }catch{} };
+      const okBtn = back.querySelector('[data-act="ok"]');
+      back.querySelectorAll('[data-act="close"]').forEach(b=>b.addEventListener('click', close));
+      back.addEventListener('click', (e)=>{ if(e.target===back) close(); });
+      if(onMount) onMount({back, close, okBtn});
+      return {back, close, okBtn};
+    }
+
+    function renderWorkspace(){
       const projects = loadProjects();
-      const active = String(projectSel?.value || '').trim();
-      const btn = (id,name)=>{
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'lib__pbtn' + (String(id)===active ? ' is-active' : '');
-        b.textContent = name;
-        b.addEventListener('click', ()=>{
-          if(projectSel) projectSel.value = String(id||'');
-          setLS(LS.libSelProject, String(id||''));
-          if(sectionSel){ sectionSel.value = ''; setLS(LS.libSelSection, ''); }
-          ensureProjectsInUI();
-          renderLibrary();
+      const selP = String(getSelectedProjectId()||'');
+      const selS = String(getSelectedSectionId()||'');
+
+      // Sidebar projects
+      if(wsProjects){
+        const items = [{ id:'', name:'All Projects', sections:[] }, ...projects];
+        wsProjects.innerHTML = items.map(p=>{
+          const active = String(p.id||'')===selP;
+          const count = p.id ? loadLibrary().filter(x=>x && String(x.projectId||'')===String(p.id)).length : loadLibrary().length;
+          return `
+            <button class="libws__projbtn ${active?'is-active':''}" data-pid="${escapeHtml(String(p.id||''))}" type="button">
+              <span class="libws__projmeta">
+                <span>${escapeHtml(String(p.name||''))}</span>
+                <span class="chip chip--time">${count}</span>
+              </span>
+              ${p.id ? `<span class="muted">›</span>` : ``}
+            </button>
+          `;
+        }).join('');
+
+        wsProjects.querySelectorAll('[data-pid]').forEach(b=>{
+          b.addEventListener('click', ()=>{
+            const pid = String(b.getAttribute('data-pid')||'');
+            setSelectedProjectId(pid);
+            // Reset section when switching project
+            setSelectedSectionId('');
+            ensureProjectsInUI();
+            renderWorkspace();
+            renderLibrary();
+          });
         });
-        return b;
-      };
-      projectBar.innerHTML = '';
-      projectBar.appendChild(btn('', 'All projects'));
-      projects.forEach(p=>{ projectBar.appendChild(btn(p.id, p.name)); });
+      }
+
+      // Breadcrumb + Sections
+      if(wsCrumb){
+        const name = selP ? (projects.find(p=>p.id===selP)?.name || 'Project') : 'All Projects';
+        wsCrumb.textContent = name;
+      }
+      if(wsSections){
+        if(!selP){
+          wsSections.hidden = true;
+          wsSections.innerHTML = '';
+        } else {
+          const proj = projects.find(p=>p.id===selP) || null;
+          const sections = Array.isArray(proj?.sections) ? proj.sections : [];
+          wsSections.hidden = false;
+          wsSections.innerHTML = [
+            `<button class="libws__sectbtn ${!selS?'is-active':''}" data-sid="" type="button">All</button>`
+          , ...sections.map(s=>`<button class="libws__sectbtn ${String(s.id)===selS?'is-active':''}" data-sid="${escapeHtml(String(s.id))}" type="button">${escapeHtml(String(s.name||''))}</button>`)
+          ].join('');
+          wsSections.querySelectorAll('[data-sid]').forEach(b=>{
+            b.addEventListener('click', ()=>{
+              setSelectedSectionId(String(b.getAttribute('data-sid')||''));
+              ensureProjectsInUI();
+              renderWorkspace();
+              renderLibrary();
+            });
+          });
+        }
+      }
+
+      // Keep hidden selects in sync (legacy)
+      if(projectSel) projectSel.value = selP;
+      if(sectionSel) sectionSel.value = selS;
     }
 
-    function manageProjectsDialog(){
-      // Lightweight (no new UI) - uses prompt/confirm so we can ship fast.
-      let projects = loadProjects();
-      const menu =
-        "Projects (Library)\n"+
-        "1 - Add project\n"+
-        "2 - Rename project\n"+
-        "3 - Delete project\n"+
-        "4 - Edit sections of a project\n"+
-        "Cancel - close";
-      const choice = prompt(menu, "4");
-      if(!choice) return;
+    function manageProjectsDialog(preselectId){
+      const projects = loadProjects();
+      const pid0 = String(preselectId||getSelectedProjectId()||'') || (projects[0]?.id||'');
 
-      const pickProject = ()=>{
-        const listTxt = projects.map((p,i)=>`${i+1}. ${p.name}`).join("\n") || "(none)";
-        const num = prompt("Pick a project:\n"+listTxt, "1");
-        const idx = Math.max(0, (parseInt(num,10)||1)-1);
-        return projects[idx] || null;
-      };
+      const bodyHtml = `
+        <label class="field">
+          <span class="field__label">Project</span>
+          <select class="field__input" id="pbProjPick">
+            ${projects.map(p=>`<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join('')}
+          </select>
+        </label>
+        <div style="display:flex; gap:8px; flex-wrap:wrap">
+          <button class="btn" id="pbProjAdd" type="button">+ Add project</button>
+          <button class="btn" id="pbProjRename" type="button">Rename</button>
+          <button class="btn" id="pbProjDelete" type="button">Delete</button>
+          <button class="btn btn--primary" id="pbProjSections" type="button">Edit sections</button>
+        </div>
+        <div class="muted" style="font-size:12px">Deleting a project won't delete prompts. Prompts will just lose their project/section.</div>
+      `;
 
-      if(choice === "1"){
-        const name = String(prompt("New project name:", "New project")||"").trim();
-        if(!name) return;
-        projects.unshift({ id:`p_${Date.now()}_${Math.random().toString(16).slice(2)}`, name, sections:[] });
-        saveProjects(projects);
-        return;
-      }
+      const modal = openModal({
+        title: 'Manage projects',
+        bodyHtml,
+        onMount: ({back, close, okBtn})=>{
+          const sel = back.querySelector('#pbProjPick');
+          if(sel) sel.value = pid0;
+          okBtn.textContent = 'Done';
 
-      if(choice === "2"){
-        const p = pickProject();
-        if(!p) return;
-        const name = String(prompt("Rename project:", p.name)||"").trim();
-        if(!name) return;
-        projects = projects.map(x=>x.id===p.id ? { ...x, name } : x);
-        saveProjects(projects);
-        return;
-      }
+          const addBtn = back.querySelector('#pbProjAdd');
+          const renBtn = back.querySelector('#pbProjRename');
+          const delBtn = back.querySelector('#pbProjDelete');
+          const secBtn = back.querySelector('#pbProjSections');
 
-      if(choice === "3"){
-        const p = pickProject();
-        if(!p) return;
-        if(!confirm(`Delete project “${p.name}”? Prompts won't be deleted, they will just lose their project/section.`)) return;
-        // Remove project
-        projects = projects.filter(x=>x.id!==p.id);
-        saveProjects(projects.length ? projects : defaultProjects());
-        // Unlink prompts
-        const lib = loadLibrary().map(it=> (it && it.projectId===p.id) ? { ...it, projectId:"", sectionId:"" } : it);
-        saveLibrary(lib);
-        return;
-      }
+          addBtn?.addEventListener('click', ()=>{
+            const inner = openModal({
+              title:'Add project',
+              bodyHtml:`<label class="field"><span class="field__label">Name</span><input class="field__input" id="pbNewProjName" placeholder="New project" /></label>`,
+              onMount: ({back: b2, close: c2, okBtn: ok2})=>{
+                ok2.textContent = 'Add';
+                ok2.addEventListener('click', ()=>{
+                  const name = String(b2.querySelector('#pbNewProjName')?.value||'').trim();
+                  if(!name) return;
+                  const ps = loadProjects();
+                  ps.unshift({ id:`p_${Date.now()}_${Math.random().toString(16).slice(2)}`, name, sections:[] });
+                  saveProjects(ps);
+                  setSelectedProjectId(ps[0].id);
+                  setSelectedSectionId('');
+                  c2();
+                  close();
+                  ensureProjectsInUI();
+                  renderWorkspace();
+                  renderLibrary();
+                });
+              }
+            });
+            // focus
+            setTimeout(()=>inner?.back.querySelector('#pbNewProjName')?.focus(), 50);
+          });
 
-      if(choice === "4"){
-        const p = pickProject();
-        if(!p) return;
-        let sections = Array.isArray(p.sections) ? [...p.sections] : [];
-        const sMenu =
-          `Sections for “${p.name}”\n`+
-          "1 - Add section\n"+
-          "2 - Rename section\n"+
-          "3 - Delete section\n"+
-          "Cancel - close";
-        const sChoice = prompt(sMenu, "1");
-        if(!sChoice) return;
+          renBtn?.addEventListener('click', ()=>{
+            const pid = String(sel?.value||'');
+            const p0 = loadProjects().find(x=>x.id===pid);
+            const inner = openModal({
+              title:'Rename project',
+              bodyHtml:`<label class="field"><span class="field__label">Name</span><input class="field__input" id="pbRenProjName" value="${escapeHtml(String(p0?.name||''))}" /></label>`,
+              onMount: ({back: b2, close: c2, okBtn: ok2})=>{
+                ok2.textContent = 'Save';
+                ok2.addEventListener('click', ()=>{
+                  const name = String(b2.querySelector('#pbRenProjName')?.value||'').trim();
+                  if(!name) return;
+                  const ps = loadProjects().map(x=>x.id===pid ? { ...x, name } : x);
+                  saveProjects(ps);
+                  c2();
+                  close();
+                  ensureProjectsInUI();
+                  renderWorkspace();
+                  renderLibrary();
+                });
+              }
+            });
+            setTimeout(()=>inner?.back.querySelector('#pbRenProjName')?.focus(), 50);
+          });
 
-        const pickSection = ()=>{
-          const listTxt = sections.map((s,i)=>`${i+1}. ${s.name}`).join("\n") || "(none)";
-          const num = prompt("Pick a section:\n"+listTxt, "1");
-          const idx = Math.max(0, (parseInt(num,10)||1)-1);
-          return sections[idx] || null;
-        };
+          delBtn?.addEventListener('click', ()=>{
+            const pid = String(sel?.value||'');
+            const p0 = loadProjects().find(x=>x.id===pid);
+            const inner = openModal({
+              title:'Delete project',
+              bodyHtml:`<div>Delete <strong>${escapeHtml(String(p0?.name||''))}</strong>?</div><div class="muted" style="font-size:12px">Prompts won't be deleted.</div>`,
+              onMount: ({close: c2, okBtn: ok2})=>{
+                ok2.textContent = 'Delete';
+                ok2.addEventListener('click', ()=>{
+                  let ps = loadProjects().filter(x=>x.id!==pid);
+                  if(!ps.length) ps = defaultProjects();
+                  saveProjects(ps);
+                  // Unlink prompts
+                  const lib = loadLibrary().map(it=> (it && String(it.projectId||'')===pid) ? { ...it, projectId:'', sectionId:'' } : it);
+                  saveLibrary(lib);
+                  // selection
+                  if(getSelectedProjectId()===pid){ setSelectedProjectId(''); setSelectedSectionId(''); }
+                  c2();
+                  close();
+                  ensureProjectsInUI();
+                  renderWorkspace();
+                  renderLibrary();
+                });
+              }
+            });
+          });
 
-        if(sChoice === "1"){
-          const name = String(prompt("New section name:", "New section")||"").trim();
-          if(!name) return;
-          sections.push({ id:`s_${Date.now()}_${Math.random().toString(16).slice(2)}`, name });
+          secBtn?.addEventListener('click', ()=>{
+            const pid = String(sel?.value||'');
+            const p0 = loadProjects().find(x=>x.id===pid);
+            if(!p0) return;
+            manageSectionsDialog(pid);
+          });
+
+          okBtn.addEventListener('click', ()=>{ close(); });
         }
-        if(sChoice === "2"){
-          const s = pickSection();
-          if(!s) return;
-          const name = String(prompt("Rename section:", s.name)||"").trim();
-          if(!name) return;
-          sections = sections.map(x=>x.id===s.id ? { ...x, name } : x);
-        }
-        if(sChoice === "3"){
-          const s = pickSection();
-          if(!s) return;
-          if(!confirm(`Delete section “${s.name}”? Prompts won't be deleted, they will just lose their section.`)) return;
-          sections = sections.filter(x=>x.id!==s.id);
-          const lib = loadLibrary().map(it=> (it && it.projectId===p.id && it.sectionId===s.id) ? { ...it, sectionId:"" } : it);
-          saveLibrary(lib);
-        }
-
-        projects = projects.map(x=>x.id===p.id ? { ...x, sections } : x);
-        saveProjects(projects);
-        return;
-      }
+      });
+      return modal;
     }
 
+    function manageSectionsDialog(projectId){
+      const ps0 = loadProjects();
+      const proj0 = ps0.find(p=>p.id===projectId);
+      if(!proj0) return;
+      const sections0 = Array.isArray(proj0.sections) ? proj0.sections : [];
+
+      const bodyHtml = `
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px">
+          <strong>${escapeHtml(proj0.name)}</strong>
+          <button class="btn" id="pbSecAdd" type="button">+ Section</button>
+        </div>
+        <div id="pbSecList" style="display:flex; flex-direction:column; gap:6px"></div>
+        <div class="muted" style="font-size:12px">Deleting a section won't delete prompts. Prompts will just lose their section.</div>
+      `;
+
+      const modal = openModal({
+        title: 'Edit sections',
+        bodyHtml,
+        onMount: ({back, close, okBtn})=>{
+          okBtn.textContent = 'Done';
+          const listEl = back.querySelector('#pbSecList');
+          const render = ()=>{
+            const ps = loadProjects();
+            const proj = ps.find(p=>p.id===projectId);
+            const sections = Array.isArray(proj?.sections) ? proj.sections : [];
+            if(!listEl) return;
+            if(!sections.length){
+              listEl.innerHTML = '<div class="muted">No sections yet.</div>';
+              return;
+            }
+            listEl.innerHTML = sections.map(s=>`
+              <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 10px; border:1px solid rgba(0,0,0,.12); border-radius:12px; background:rgba(255,255,255,.55)">
+                <span>${escapeHtml(String(s.name||''))}</span>
+                <span style="display:flex; gap:6px">
+                  <button class="btn btn--mini" data-act="ren" data-sid="${escapeHtml(String(s.id))}" type="button">Rename</button>
+                  <button class="btn btn--mini" data-act="del" data-sid="${escapeHtml(String(s.id))}" type="button">Delete</button>
+                </span>
+              </div>
+            `).join('');
+
+            listEl.querySelectorAll('button[data-act]').forEach(b=>{
+              b.addEventListener('click', ()=>{
+                const sid = String(b.getAttribute('data-sid')||'');
+                const act = String(b.getAttribute('data-act')||'');
+                if(act==='ren'){
+                  const inner = openModal({
+                    title:'Rename section',
+                    bodyHtml:`<label class="field"><span class="field__label">Name</span><input class="field__input" id="pbRenSecName" value="${escapeHtml(String(sections.find(x=>x.id===sid)?.name||''))}" /></label>`,
+                    onMount: ({back: b2, close: c2, okBtn: ok2})=>{
+                      ok2.textContent='Save';
+                      ok2.addEventListener('click', ()=>{
+                        const name = String(b2.querySelector('#pbRenSecName')?.value||'').trim();
+                        if(!name) return;
+                        const ps2 = loadProjects().map(p=>{
+                          if(p.id!==projectId) return p;
+                          const secs = (p.sections||[]).map(x=>x.id===sid ? { ...x, name } : x);
+                          return { ...p, sections: secs };
+                        });
+                        saveProjects(ps2);
+                        c2();
+                        render();
+                        ensureProjectsInUI();
+                        renderWorkspace();
+                        renderLibrary();
+                      });
+                    }
+                  });
+                  setTimeout(()=>inner?.back.querySelector('#pbRenSecName')?.focus(), 50);
+                }
+                if(act==='del'){
+                  const inner = openModal({
+                    title:'Delete section',
+                    bodyHtml:`<div>Delete section <strong>${escapeHtml(String(sections.find(x=>x.id===sid)?.name||''))}</strong>?</div>`,
+                    onMount: ({close: c2, okBtn: ok2})=>{
+                      ok2.textContent='Delete';
+                      ok2.addEventListener('click', ()=>{
+                        const ps2 = loadProjects().map(p=>{
+                          if(p.id!==projectId) return p;
+                          const secs = (p.sections||[]).filter(x=>x.id!==sid);
+                          return { ...p, sections: secs };
+                        });
+                        saveProjects(ps2);
+                        // unlink prompts
+                        const lib2 = loadLibrary().map(it=> (it && String(it.projectId||'')===projectId && String(it.sectionId||'')===sid) ? { ...it, sectionId:'' } : it);
+                        saveLibrary(lib2);
+                        if(getSelectedSectionId()===sid) setSelectedSectionId('');
+                        c2();
+                        render();
+                        ensureProjectsInUI();
+                        renderWorkspace();
+                        renderLibrary();
+                      });
+                    }
+                  });
+                }
+              });
+            });
+          };
+
+          back.querySelector('#pbSecAdd')?.addEventListener('click', ()=>{
+            const inner = openModal({
+              title:'Add section',
+              bodyHtml:`<label class="field"><span class="field__label">Name</span><input class="field__input" id="pbNewSecName" placeholder="New section" /></label>`,
+              onMount: ({back: b2, close: c2, okBtn: ok2})=>{
+                ok2.textContent='Add';
+                ok2.addEventListener('click', ()=>{
+                  const name = String(b2.querySelector('#pbNewSecName')?.value||'').trim();
+                  if(!name) return;
+                  const ps2 = loadProjects().map(p=>{
+                    if(p.id!==projectId) return p;
+                    const secs = Array.isArray(p.sections) ? [...p.sections] : [];
+                    secs.push({ id:`s_${Date.now()}_${Math.random().toString(16).slice(2)}`, name });
+                    return { ...p, sections: secs };
+                  });
+                  saveProjects(ps2);
+                  c2();
+                  render();
+                  ensureProjectsInUI();
+                  renderWorkspace();
+                  renderLibrary();
+                });
+              }
+            });
+            setTimeout(()=>inner?.back.querySelector('#pbNewSecName')?.focus(), 50);
+          });
+
+          okBtn.addEventListener('click', close);
+          render();
+        }
+      });
+      return modal;
+    }
     function seedLibraryIfEmpty(){
       // Library should be user-owned only.
       // We still keep a seeded flag so we don't accidentally re-run older placeholder logic.
@@ -1538,15 +1763,11 @@ function renderLines(el, arr){
       editingId = existing?.id || null;
       editingCreatedAt = existing?.t || Date.now();
 
-      const golden = String(existing?.golden ?? existing?.text ?? '').trim();
-      const prompt = String(existing?.prompt ?? '').trim();
-      const original = String(existing?.original ?? '').trim();
-
       if(editorTitle) editorTitle.textContent = isEdit ? 'Edit prompt' : 'Add prompt';
       if(fTitle) fTitle.value = existing?.title || '';
-      if(fGolden) fGolden.value = golden;
-      if(fPrompt) fPrompt.value = prompt;
-      if(fOriginal) fOriginal.value = original;
+      if(fGolden) fGolden.value = existing?.golden || existing?.text || '';
+      if(fPromptW) fPromptW.value = existing?.prompt || '';
+      if(fOriginal) fOriginal.value = existing?.original || '';
       if(fCat) fCat.value = existing?.cat || '';
       if(fProject) fProject.value = existing?.projectId || '';
       ensureProjectsInUI();
@@ -1575,8 +1796,8 @@ function renderLines(el, arr){
     function renderLibrary(){
       const q = String(search?.value || '').trim().toLowerCase();
       const cat = String(catSel?.value || '').trim();
-      const selP = String(projectSel?.value || '').trim();
-      const selS = String(sectionSel?.value || '').trim();
+      const selP = String(getSelectedProjectId()||'').trim();
+      const selS = String(getSelectedSectionId()||'').trim();
       const favOnly = !!(onlyFav && onlyFav.checked);
 
       const projects = loadProjects();
@@ -1585,15 +1806,8 @@ function renderLines(el, arr){
 
       const libAllRaw = loadLibrary().map(it=>{
         if(!it || typeof it!=='object') return it;
-        // Backwards compatibility: older saves used {text}
-        const golden = String(it.golden ?? it.text ?? '');
-        const prompt = String(it.prompt ?? '');
-        const original = String(it.original ?? '');
         return {
           ...it,
-          golden,
-          prompt,
-          original,
           cat: it.cat || "",
           fav: !!it.fav
         };
@@ -1616,7 +1830,7 @@ function renderLines(el, arr){
         if(selS && String(it.sectionId||"") !== selS) return false;
         if(favOnly && !it.fav) return false;
         if(!q) return true;
-        const hay = [it?.title, it?.golden, it?.prompt, it?.original, it?.tags, it?.model, it?.notes, it?.cat, projectName(it.projectId), sectionName(it.projectId,it.sectionId), it?.modeUsed].filter(Boolean).join(' ').toLowerCase();
+        const hay = [it?.title, it?.golden, it?.text, it?.prompt, it?.original, it?.tags, it?.model, it?.notes, it?.cat, projectName(it.projectId), sectionName(it.projectId,it.sectionId), it?.modeUsed].filter(Boolean).join(' ').toLowerCase();
         return hay.includes(q);
       });
       if(!list) return;
@@ -1639,9 +1853,9 @@ function renderLines(el, arr){
         const mode = String(item.modeUsed||"").toLowerCase();
         const modeNice = mode ? (mode==='auditor'?'Auditor':mode==='creator'?'Creator':'Thinker') : '';
         const notes = escapeHtml(String(item.notes || ''));
-        const golden = escapeHtml(String(item.golden ?? item.text ?? ''));
-        const prompt = escapeHtml(String(item.prompt || ''));
-        const original = escapeHtml(String(item.original || ''));
+        const golden = escapeHtml(String(item.golden || item.text || ''));
+        const wprompt = escapeHtml(String(item.prompt || ''));
+        const orig = escapeHtml(String(item.original || ''));
         return `
           <article class="card card--flat lib__item" data-id="${escapeHtml(String(item.id||""))}" data-cat="${cat}">
             <div class="card__body">
@@ -1668,25 +1882,15 @@ function renderLines(el, arr){
               </div>
 
               ${notes ? `<div class="lib__notes">${notes}</div>` : ''}
-
-              <details class="lib__details" open>
-                <summary>Golden Prompt</summary>
-                <pre class="pre pre--sm lib__pre">${golden}</pre>
+              <pre class="pre pre--sm lib__pre">${golden}</pre>
+              <details class="fold" ${wprompt?"":"hidden"}>
+                <summary class="fold__sum">Working Prompt</summary>
+                <div class="fold__body"><pre class="pre pre--sm">${wprompt}</pre></div>
               </details>
-
-              ${prompt ? `
-                <details class="lib__details">
-                  <summary>Prompt</summary>
-                  <pre class="pre pre--sm lib__pre">${prompt}</pre>
-                </details>
-              ` : ''}
-
-              ${original ? `
-                <details class="lib__details">
-                  <summary>Original Prompt</summary>
-                  <pre class="pre pre--sm lib__pre">${original}</pre>
-                </details>
-              ` : ''}
+              <details class="fold" ${orig?"":"hidden"}>
+                <summary class="fold__sum">Original Prompt</summary>
+                <div class="fold__body"><pre class="pre pre--sm">${orig}</pre></div>
+              </details>
             </div>
           </article>
         `;
@@ -1715,13 +1919,12 @@ function renderLines(el, arr){
           }
 
           if(act === 'copy'){
-            const txt = String(item.golden ?? item.text ?? "");
-            try{ await navigator.clipboard.writeText(txt); setStatus('Copied ✅'); }
+            try{ await navigator.clipboard.writeText(String(item.golden||item.text||"")); setStatus('Copied ✅'); }
             catch{ setStatus('Copy failed.'); }
             setTimeout(()=>setStatus(''), 900);
           }
           if(act === 'send'){
-            setDraftPromptForce(String(item.golden ?? item.text ?? ""));
+            setDraftPromptForce(String(item.golden||item.text||""));
             location.hash = 'buddy';
           }
           if(act === 'edit'){
@@ -1750,8 +1953,10 @@ function renderLines(el, arr){
         t: editingCreatedAt || Date.now(),
         title: String(fTitle?.value || '').trim(),
         golden: String(fGolden?.value || '').trim(),
-        prompt: String(fPrompt?.value || '').trim(),
+        prompt: String(fPromptW?.value || '').trim(),
         original: String(fOriginal?.value || '').trim(),
+        // legacy field for backward compatibility
+        text: String(fGolden?.value || '').trim(),
         cat: String(fCat?.value || '').trim(),
         projectId: String(fProject?.value || '').trim(),
         sectionId: String(fSection?.value || '').trim(),
@@ -1761,7 +1966,6 @@ function renderLines(el, arr){
         notes: String(fNotes?.value || '').trim(),
         fav: false
       };
-      if(!item.golden && item.prompt) item.golden = item.prompt;
       if(!item.golden){ setEditStatus('Golden Prompt is required.'); return; }
       if(!item.title){ item.title = item.golden.split(/\n|\r/)[0].slice(0,48) || 'Untitled'; }
 
@@ -1784,6 +1988,8 @@ function renderLines(el, arr){
     search?.addEventListener('input', ()=>renderLibrary());
     catSel?.addEventListener('change', ()=>renderLibrary());
     onlyFav?.addEventListener('change', ()=>renderLibrary());
+    wsAddProject?.addEventListener('click', ()=>{ manageProjectsDialog(); });
+    wsManage?.addEventListener('click', ()=>{ manageProjectsDialog(getSelectedProjectId()); });
     projectSel?.addEventListener('change', ()=>{
       setLS(LS.libSelProject, String(projectSel.value||""));
       // reset section when project changes
@@ -1845,6 +2051,7 @@ function renderLines(el, arr){
     ensureCategoriesInUI();
     ensureProjectsInUI();
     seedLibraryIfEmpty();
+    renderWorkspace();
     renderLibrary();
   }
 

@@ -155,138 +155,140 @@
 <template id="tpl-library">
   <div class="card">
     <div class="card__body">
-      <h2 class="card__title">Library</h2>
-      <p class="card__desc">Save prompts you want to reuse. Stored locally in your browser.</p>
+      <div class="libws">
+        <aside class="libws__sidebar" aria-label="Projects">
+          <div class="libws__sidehead">
+            <div>
+              <h2 class="card__title" style="margin:0">Library</h2>
+              <div class="muted" style="font-size:12px">Workspace</div>
+            </div>
+          </div>
 
-      <div class="panel__actions">
-        <button class="btn btn--primary" id="libAdd" type="button">Add prompt</button>
-        <button class="btn" id="libExport" type="button">Export</button>
-        <button class="btn" id="libImport" type="button">Import</button>
-        <input id="libImportFile" type="file" accept="application/json" hidden />
+          <div class="libws__projlist" id="libWsProjects"></div>
+
+          <div class="libws__sideactions">
+            <button class="btn btn--primary" id="libWsAddProject" type="button">+ Project</button>
+            <button class="btn" id="libWsManage" type="button">Manage</button>
+          </div>
+        </aside>
+
+        <main class="libws__main" aria-label="Library content">
+          <div class="libws__toolbar">
+            <div class="libws__toolbarLeft">
+              <button class="btn btn--primary" id="libAdd" type="button">Add prompt</button>
+              <button class="btn" id="libExport" type="button">Export</button>
+              <button class="btn" id="libImport" type="button">Import</button>
+              <input id="libImportFile" type="file" accept="application/json" hidden />
+            </div>
+
+            <div class="libws__toolbarRight">
+              <input class="field__input" id="libSearch" type="text" placeholder="Search all visible prompts…" />
+              <select class="field__input" id="libCat">
+                <option value="">All categories</option>
+              </select>
+              <label class="check" style="margin-left:6px">
+                <input id="libOnlyFav" type="checkbox" />
+                <span>Only favorites</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="libws__subbar">
+            <div class="libws__crumb" id="libWsCrumb">All Projects</div>
+            <div class="libws__sections" id="libWsSections" hidden></div>
+          </div>
+
+          <div class="settings__status" id="libStatus" aria-live="polite"></div>
+
+          <div class="block" id="libEditorWrap" hidden>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+              <strong id="libEditorTitle">Edit prompt</strong>
+              <button class="btn" id="libEditorClose" type="button">Close</button>
+            </div>
+
+            <div class="libws__editgrid">
+              <label class="field">
+                <span class="field__label">Title</span>
+                <input class="field__input" id="libFieldTitle" type="text" placeholder="Short name" />
+              </label>
+
+              <label class="field">
+                <span class="field__label">Category</span>
+                <select class="field__input" id="libFieldCat"></select>
+              </label>
+
+              <label class="field">
+                <span class="field__label">Project</span>
+                <select class="field__input" id="libFieldProject"></select>
+              </label>
+
+              <label class="field">
+                <span class="field__label">Section</span>
+                <select class="field__input" id="libFieldSection"></select>
+              </label>
+
+              <label class="field">
+                <span class="field__label">Mode used</span>
+                <select class="field__input" id="libFieldMode">
+                  <option value="">(none)</option>
+                  <option value="auditor">Auditor</option>
+                  <option value="thinker">Thinker</option>
+                  <option value="creator">Creator</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span class="field__label">Tags</span>
+                <input class="field__input" id="libFieldTags" type="text" placeholder="#tag1 #tag2" />
+              </label>
+
+              <label class="field">
+                <span class="field__label">AI model hint (optional)</span>
+                <input class="field__input" id="libFieldModel" type="text" placeholder="e.g., DeepSeek, GPT, Claude" />
+              </label>
+
+              <label class="field">
+                <span class="field__label">Notes</span>
+                <textarea class="field__textarea" id="libFieldNotes" rows="3" placeholder="Text will be added here."></textarea>
+              </label>
+            </div>
+
+            <details class="fold" open>
+              <summary class="fold__sum">Golden Prompt</summary>
+              <div class="fold__body">
+                <textarea class="output" id="libFieldGolden" rows="8" placeholder="Golden prompt…"></textarea>
+              </div>
+            </details>
+
+            <details class="fold">
+              <summary class="fold__sum">Working Prompt (optional)</summary>
+              <div class="fold__body">
+                <textarea class="output" id="libFieldPrompt" rows="6" placeholder="Your working prompt version…"></textarea>
+              </div>
+            </details>
+
+            <details class="fold">
+              <summary class="fold__sum">Original Prompt (optional)</summary>
+              <div class="fold__body">
+                <textarea class="output" id="libFieldOriginal" rows="6" placeholder="Raw input / original brief…"></textarea>
+              </div>
+            </details>
+
+            <div class="settings__status" id="libEditStatus" aria-live="polite"></div>
+
+            <div class="panel__actions">
+              <button class="btn btn--primary" id="libSave" type="button">Save</button>
+              <button class="btn" id="libCancel" type="button">Cancel</button>
+            </div>
+          </div>
+
+          <div id="libList" class="libws__grid"></div>
+
+          <!-- Hidden legacy controls (kept for compatibility and state, not shown) -->
+          <select id="libProject" hidden><option value="">All</option></select>
+          <select id="libSection" hidden><option value="">All</option></select>
+        </main>
       </div>
-
-      <label class="field" style="margin-top:12px">
-        <span class="field__label">Search</span>
-        <input class="field__input" id="libSearch" type="text" placeholder="Search title, tags, model, notes…" />
-      </label>
-
-      <div class="lib__filters">
-        <label class="field field--inline">
-          <span class="field__label">Project</span>
-          <select class="field__input" id="libProject">
-            <option value="">All</option>
-          </select>
-        </label>
-
-        <label class="field field--inline">
-          <span class="field__label">Section</span>
-          <select class="field__input" id="libSection">
-            <option value="">All</option>
-          </select>
-        </label>
-
-        <button class="btn btn--mini" id="libManageProjects" type="button">Manage</button>
-
-        <label class="field field--inline">
-          <span class="field__label">Category</span>
-          <select class="field__input" id="libCat">
-            <option value="">All</option>
-          </select>
-        </label>
-
-        <label class="check">
-          <input id="libOnlyFav" type="checkbox" />
-          <span>Only favorites</span>
-        </label>
-      </div>
-
-      <div class="lib__projectBar" id="libProjectBar"></div>
-
-      <div class="settings__status" id="libStatus" aria-live="polite"></div>
-
-      <!-- Inline editor (keeps everything inside the main screen) -->
-      <div class="block" id="libEditorWrap" hidden>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
-          <strong id="libEditorTitle">Edit prompt</strong>
-          <button class="btn" id="libEditorClose" type="button">Close</button>
-        </div>
-
-        <label class="field">
-          <span class="field__label">Title</span>
-          <input class="field__input" id="libFieldTitle" type="text" placeholder="Short name" />
-        </label>
-
-        <label class="field">
-          <span class="field__label">Golden Prompt</span>
-          <textarea class="output" id="libFieldGolden" rows="8" placeholder="Paste your best (golden) prompt..."></textarea>
-        </label>
-
-        <details class="lib__details">
-          <summary>Prompt (optional)</summary>
-          <label class="field" style="margin-top:10px">
-            <span class="field__label">Prompt</span>
-            <textarea class="output" id="libFieldPrompt" rows="6" placeholder="Your working prompt version..."></textarea>
-          </label>
-        </details>
-
-        <details class="lib__details">
-          <summary>Original Prompt (optional)</summary>
-          <label class="field" style="margin-top:10px">
-            <span class="field__label">Original Prompt</span>
-            <textarea class="output" id="libFieldOriginal" rows="6" placeholder="Raw input / original brief..."></textarea>
-          </label>
-        </details>
-
-        <label class="field">
-          <span class="field__label">Category</span>
-          <select class="field__input" id="libFieldCat"></select>
-        </label>
-
-        <div class="lib__filters" style="margin:8px 0 0">
-          <label class="field field--inline">
-            <span class="field__label">Project</span>
-            <select class="field__input" id="libFieldProject"></select>
-          </label>
-
-          <label class="field field--inline">
-            <span class="field__label">Section</span>
-            <select class="field__input" id="libFieldSection"></select>
-          </label>
-
-          <label class="field field--inline">
-            <span class="field__label">Mode used</span>
-            <select class="field__input" id="libFieldMode">
-              <option value="">-</option>
-              <option value="auditor">Auditor</option>
-              <option value="thinker">Thinker</option>
-              <option value="creator">Creator</option>
-            </select>
-          </label>
-        </div>
-
-        <label class="field">
-          <span class="field__label">Tags</span>
-          <input class="field__input" id="libFieldTags" type="text" placeholder="#writing #claude #coding" />
-        </label>
-
-        <label class="field">
-          <span class="field__label">AI model hint (optional)</span>
-          <input class="field__input" id="libFieldModel" type="text" placeholder="e.g., DeepSeek, GPT, Claude" />
-        </label>
-
-        <label class="field">
-          <span class="field__label">Notes</span>
-          <textarea class="output" id="libFieldNotes" rows="3" placeholder="Text will be added here."></textarea>
-        </label>
-
-        <div class="panel__actions">
-          <button class="btn btn--primary" id="libSave" type="button">Save</button>
-          <button class="btn" id="libCancel" type="button">Cancel</button>
-        </div>
-        <div class="settings__status" id="libEditStatus" aria-live="polite"></div>
-      </div>
-
-      <div id="libList"></div>
     </div>
   </div>
 </template>
