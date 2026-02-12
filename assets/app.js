@@ -1255,10 +1255,34 @@ function renderLines(el, arr){
       }
     }
 
+    function refreshEditorSections(){
+      const projects = loadProjects();
+      if(!fSection) return;
+      const keepSection = String(fSection.value||'');
+      while(fSection.options.length) fSection.remove(0);
+      const o0 = document.createElement('option');
+      o0.value = "";
+      o0.textContent = "";
+      fSection.appendChild(o0);
+      const pid = String(fProject?.value||"");
+      const proj = projects.find(p=>p.id===pid) || null;
+      (proj?.sections||[]).forEach(s=>{
+        const o = document.createElement('option');
+        o.value = s.id;
+        o.textContent = s.name;
+        fSection.appendChild(o);
+      });
+      // restore if still valid
+      if(keepSection && Array.from(fSection.options).some(o=>String(o.value)===keepSection)){
+        fSection.value = keepSection;
+      }
+    }
+
     function ensureProjectsInUI(){
       const projects = loadProjects();
-      // Filters
+      // Filters (hidden legacy selects)
       if(projectSel){
+        const keep = String(projectSel.value||getLS(LS.libSelProject, "")||"");
         // keep first option (All)
         while(projectSel.options.length > 1) projectSel.remove(1);
         projects.forEach(p=>{
@@ -1267,8 +1291,10 @@ function renderLines(el, arr){
           o.textContent = p.name;
           projectSel.appendChild(o);
         });
+        if(keep && Array.from(projectSel.options).some(o=>String(o.value)===keep)) projectSel.value = keep;
       }
       if(sectionSel){
+        const keepS = String(sectionSel.value||getLS(LS.libSelSection, "")||"");
         while(sectionSel.options.length > 1) sectionSel.remove(1);
         const pid = String(projectSel?.value||getLS(LS.libSelProject, "")||"");
         const proj = projects.find(p=>p.id===pid) || null;
@@ -1278,9 +1304,12 @@ function renderLines(el, arr){
           o.textContent = s.name;
           sectionSel.appendChild(o);
         });
+        if(keepS && Array.from(sectionSel.options).some(o=>String(o.value)===keepS)) sectionSel.value = keepS;
       }
-      // Editor
+
+      // Editor selects
       if(fProject){
+        const keepP = String(fProject.value||"");
         while(fProject.options.length) fProject.remove(0);
         const oNone = document.createElement('option');
         oNone.value = "";
@@ -1292,22 +1321,11 @@ function renderLines(el, arr){
           o.textContent = p.name;
           fProject.appendChild(o);
         });
+        if(keepP && Array.from(fProject.options).some(o=>String(o.value)===keepP)){
+          fProject.value = keepP;
+        }
       }
-      if(fSection){
-        while(fSection.options.length) fSection.remove(0);
-        const o0 = document.createElement('option');
-        o0.value = "";
-        o0.textContent = "";
-        fSection.appendChild(o0);
-        const pid = String(fProject?.value||"");
-        const proj = projects.find(p=>p.id===pid) || null;
-        (proj?.sections||[]).forEach(s=>{
-          const o = document.createElement('option');
-          o.value = s.id;
-          o.textContent = s.name;
-          fSection.appendChild(o);
-        });
-      }
+      refreshEditorSections();
     }
 
     function openModal({title, bodyHtml, onMount}){
@@ -1762,15 +1780,24 @@ function renderLines(el, arr){
       editingId = existing?.id || null;
       editingCreatedAt = existing?.t || Date.now();
 
+      // Make sure selects are populated before we set values.
+      ensureCategoriesInUI();
+      ensureProjectsInUI();
+
       if(editorTitle) editorTitle.textContent = isEdit ? 'Edit prompt' : 'Add prompt';
       if(fTitle) fTitle.value = existing?.title || '';
       if(fGolden) fGolden.value = existing?.golden || existing?.text || '';
       if(fPromptW) fPromptW.value = existing?.prompt || '';
       if(fOriginal) fOriginal.value = existing?.original || '';
       if(fCat) fCat.value = existing?.cat || '';
-      if(fProject) fProject.value = existing?.projectId || '';
-      ensureProjectsInUI();
-      if(fSection) fSection.value = existing?.sectionId || '';
+
+      // Defaults for new items: inherit current workspace selection.
+      const defaultPid = isEdit ? String(existing?.projectId||'') : String(getSelectedProjectId()||'');
+      const defaultSid = isEdit ? String(existing?.sectionId||'') : String(getSelectedSectionId()||'');
+
+      if(fProject) fProject.value = defaultPid;
+      refreshEditorSections();
+      if(fSection) fSection.value = defaultSid;
       if(fMode) fMode.value = existing?.modeUsed || '';
       if(fTags) fTags.value = existing?.tags || '';
       if(fModel) fModel.value = existing?.model || '';
@@ -1946,6 +1973,16 @@ function renderLines(el, arr){
     editorClose?.addEventListener('click', closeEditor);
     btnCancel?.addEventListener('click', closeEditor);
 
+    // When editing, switching project should update available sections.
+    fProject?.addEventListener('change', ()=>{
+      refreshEditorSections();
+      // if current section isn't valid anymore, clear it
+      const sid = String(fSection?.value||'');
+      if(sid && !Array.from(fSection?.options||[]).some(o=>String(o.value)===sid)){
+        if(fSection) fSection.value = '';
+      }
+    });
+
     btnSave?.addEventListener('click', ()=>{
       const item = {
         id: editingId || `lib_${Date.now()}_${Math.random().toString(16).slice(2)}`,
@@ -1965,6 +2002,12 @@ function renderLines(el, arr){
         notes: String(fNotes?.value || '').trim(),
         fav: false
       };
+
+      // For newly created items, inherit the current workspace project/section if empty.
+      if(!editingId){
+        if(!item.projectId) item.projectId = String(getSelectedProjectId()||'').trim();
+        if(!item.sectionId) item.sectionId = String(getSelectedSectionId()||'').trim();
+      }
       if(!item.golden){ setEditStatus('Golden Prompt is required.'); return; }
       if(!item.title){ item.title = item.golden.split(/\n|\r/)[0].slice(0,48) || 'Untitled'; }
 
@@ -2005,11 +2048,6 @@ function renderLines(el, arr){
       manageProjectsDialog();
       ensureProjectsInUI();
       renderLibrary();
-    });
-
-    fProject?.addEventListener('change', ()=>{
-      // refresh editor sections list
-      ensureProjectsInUI();
     });
 
     exportBtn?.addEventListener('click', ()=>{
