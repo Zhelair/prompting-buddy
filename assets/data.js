@@ -156,12 +156,31 @@ window.PB_DATA = {
     endpoint: "https://prompting-buddy-house.nik-sales-737.workers.dev",
     // Daily limits shown in UI (and used as client-side fallback if /status returns no limits).
     // If your Worker enforces different limits, update the Worker too.
-    dailyPromptLimit: 100,
-    dailyCoachLimit: 20,
+    dailyPromptLimit: 30,
+    dailyCoachLimit: 5,
     // Prompt Check input cap (client-side). Buddy textarea itself can be any size,
     // but we use this to guard requests sent to the Worker.
     promptMaxChars: 20000,
     coachMaxChars: 8000,
     timezone: "Europe/Sofia"
+  },
+
+  plans: {
+    free: {
+      id: "free",
+      label: "Free",
+      dailyPromptLimit: 30,
+      dailyCoachLimit: 5
+    },
+    premium: {
+      id: "premium",
+      label: "Premium",
+      dailyPromptLimit: 100,
+      dailyCoachLimit: 20,
+      // Add one or more premium passphrases here.
+      // Example: ["MYPASS2026", "MYPASS2026B"]
+      passphrases: ["CHANGE_ME"]
+    }
   }
+
 };
