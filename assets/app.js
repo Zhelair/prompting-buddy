@@ -17,6 +17,7 @@
   const brandName = document.getElementById("brandName");
   const unlockBtn = document.getElementById("unlockBtn");
   const pillPrompts = document.getElementById("pillPrompts");
+  const pillReview = document.getElementById("pillReview");
   const pillCoach = document.getElementById("pillCoach");
   const promptsLeftEl = document.getElementById("promptsLeft");
   const promptsLimitEl = document.getElementById("promptsLimit");
@@ -69,6 +70,10 @@
     const list = premium && Array.isArray(premium.passphrases) ? premium.passphrases : [];
     const matches = pass && list.some(p => normalizePassphrase(p) === pass);
     return matches ? 'premium' : 'free';
+  }
+
+  function isPremiumPassphrase(passphrase){
+    return planFromPassphrase(passphrase) === 'premium';
   }
 
   function getActivePlan(){
