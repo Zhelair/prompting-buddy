@@ -17,7 +17,6 @@
   const brandName = document.getElementById("brandName");
   const unlockBtn = document.getElementById("unlockBtn");
   const pillPrompts = document.getElementById("pillPrompts");
-  const pillReview = document.getElementById("pillReview");
   const pillCoach = document.getElementById("pillCoach");
   const promptsLeftEl = document.getElementById("promptsLeft");
   const promptsLimitEl = document.getElementById("promptsLimit");
@@ -33,9 +32,6 @@
     ideas: "pb_ideas_v1",
     draftPrompt: "pb_draft_prompt_v1",
     draftForce: "pb_draft_force_v1",
-    passphrase: "pb_passphrase_v1",
-    plan: "pb_plan_v1",
-    usage: (plan)=>`pb_usage_${plan}_v1`,
     theme: "pb_theme",
     variant: (t)=>`pb_theme_variant_${t}`,
     libSelProject: "pb_lib_sel_project_v1",
@@ -53,106 +49,6 @@
   function setLS(key, value){
     try{ localStorage.setItem(key, JSON.stringify(value)); } catch {}
   }
-
-// -------- Plans & local usage (two-tier) --------
-  function normalizePassphrase(p){
-    return String(p || '').trim();
-  }
-
-  function getPlans(){
-    return (data && data.plans) ? data.plans : {};
-  }
-
-  function planFromPassphrase(passphrase){
-    const pass = normalizePassphrase(passphrase);
-    const plans = getPlans();
-    const premium = plans && plans.premium ? plans.premium : null;
-    const list = premium && Array.isArray(premium.passphrases) ? premium.passphrases : [];
-    const matches = pass && list.some(p => normalizePassphrase(p) === pass);
-    return matches ? 'premium' : 'free';
-  }
-
-  function isPremiumPassphrase(passphrase){
-    return planFromPassphrase(passphrase) === 'premium';
-  }
-
-  function getActivePlan(){
-    const stored = localStorage.getItem(LS.plan);
-    if(stored === 'premium' || stored === 'free') return stored;
-    const pass = localStorage.getItem(LS.passphrase);
-    return planFromPassphrase(pass);
-  }
-
-  function getPlanLimits(planId){
-    const plans = getPlans();
-    if(planId === 'premium' && plans.premium){
-      return {
-        prompt: Number(plans.premium.dailyPromptLimit || 0),
-        coach: Number(plans.premium.dailyCoachLimit || 0)
-      };
-    }
-    if(plans.free){
-      return {
-        prompt: Number(plans.free.dailyPromptLimit || house.dailyPromptLimit || 30),
-        coach: Number(plans.free.dailyCoachLimit || house.dailyCoachLimit || 5)
-      };
-    }
-    return {
-      prompt: Number(house.dailyPromptLimit || 30),
-      coach: Number(house.dailyCoachLimit || 5)
-    };
-  }
-
-  function getDayKey(){
-    try{
-      const tz = house.timezone || 'Europe/Sofia';
-      const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' });
-      return fmt.format(new Date());
-    }catch(e){
-      const d = new Date();
-      const mm = String(d.getMonth()+1).padStart(2,'0');
-      const dd = String(d.getDate()).padStart(2,'0');
-      return `${d.getFullYear()}-${mm}-${dd}`;
-    }
-  }
-
-  function getUsage(planId){
-    const key = LS.usage(planId);
-    const today = getDayKey();
-    const u = getLS(key, { day: today, promptUsed: 0, coachUsed: 0 });
-    if(u.day !== today){
-      u.day = today;
-      u.promptUsed = 0;
-      u.coachUsed = 0;
-      setLS(key, u);
-    }
-    return u;
-  }
-
-  function incUsage(planId, field){
-    const u = getUsage(planId);
-    if(field === 'prompt') u.promptUsed = Number(u.promptUsed || 0) + 1;
-    if(field === 'coach') u.coachUsed = Number(u.coachUsed || 0) + 1;
-    setLS(LS.usage(planId), u);
-  }
-
-  function updateHeaderFromLocal(){
-    const planId = getActivePlan();
-    const lim = getPlanLimits(planId);
-    const u = getUsage(planId);
-    const leftPrompts = Math.max(0, (lim.prompt || 0) - (u.promptUsed || 0));
-    const leftCoach = Math.max(0, (lim.coach || 0) - (u.coachUsed || 0));
-    pillPrompts.textContent = `${leftPrompts}/${lim.prompt || 0}`;
-    pillReview.textContent = `${leftCoach}/${lim.coach || 0}`;
-    pillPrompts.hidden = false;
-    pillReview.hidden = false;
-  }
-
-
-
-  
-// -------- End Plans & local usage --------
-
 
   // last-run caches (for persistence when navigating Buddy/Vault/About)
   const LS_LAST = {
@@ -361,7 +257,7 @@
     const res = await fetch(url, {
       method,
       headers,
-      body: body==null ? null : (typeof body === "string" ? body : JSON.stringify(body))
+      body: body!=null ? JSON.stringify(body) : null
     });
     const txt = await res.text();
     let j = null;
@@ -374,17 +270,14 @@
   }
 
   async function refreshStatus(){
-    // Always show local plan limits so the UI never gets stuck at 0/0.
-    updateHeaderFromLocal();
-
     const tok = getToken();
     if(!tok){
-      // No token - we still show plan-based limits locally.
-      pillPrompts.hidden = false;
-      pillCoach.hidden = false;
+      pillPrompts.hidden = true;
+      pillCoach.hidden = true;
+      promptsLeftEl.textContent = "0";
+      coachLeftEl.textContent = "0";
       return;
     }
-
     try {
       const st = await api("/status", {
         method: "GET",
@@ -392,33 +285,19 @@
           "Authorization": `Bearer ${tok}`
         }
       });
-
-      const { promptLimit, coachLimit } = getActiveLimits();
-
-      function sanitizeQuota(q, fallbackLimit){
-        const used = Number(q?.used ?? 0) || 0;
-        let limit = Number(q?.limit ?? fallbackLimit) || 0;
-        if(limit <= 0) limit = fallbackLimit;
-        let left = (q && q.left != null) ? Number(q.left) : (limit - used);
-        if(!Number.isFinite(left)) left = Math.max(0, limit - used);
-        left = Math.max(0, Math.min(limit, left));
-        return { used, limit, left };
-      }
-
-      const p = sanitizeQuota(st && st.prompt ? st.prompt : null, promptLimit);
-      const c = sanitizeQuota(st && st.coach ? st.coach : null, coachLimit);
-
+      // expected: { prompt: {used,limit,left}, coach: {used,limit,left} }
+      const p = st && st.prompt ? st.prompt : { used:0, limit:DAILY_PROMPT_LIMIT, left:DAILY_PROMPT_LIMIT };
+      const c = st && st.coach ? st.coach : { used:0, limit:DAILY_COACH_LIMIT, left:DAILY_COACH_LIMIT };
       pillPrompts.hidden = false;
       pillCoach.hidden = false;
-      promptsLeftEl.textContent = String(p.left);
-      promptsLimitEl.textContent = String(p.limit);
-      coachLeftEl.textContent = String(c.left);
-      coachLimitEl.textContent = String(c.limit);
+      promptsLeftEl.textContent = String(p.left ?? Math.max(0, (p.limit||DAILY_PROMPT_LIMIT) - (p.used||0)));
+      promptsLimitEl.textContent = String(p.limit ?? DAILY_PROMPT_LIMIT);
+      coachLeftEl.textContent = String(c.left ?? Math.max(0, (c.limit||DAILY_COACH_LIMIT) - (c.used||0)));
+      coachLimitEl.textContent = String(c.limit ?? DAILY_COACH_LIMIT);
     } catch {
-      // If status fails, we still keep local plan limits visible.
-      pillPrompts.hidden = false;
-      pillCoach.hidden = false;
-      updateHeaderFromLocal();
+      // token probably invalid
+      pillPrompts.hidden = true;
+      pillCoach.hidden = true;
     }
   }
 
@@ -492,44 +371,26 @@
     btn?.addEventListener('click', async ()=>{
       const pass = String(input?.value || "").trim();
       if(!pass){ status.textContent = "Paste your passphrase."; return; }
-
-      // Two tiers: Free (no passphrase) and Premium (passphrase).
-      if(!isPremiumPassphrase(pass)){
-        status.textContent = "Wrong passphrase.";
-        return;
-      }
-
-      // Always set local plan immediately so counters never show 0/0.
-      try{
-        localStorage.setItem(LS.passphrase, pass);
-        localStorage.setItem(LS.plan, "premium");
-      }catch{}
-      updateHeaderFromLocal();
-
       status.textContent = "Unlocking...";
       try {
         const j = await api("/unlock", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Accept": "application/json",
             "X-OU-PASS": pass
           },
-          body: { passphrase: pass, pass: pass, code: pass, key: pass }
+          body: {}
         });
         if(j && j.token){
           setToken(j.token, j.expiresAt);
           status.textContent = "Unlocked ✅";
+          await refreshStatus();
+          setTimeout(cleanup, 450);
         } else {
-          // Worker may not return a token (or may be down). Keep Premium locally.
-          status.textContent = "Unlocked locally ✅ (server token missing).";
+          status.textContent = "Unexpected response.";
         }
-        await refreshStatus();
-        setTimeout(cleanup, 450);
       } catch (err){
-        status.textContent = "Unlocked locally ✅ (server error).";
-        await refreshStatus();
-        setTimeout(cleanup, 650);
+        status.textContent = String(err?.message || err);
       }
     });
 
@@ -538,18 +399,14 @@
   }
 
   unlockBtn?.addEventListener('click', ()=>{
-    // Allow switching passphrase without needing DevTools.
-    // If a token exists, you can still re-unlock with a new premium passphrase.
-    if(getToken()){
-      const go = confirm("Already unlocked on this device. Change passphrase?\n\nOK = change passphrase\nCancel = lock device");
-      if(!go){
+    // If already unlocked, offer quick "lock".
+    if(getToken()) {
+      if(confirm("Lock this device (remove token)?")) {
         clearToken();
-        try{ localStorage.removeItem(LS.passphrase); }catch{}
-        try{ localStorage.removeItem(LS.plan); }catch{}
         refreshStatus();
         render(location.hash.replace('#','')||'buddy');
-        return;
       }
+      return;
     }
     openUnlock();
   });
@@ -741,7 +598,6 @@ function renderLines(el, arr){
           aiReply: ""
         });
         setStatus("Done ✅ Saved to Vault.");
-        incUsage("prompt");
         await refreshStatus();
       } catch (err){
         setStatus(String(err?.message || err));
@@ -1286,7 +1142,6 @@ function renderLines(el, arr){
           metaPrompt: parsed.metaPrompt,
           raw: txt
         });
-        incUsage("coach");
         renderCoachPersisted(loadLastCoach());
 
         if(modalRaw) modalRaw.textContent = txt;
