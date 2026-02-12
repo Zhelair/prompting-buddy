@@ -200,6 +200,8 @@
         </label>
       </div>
 
+      <div class="lib__projectBar" id="libProjectBar"></div>
+
       <div class="settings__status" id="libStatus" aria-live="polite"></div>
 
       <!-- Inline editor (keeps everything inside the main screen) -->
@@ -215,9 +217,25 @@
         </label>
 
         <label class="field">
-          <span class="field__label">Prompt</span>
-          <textarea class="output" id="libFieldText" rows="8" placeholder="Paste prompt text..."></textarea>
+          <span class="field__label">Golden Prompt</span>
+          <textarea class="output" id="libFieldGolden" rows="8" placeholder="Paste your best (golden) prompt..."></textarea>
         </label>
+
+        <details class="lib__details">
+          <summary>Prompt (optional)</summary>
+          <label class="field" style="margin-top:10px">
+            <span class="field__label">Prompt</span>
+            <textarea class="output" id="libFieldPrompt" rows="6" placeholder="Your working prompt version..."></textarea>
+          </label>
+        </details>
+
+        <details class="lib__details">
+          <summary>Original Prompt (optional)</summary>
+          <label class="field" style="margin-top:10px">
+            <span class="field__label">Original Prompt</span>
+            <textarea class="output" id="libFieldOriginal" rows="6" placeholder="Raw input / original brief..."></textarea>
+          </label>
+        </details>
 
         <label class="field">
           <span class="field__label">Category</span>

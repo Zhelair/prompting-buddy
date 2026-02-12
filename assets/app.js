@@ -1178,6 +1178,7 @@ function renderLines(el, arr){
     const manageProjectsBtn = document.getElementById('libManageProjects');
     const catSel = document.getElementById('libCat');
     const onlyFav = document.getElementById('libOnlyFav');
+    const projectBar = document.getElementById('libProjectBar');
 
     // Inline editor (inside Library page)
     const editorWrap = document.getElementById('libEditorWrap');
@@ -1185,7 +1186,9 @@ function renderLines(el, arr){
     const editorClose = document.getElementById('libEditorClose');
     const editorStatus = document.getElementById('libEditStatus');
     const fTitle = document.getElementById('libFieldTitle');
-    const fText = document.getElementById('libFieldText');
+    const fGolden = document.getElementById('libFieldGolden');
+    const fPrompt = document.getElementById('libFieldPrompt');
+    const fOriginal = document.getElementById('libFieldOriginal');
     const fCat = document.getElementById('libFieldCat');
     const fProject = document.getElementById('libFieldProject');
     const fSection = document.getElementById('libFieldSection');
@@ -1201,7 +1204,7 @@ function renderLines(el, arr){
 
     const CATS = Array.isArray(data.libraryCategories) && data.libraryCategories.length
       ? data.libraryCategories.slice(0,50)
-      : ["Daily drivers","Writing","Coding","Research / OSINT","Visuals","Creators","Business","Life / Mood"];
+      : ["General","Daily drivers","Writing","Coding","Research / OSINT","Visuals","Creators","Business","Life / Mood"];
 
     const LS_LIB_SEEDED = "pb_library_seeded_v1";
     const LS_IDEAS_SEEDED = "pb_ideas_seeded_v1";
@@ -1219,10 +1222,13 @@ function renderLines(el, arr){
       }
       // Editor dropdown
       if(fCat.options.length === 0){
-        const o0 = document.createElement('option');
-        o0.value = "";
-        o0.textContent = "General";
-        fCat.appendChild(o0);
+        const hasGeneral = CATS.some(x=>String(x).toLowerCase()==='general');
+        if(!hasGeneral){
+          const o0 = document.createElement('option');
+          o0.value = "";
+          o0.textContent = "General";
+          fCat.appendChild(o0);
+        }
         CATS.forEach(c=>{
           const o = document.createElement('option');
           o.value = c;
@@ -1234,6 +1240,26 @@ function renderLines(el, arr){
 
     function ensureProjectsInUI(){
       const projects = loadProjects();
+      // Quick project bar (Teams-like switching)
+      if(projectBar){
+        const active = String(projectSel?.value || '').trim();
+        const btn = (id, name)=>{
+          const isA = id === active;
+          return `<button class="lib__pbtn${isA?" is-active":""}" data-pid="${escapeHtml(id)}" type="button">${escapeHtml(name)}</button>`;
+        };
+        projectBar.innerHTML = btn('', 'All') + projects.map(p=>btn(p.id, p.name)).join('');
+        projectBar.querySelectorAll('button[data-pid]').forEach(b=>{
+          b.addEventListener('click', ()=>{
+            const pid = String(b.getAttribute('data-pid')||'');
+            if(projectSel) projectSel.value = pid;
+            setLS(LS.libSelProject, pid);
+            if(sectionSel) sectionSel.value = "";
+            setLS(LS.libSelSection, "");
+            ensureProjectsInUI();
+            renderLibrary();
+          });
+        });
+      }
       // Filters
       if(projectSel){
         // keep first option (All)
@@ -1285,6 +1311,30 @@ function renderLines(el, arr){
           fSection.appendChild(o);
         });
       }
+      renderProjectBar();
+    }
+
+    function renderProjectBar(){
+      if(!projectBar) return;
+      const projects = loadProjects();
+      const active = String(projectSel?.value || '').trim();
+      const btn = (id,name)=>{
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'lib__pbtn' + (String(id)===active ? ' is-active' : '');
+        b.textContent = name;
+        b.addEventListener('click', ()=>{
+          if(projectSel) projectSel.value = String(id||'');
+          setLS(LS.libSelProject, String(id||''));
+          if(sectionSel){ sectionSel.value = ''; setLS(LS.libSelSection, ''); }
+          ensureProjectsInUI();
+          renderLibrary();
+        });
+        return b;
+      };
+      projectBar.innerHTML = '';
+      projectBar.appendChild(btn('', 'All projects'));
+      projects.forEach(p=>{ projectBar.appendChild(btn(p.id, p.name)); });
     }
 
     function manageProjectsDialog(){
@@ -1488,9 +1538,15 @@ function renderLines(el, arr){
       editingId = existing?.id || null;
       editingCreatedAt = existing?.t || Date.now();
 
+      const golden = String(existing?.golden ?? existing?.text ?? '').trim();
+      const prompt = String(existing?.prompt ?? '').trim();
+      const original = String(existing?.original ?? '').trim();
+
       if(editorTitle) editorTitle.textContent = isEdit ? 'Edit prompt' : 'Add prompt';
       if(fTitle) fTitle.value = existing?.title || '';
-      if(fText) fText.value = existing?.text || '';
+      if(fGolden) fGolden.value = golden;
+      if(fPrompt) fPrompt.value = prompt;
+      if(fOriginal) fOriginal.value = original;
       if(fCat) fCat.value = existing?.cat || '';
       if(fProject) fProject.value = existing?.projectId || '';
       ensureProjectsInUI();
@@ -1529,8 +1585,15 @@ function renderLines(el, arr){
 
       const libAllRaw = loadLibrary().map(it=>{
         if(!it || typeof it!=='object') return it;
+        // Backwards compatibility: older saves used {text}
+        const golden = String(it.golden ?? it.text ?? '');
+        const prompt = String(it.prompt ?? '');
+        const original = String(it.original ?? '');
         return {
           ...it,
+          golden,
+          prompt,
+          original,
           cat: it.cat || "",
           fav: !!it.fav
         };
@@ -1553,7 +1616,7 @@ function renderLines(el, arr){
         if(selS && String(it.sectionId||"") !== selS) return false;
         if(favOnly && !it.fav) return false;
         if(!q) return true;
-        const hay = [it?.title, it?.text, it?.tags, it?.model, it?.notes, it?.cat, projectName(it.projectId), sectionName(it.projectId,it.sectionId), it?.modeUsed].filter(Boolean).join(' ').toLowerCase();
+        const hay = [it?.title, it?.golden, it?.prompt, it?.original, it?.tags, it?.model, it?.notes, it?.cat, projectName(it.projectId), sectionName(it.projectId,it.sectionId), it?.modeUsed].filter(Boolean).join(' ').toLowerCase();
         return hay.includes(q);
       });
       if(!list) return;
@@ -1576,7 +1639,9 @@ function renderLines(el, arr){
         const mode = String(item.modeUsed||"").toLowerCase();
         const modeNice = mode ? (mode==='auditor'?'Auditor':mode==='creator'?'Creator':'Thinker') : '';
         const notes = escapeHtml(String(item.notes || ''));
-        const text = escapeHtml(String(item.text || ''));
+        const golden = escapeHtml(String(item.golden ?? item.text ?? ''));
+        const prompt = escapeHtml(String(item.prompt || ''));
+        const original = escapeHtml(String(item.original || ''));
         return `
           <article class="card card--flat lib__item" data-id="${escapeHtml(String(item.id||""))}" data-cat="${cat}">
             <div class="card__body">
@@ -1603,7 +1668,25 @@ function renderLines(el, arr){
               </div>
 
               ${notes ? `<div class="lib__notes">${notes}</div>` : ''}
-              <pre class="pre pre--sm lib__pre">${text}</pre>
+
+              <details class="lib__details" open>
+                <summary>Golden Prompt</summary>
+                <pre class="pre pre--sm lib__pre">${golden}</pre>
+              </details>
+
+              ${prompt ? `
+                <details class="lib__details">
+                  <summary>Prompt</summary>
+                  <pre class="pre pre--sm lib__pre">${prompt}</pre>
+                </details>
+              ` : ''}
+
+              ${original ? `
+                <details class="lib__details">
+                  <summary>Original Prompt</summary>
+                  <pre class="pre pre--sm lib__pre">${original}</pre>
+                </details>
+              ` : ''}
             </div>
           </article>
         `;
@@ -1632,12 +1715,13 @@ function renderLines(el, arr){
           }
 
           if(act === 'copy'){
-            try{ await navigator.clipboard.writeText(String(item.text||"")); setStatus('Copied ✅'); }
+            const txt = String(item.golden ?? item.text ?? "");
+            try{ await navigator.clipboard.writeText(txt); setStatus('Copied ✅'); }
             catch{ setStatus('Copy failed.'); }
             setTimeout(()=>setStatus(''), 900);
           }
           if(act === 'send'){
-            setDraftPromptForce(String(item.text||""));
+            setDraftPromptForce(String(item.golden ?? item.text ?? ""));
             location.hash = 'buddy';
           }
           if(act === 'edit'){
@@ -1665,7 +1749,9 @@ function renderLines(el, arr){
         id: editingId || `lib_${Date.now()}_${Math.random().toString(16).slice(2)}`,
         t: editingCreatedAt || Date.now(),
         title: String(fTitle?.value || '').trim(),
-        text: String(fText?.value || '').trim(),
+        golden: String(fGolden?.value || '').trim(),
+        prompt: String(fPrompt?.value || '').trim(),
+        original: String(fOriginal?.value || '').trim(),
         cat: String(fCat?.value || '').trim(),
         projectId: String(fProject?.value || '').trim(),
         sectionId: String(fSection?.value || '').trim(),
@@ -1675,8 +1761,9 @@ function renderLines(el, arr){
         notes: String(fNotes?.value || '').trim(),
         fav: false
       };
-      if(!item.text){ setEditStatus('Prompt text is required.'); return; }
-      if(!item.title){ item.title = item.text.split(/\n|\r/)[0].slice(0,48) || 'Untitled'; }
+      if(!item.golden && item.prompt) item.golden = item.prompt;
+      if(!item.golden){ setEditStatus('Golden Prompt is required.'); return; }
+      if(!item.title){ item.title = item.golden.split(/\n|\r/)[0].slice(0,48) || 'Untitled'; }
 
       const libAll = loadLibrary();
       const idx = libAll.findIndex(x=>x && x.id === item.id);

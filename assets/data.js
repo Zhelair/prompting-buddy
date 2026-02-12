@@ -143,6 +143,7 @@ window.PB_DATA = {
 
 
   libraryCategories: [
+    "General",
     "Daily drivers",
     "Writing",
     "Coding",
