@@ -250,13 +250,7 @@ function colorForKey(key){
   }
   function setToken(token, expiresAtISO){
     localStorage.setItem(LS.token, token);
-    // Worker versions differ: can return expiresAt (ISO) OR exp (ms timestamp).
-    let expMs = 0;
-    if (typeof expiresAtISO === 'number' && Number.isFinite(expiresAtISO)) {
-      expMs = expiresAtISO;
-    } else if (expiresAtISO) {
-      expMs = Date.parse(String(expiresAtISO));
-    }
+    const expMs = expiresAtISO ? Date.parse(expiresAtISO) : 0;
     if(expMs) localStorage.setItem(LS.tokenExp, String(expMs));
   }
   function clearToken(){
@@ -374,19 +368,8 @@ function colorForKey(key){
     try {
       const url = (window.PB_DATA && window.PB_DATA.supportUrl) ? String(window.PB_DATA.supportUrl).trim() : "";
       if(buy){
-        if(!url || url === "#"){
-          buy.setAttribute("href", "#about");
-          try{ buy.removeAttribute("target"); }catch{}
-          buy.addEventListener("click", (e)=>{
-            e.preventDefault();
-            cleanup();
-            location.hash = "#about";
-            render("about");
-          });
-        } else {
-          buy.setAttribute("href", url);
-          buy.setAttribute("target", "_blank");
-        }
+        if(!url || url === "#") { buy.style.display = "none"; }
+        else { buy.setAttribute('href', url); }
       }
     } catch {}
 
@@ -403,15 +386,12 @@ function colorForKey(key){
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            // Keep header for backward compatibility (older Worker versions).
             "X-OU-PASS": pass
           },
-          // New Worker expects passphrase in JSON body.
-          body: { passphrase: pass }
+          body: {}
         });
         if(j && j.token){
-          // Worker may return expiresAt (ISO) or exp (ms).
-          setToken(j.token, j.expiresAt || j.exp);
+          setToken(j.token, j.expiresAt);
           status.textContent = "Unlocked ✅";
           await refreshStatus();
           setTimeout(cleanup, 450);
@@ -2236,18 +2216,6 @@ function renderLines(el, arr){
 
     const support = box.querySelector('#pbSupportLink');
     if(support) support.href = data.supportUrl || '#';
-    const aboutUnlock = box.querySelector("#pbAboutUnlock");
-    if(aboutUnlock){
-      aboutUnlock.addEventListener("click", ()=>{
-        if(getToken()){
-          location.hash = "#buddy";
-          render("buddy");
-          return;
-        }
-        openUnlock();
-      });
-    }
-
 
     // Wire theme picker (radio list)
     const currentTheme = getTheme();

@@ -68,7 +68,6 @@ window.PB_DATA = {
             Buy a passphrase on BuyMeACoffee. I may rotate the passphrase monthly. Support keeps the project ad-free, evolving, and without data sharing.
           </p>
           <a class="btn btn--primary" id="pbSupportLink" href="#" target="_blank" rel="noopener">Get passphrase</a>
-          <button class="btn" id="pbAboutUnlock" type="button">Unlock</button>
         </div>
       </div>
 
@@ -158,7 +157,7 @@ window.PB_DATA = {
     dailyCoachLimit: 5,
     // Prompt Check input cap (client-side). Buddy textarea itself can be any size,
     // but we use this to guard requests sent to the Worker.
-    promptMaxChars: 5000,
+    promptMaxChars: 20000,
     coachMaxChars: 8000,
     timezone: "Europe/Sofia"
   }
