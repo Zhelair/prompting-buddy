@@ -1,12 +1,3 @@
-// Deterministic, nice-looking color for project dots.
-function colorForKey(key){
-  const s = String(key||'');
-  let h = 0;
-  for (let i=0;i<s.length;i++) h = (h*31 + s.charCodeAt(i)) >>> 0;
-  const hue = h % 360;
-  return `hsl(${hue} 70% 55%)`;
-}
-
 (function(){
   const data = window.PB_DATA || {};
   const house = data.house || {};
@@ -1371,30 +1362,19 @@ function renderLines(el, arr){
       // Sidebar projects
       if(wsProjects){
         const items = [{ id:'', name:'All Projects', sections:[] }, ...projects];
-        const projectButtons = items.map(p=>{
-          const pid = String(p.id||'');
-          const active = pid===selP;
-          const count = pid ? loadLibrary().filter(x=>x && String(x.projectId||'')===pid).length : loadLibrary().length;
-          const dot = pid ? colorForKey(pid) : 'rgba(0,0,0,.25)';
+        wsProjects.innerHTML = items.map(p=>{
+          const active = String(p.id||'')===selP;
+          const count = p.id ? loadLibrary().filter(x=>x && String(x.projectId||'')===String(p.id)).length : loadLibrary().length;
           return `
-            <button class="libws__projbtn ${active?'is-active':''}" data-pid="${escapeHtml(pid)}" type="button">
-              <span class="libws__dot" style="background:${dot}"></span>
+            <button class="libws__projbtn ${active?'is-active':''}" data-pid="${escapeHtml(String(p.id||''))}" type="button">
               <span class="libws__projmeta">
                 <span>${escapeHtml(String(p.name||''))}</span>
                 <span class="chip chip--time">${count}</span>
               </span>
-              ${pid ? `<span class="muted">›</span>` : ``}
+              ${p.id ? `<span class="muted">›</span>` : ``}
             </button>
           `;
         }).join('');
-
-        // Collapsible group (Notion-ish)
-        wsProjects.innerHTML = `
-          <details class="wsGroup" open>
-            <summary>Projects</summary>
-            <div class="wsGroup__body">${projectButtons}</div>
-          </details>
-        `;
 
         wsProjects.querySelectorAll('[data-pid]').forEach(b=>{
           b.addEventListener('click', ()=>{
