@@ -67,7 +67,7 @@ var index_default = {
       }
       if (!passphrase) return corsJson(request, env, 400, { error: "missing_passphrase" });
       const allowed = getAllowedPassphrases(env);
-      if (!allowed.length || !allowed.includes(passphrase)) {
+      if (!allowed.length || !allowed.includes(passphrase.trim())) {
         return corsJson(request, env, 401, { error: "invalid_passphrase" });
       }
       const device = (request.headers.get('x-ou-device') || request.headers.get('user-agent') || '').trim();
