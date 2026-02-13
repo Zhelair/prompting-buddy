@@ -8,9 +8,9 @@ DEFAULT_ORIGIN = "https://zhelair.github.io"
 TIMEZONE = "Europe/Sofia"
 DAILY_PROMPT_LIMIT = "30"
 DAILY_COACH_LIMIT = "5"
-PROMPT_MAX_CHARS = "20000"
-COACH_MAX_CHARS = "20000"
-TOKEN_TTL_DAYS = "180"
+PROMPT_MAX_CHARS = "5000"
+COACH_MAX_CHARS = "8000"
+TOKEN_TTL_DAYS = "60"
 
 [[durable_objects.bindings]]
 name = "LIMITS"

@@ -71,7 +71,13 @@ export default {
 
       let body = {};
       try { body = await request.json(); } catch { body = {}; }
-      const passphrase = String(body.passphrase || '').trim();
+      // Accept passphrase via JSON body (preferred) or header (backward compatible).
+      const passphrase = String(
+        body.passphrase ||
+        request.headers.get('X-OU-PASS') ||
+        request.headers.get('x-ou-pass') ||
+        ''
+      ).trim();
       if (!passphrase) return corsJson(request, env, 400, { error: 'missing_passphrase' });
 
       const allowed = getAllowedPassphrases(env);
@@ -79,13 +85,14 @@ export default {
         return corsJson(request, env, 401, { error: 'invalid_passphrase' });
       }
 
-      const device = String(request.headers.get('x-ou-device') || request.headers.get('X-OU-DEVICE') || request.headers.get('x-client-id') || request.headers.get('X-Client-Id') || request.headers.get('User-Agent') || '').trim();
-      const sub = await sha256Hex(`${passphrase}|${device}`);
+      // IMPORTANT: Usage counters are keyed by `sub`.
+      // We want the same passphrase to share limits across devices, so `sub` must NOT include device/UA.
+      const sub = await sha256Hex(passphrase);
       const ttlDays = Number(env.TOKEN_TTL_DAYS || 30);
       const exp = Date.now() + Math.max(1, ttlDays) * 24 * 60 * 60 * 1000;
       const token = await signToken({ sub, exp }, env.TOKEN_SECRET || '');
 
-      return corsJson(request, env, 200, { token, exp });
+      return corsJson(request, env, 200, { token, exp, expiresAt: new Date(exp).toISOString() });
     }
 
     // Premium endpoints require token
@@ -230,6 +237,30 @@ Follow this process:
 4) Golden Prompt: a single revised prompt, preserving intent.
 
 Return ONLY valid JSON, no markdown, no code fences, no extra text.
+
+Hard rules:
+The value of "golden" must NOT contain "{" or "}" characters.
+Output only JSON. No extra text.
+No markdown, no backticks, no code fences.
+"diagnosis" must contain 1–3 short items (each under 250 characters).
+"missing" must contain 1–3 short items (each under 250 characters).
+"improvements" must contain 1–3 short items (each under 250 characters).
+"golden" must be under 1200 characters.
+Keep output concise. Do not exceed necessary length.
+If "golden" contains "{" or "}" then you MUST output FORMAT_ERROR instead of any other content.
+If you are about to include "{" or "}" anywhere in "golden", STOP and output FORMAT_ERROR JSON only.
+
+Use EXACTLY these keys and no others:
+"diagnosis": array of strings
+"missing": array of strings
+"improvements": array of strings
+"golden": string
+
+Do NOT put JSON inside any field.
+"golden" must be plain text only. It must NOT contain JSON, braces that start an object, or the words "diagnosis", "missing", "improvements" as labels.
+
+If you break any rule, output exactly:
+{"diagnosis":["FORMAT_ERROR"],"missing":[],"improvements":[],"golden":"FORMAT_ERROR"}
 Schema:
 {
   "diagnosis": ["..."],
@@ -255,6 +286,29 @@ Follow this process:
 4) Golden Prompt: a single revised prompt that encourages exploration (options, tradeoffs, criteria) while preserving intent.
 
 Return ONLY valid JSON, no markdown, no code fences, no extra text.
+Hard rules:
+The value of "golden" must NOT contain "{" or "}" characters.
+Output only JSON. No extra text.
+No markdown, no backticks, no code fences.
+"diagnosis" must contain 1–3 short items (each under 250 characters).
+"missing" must contain 1–3 short items (each under 250 characters).
+"improvements" must contain 1–3 short items (each under 250 characters).
+"golden" must be under 1200 characters.
+Keep output concise. Do not exceed necessary length.
+If "golden" contains "{" or "}" then you MUST output FORMAT_ERROR instead of any other content.
+If you are about to include "{" or "}" anywhere in "golden", STOP and output FORMAT_ERROR JSON only.
+
+Use EXACTLY these keys and no others:
+"diagnosis": array of strings
+"missing": array of strings
+"improvements": array of strings
+"golden": string
+
+Do NOT put JSON inside any field.
+"golden" must be plain text only. It must NOT contain JSON, braces that start an object, or the words "diagnosis", "missing", "improvements" as labels.
+
+If you break any rule, output exactly:
+{"diagnosis":["FORMAT_ERROR"],"missing":[],"improvements":[],"golden":"FORMAT_ERROR"}
 Schema:
 {
   "diagnosis": ["..."],
@@ -280,6 +334,29 @@ Follow this process:
 4) Golden Prompt: a single revised prompt that adds creative direction (audience, tone, style constraints) while preserving intent.
 
 Return ONLY valid JSON, no markdown, no code fences, no extra text.
+Hard rules:
+The value of "golden" must NOT contain "{" or "}" characters.
+Output only JSON. No extra text.
+No markdown, no backticks, no code fences.
+"diagnosis" must contain 1–3 short items (each under 250 characters).
+"missing" must contain 1–3 short items (each under 250 characters).
+"improvements" must contain 1–3 short items (each under 250 characters).
+"golden" must be under 1200 characters.
+Keep output concise. Do not exceed necessary length.
+If "golden" contains "{" or "}" then you MUST output FORMAT_ERROR instead of any other content.
+If you are about to include "{" or "}" anywhere in "golden", STOP and output FORMAT_ERROR JSON only.
+
+Use EXACTLY these keys and no others:
+"diagnosis": array of strings
+"missing": array of strings
+"improvements": array of strings
+"golden": string
+
+Do NOT put JSON inside any field.
+"golden" must be plain text only. It must NOT contain JSON, braces that start an object, or the words "diagnosis", "missing", "improvements" as labels.
+
+If you break any rule, output exactly:
+{"diagnosis":["FORMAT_ERROR"],"missing":[],"improvements":[],"golden":"FORMAT_ERROR"}
 Schema:
 {
   "diagnosis": ["..."],
@@ -287,7 +364,6 @@ Schema:
   "improvements": ["..."],
   "golden": "..."
 }`;
-
 
 const SYSTEM_COACH = `You are Prompting Buddy Coach.
 You will be given up to 5 prior prompt-check runs (prompts and optional pasted AI replies).
@@ -328,7 +404,9 @@ function corsJson(request, env, status, obj) {
     status,
     headers: {
       ...corsHeaders(request, env),
-      'Content-Type': 'application/json; charset=utf-8'
+      'Content-Type': 'application/json; charset=utf-8',
+      // These endpoints are user-specific (tokens + counters). Never cache.
+      'Cache-Control': 'no-store'
     }
   });
 }
@@ -546,4 +624,5 @@ function timingSafeEqual(a, b) {
   let out = 0;
   for (let i = 0; i < x.length; i++) out |= x.charCodeAt(i) ^ y.charCodeAt(i);
   return out === 0;
-}
+};
+//# sourceMappingURL=index.js.map

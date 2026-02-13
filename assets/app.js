@@ -250,7 +250,13 @@ function colorForKey(key){
   }
   function setToken(token, expiresAtISO){
     localStorage.setItem(LS.token, token);
-    const expMs = expiresAtISO ? Date.parse(expiresAtISO) : 0;
+    // Worker versions differ: can return expiresAt (ISO) OR exp (ms timestamp).
+    let expMs = 0;
+    if (typeof expiresAtISO === 'number' && Number.isFinite(expiresAtISO)) {
+      expMs = expiresAtISO;
+    } else if (expiresAtISO) {
+      expMs = Date.parse(String(expiresAtISO));
+    }
     if(expMs) localStorage.setItem(LS.tokenExp, String(expMs));
   }
   function clearToken(){
@@ -386,12 +392,15 @@ function colorForKey(key){
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            // Keep header for backward compatibility (older Worker versions).
             "X-OU-PASS": pass
           },
-          body: {}
+          // New Worker expects passphrase in JSON body.
+          body: { passphrase: pass }
         });
         if(j && j.token){
-          setToken(j.token, j.expiresAt);
+          // Worker may return expiresAt (ISO) or exp (ms).
+          setToken(j.token, j.expiresAt || j.exp);
           status.textContent = "Unlocked ✅";
           await refreshStatus();
           setTimeout(cleanup, 450);
