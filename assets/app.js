@@ -374,8 +374,19 @@ function colorForKey(key){
     try {
       const url = (window.PB_DATA && window.PB_DATA.supportUrl) ? String(window.PB_DATA.supportUrl).trim() : "";
       if(buy){
-        if(!url || url === "#") { buy.style.display = "none"; }
-        else { buy.setAttribute('href', url); }
+        if(!url || url === "#"){
+          buy.setAttribute("href", "#about");
+          try{ buy.removeAttribute("target"); }catch{}
+          buy.addEventListener("click", (e)=>{
+            e.preventDefault();
+            cleanup();
+            location.hash = "#about";
+            render("about");
+          });
+        } else {
+          buy.setAttribute("href", url);
+          buy.setAttribute("target", "_blank");
+        }
       }
     } catch {}
 
@@ -2225,6 +2236,18 @@ function renderLines(el, arr){
 
     const support = box.querySelector('#pbSupportLink');
     if(support) support.href = data.supportUrl || '#';
+    const aboutUnlock = box.querySelector("#pbAboutUnlock");
+    if(aboutUnlock){
+      aboutUnlock.addEventListener("click", ()=>{
+        if(getToken()){
+          location.hash = "#buddy";
+          render("buddy");
+          return;
+        }
+        openUnlock();
+      });
+    }
+
 
     // Wire theme picker (radio list)
     const currentTheme = getTheme();
