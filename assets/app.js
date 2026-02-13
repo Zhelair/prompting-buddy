@@ -18,7 +18,6 @@
   const unlockBtn = document.getElementById("unlockBtn");
   const pillPrompts = document.getElementById("pillPrompts");
   const pillCoach = document.getElementById("pillCoach");
-  const pillCoach = document.getElementById("pillCoach");
   const promptsLeftEl = document.getElementById("promptsLeft");
   const promptsLimitEl = document.getElementById("promptsLimit");
   const coachLeftEl = document.getElementById("coachLeft");
