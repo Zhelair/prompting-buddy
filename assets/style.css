@@ -14,7 +14,8 @@ a{color:inherit}button,a.navbtn{font:inherit}
 @media (min-width: 1100px){
   body{font-size:17px}
   .console{padding:22px 14px}
-  .screen{width:min(1480px,96vw)}
+  .screen{width:min(1680px,96vw)}
+  .screen{aspect-ratio:auto; min-height:86vh}
   .home__headline{font-size:30px}
 }
 .screen__bg{position:absolute;inset:0;opacity:.55;background:radial-gradient(70% 55% at 70% 30%,rgba(255,138,61,.18),transparent 60%),radial-gradient(60% 50% at 20% 65%,rgba(44,130,126,.16),transparent 60%),linear-gradient(180deg,rgba(245,239,226,.12),rgba(12,12,13,.35));pointer-events:none}
@@ -1073,3 +1074,12 @@ body[data-theme] .pbmodal{background:rgba(255,255,255,.92)}
 .pbmodal__hd{padding:14px 16px;border-bottom:1px solid rgba(0,0,0,.12);display:flex;align-items:center;justify-content:space-between;gap:10px}
 .pbmodal__bd{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
 .pbmodal__ft{padding:14px 16px;border-top:1px solid rgba(0,0,0,.12);display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+
+body[data-theme="terminal"] .pill{background:rgba(0,0,0,.28); border-color:rgba(0,255,110,.28); color:var(--term-ink)}
+
+@media (min-width: 1100px){
+  .libws__grid{grid-template-columns:repeat(2,minmax(320px,1fr))}
+}
+@media (min-width: 1500px){
+  .libws__grid{grid-template-columns:repeat(3,minmax(320px,1fr))}
+}

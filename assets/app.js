@@ -2081,10 +2081,15 @@ function renderLines(el, arr){
         if(Array.isArray(parsed)){
           // allow importing a plain Library array
           saveLibrary(parsed);
+        ensureCategoriesInUI();
+        ensureProjectsInUI();
         } else {
           applyImportBundle(parsed);
+          ensureCategoriesInUI();
+          ensureProjectsInUI();
         }
         renderLibrary();
+        renderWorkspace();
         setStatus('Imported ✅');
         setTimeout(()=>setStatus(''), 900);
       } catch {
