@@ -70,7 +70,8 @@ var index_default = {
       if (!allowed.length || !allowed.includes(passphrase)) {
         return corsJson(request, env, 401, { error: "invalid_passphrase" });
       }
-      const sub = await getSubFromRequest(request);
+      const device = (request.headers.get('x-ou-device') || request.headers.get('user-agent') || '').trim();
+      const sub = await sha256Hex(passphrase.trim() + '|' + device);
       const ttlDays = Number(env.TOKEN_TTL_DAYS || 30);
       const exp = Date.now() + Math.max(1, ttlDays) * 24 * 60 * 60 * 1e3;
       const token = await signToken({ sub, exp }, env.TOKEN_SECRET || "");
