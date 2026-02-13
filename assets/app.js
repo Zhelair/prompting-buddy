@@ -239,9 +239,22 @@
     }
     return t;
   }
-  function setToken(token, expiresAtISO){
+  function setToken(token, expiresAt){
     localStorage.setItem(LS.token, token);
-    const expMs = expiresAtISO ? Date.parse(expiresAtISO) : 0;
+
+    // Accept either:
+    // - ISO string (older workers)
+    // - epoch ms number (newer workers)
+    let expMs = 0;
+    if(typeof expiresAt === 'number' && isFinite(expiresAt)) expMs = expiresAt;
+    else if(typeof expiresAt === 'string' && expiresAt.trim()){
+      const n = Number(expiresAt);
+      if(isFinite(n) && n > 1e11) expMs = n; // looks like epoch ms
+      else {
+        const parsed = Date.parse(expiresAt);
+        if(isFinite(parsed)) expMs = parsed;
+      }
+    }
     if(expMs) localStorage.setItem(LS.tokenExp, String(expMs));
   }
   function clearToken(){
@@ -382,7 +395,7 @@
           body: {}
         });
         if(j && j.token){
-          setToken(j.token, j.expiresAt);
+          setToken(j.token, (j.expiresAt ?? j.exp ?? j.expiresAtISO ?? j.expires_at ?? j.expires));
           status.textContent = "Unlocked ✅";
           await refreshStatus();
           setTimeout(cleanup, 450);
@@ -399,19 +412,15 @@
   }
 
   unlockBtn?.addEventListener('click', ()=>{
-    // If already unlocked, offer quick "lock".
+    // Allow switching accounts without manual "lock first" dance.
+    // If already unlocked, confirm and then reopen the unlock modal.
     if(getToken()) {
-      if(confirm("Lock this device (remove token)?")) {
-        clearToken();
-        refreshStatus();
-        render(location.hash.replace('#','')||'buddy');
-      }
-      return;
+      if(!confirm("Switch passphrase (replace token)?")) return;
+      clearToken();
     }
     openUnlock();
   });
-
-  // --- Buddy
+// --- Buddy
   function initBuddy(){
     const prompt = document.getElementById('pcPrompt');
     const lensSel = document.getElementById('pcLens');
