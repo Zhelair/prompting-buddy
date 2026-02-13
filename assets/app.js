@@ -1,3 +1,12 @@
+// Deterministic, nice-looking color for project dots.
+function colorForKey(key){
+  const s = String(key||'');
+  let h = 0;
+  for (let i=0;i<s.length;i++) h = (h*31 + s.charCodeAt(i)) >>> 0;
+  const hue = h % 360;
+  return `hsl(${hue} 70% 55%)`;
+}
+
 (function(){
   const data = window.PB_DATA || {};
   const house = data.house || {};
@@ -239,22 +248,9 @@
     }
     return t;
   }
-  function setToken(token, expiresAt){
+  function setToken(token, expiresAtISO){
     localStorage.setItem(LS.token, token);
-
-    // Accept either:
-    // - ISO string (older workers)
-    // - epoch ms number (newer workers)
-    let expMs = 0;
-    if(typeof expiresAt === 'number' && isFinite(expiresAt)) expMs = expiresAt;
-    else if(typeof expiresAt === 'string' && expiresAt.trim()){
-      const n = Number(expiresAt);
-      if(isFinite(n) && n > 1e11) expMs = n; // looks like epoch ms
-      else {
-        const parsed = Date.parse(expiresAt);
-        if(isFinite(parsed)) expMs = parsed;
-      }
-    }
+    const expMs = expiresAtISO ? Date.parse(expiresAtISO) : 0;
     if(expMs) localStorage.setItem(LS.tokenExp, String(expMs));
   }
   function clearToken(){
@@ -395,7 +391,7 @@
           body: {}
         });
         if(j && j.token){
-          setToken(j.token, (j.expiresAt ?? j.exp ?? j.expiresAtISO ?? j.expires_at ?? j.expires));
+          setToken(j.token, j.expiresAt);
           status.textContent = "Unlocked ✅";
           await refreshStatus();
           setTimeout(cleanup, 450);
@@ -412,15 +408,19 @@
   }
 
   unlockBtn?.addEventListener('click', ()=>{
-    // Allow switching accounts without manual "lock first" dance.
-    // If already unlocked, confirm and then reopen the unlock modal.
+    // If already unlocked, offer quick "lock".
     if(getToken()) {
-      if(!confirm("Switch passphrase (replace token)?")) return;
-      clearToken();
+      if(confirm("Lock this device (remove token)?")) {
+        clearToken();
+        refreshStatus();
+        render(location.hash.replace('#','')||'buddy');
+      }
+      return;
     }
     openUnlock();
   });
-// --- Buddy
+
+  // --- Buddy
   function initBuddy(){
     const prompt = document.getElementById('pcPrompt');
     const lensSel = document.getElementById('pcLens');
@@ -496,17 +496,7 @@
           renderLines(diag, norm.diagnosis);
           renderLines(miss, norm.missing);
           renderLines(sugg, norm.improvements);
-          if(gold){
-            const txt = String(norm.golden || "");
-            gold.textContent = txt;
-            const goldSec = document.querySelector(".pc__section--gold");
-            if(goldSec){
-              goldSec.classList.toggle("pb-filled", !!txt.trim());
-              goldSec.classList.remove("pb-pop");
-              void goldSec.offsetWidth;
-              if(txt.trim()) goldSec.classList.add("pb-pop");
-            }
-          }
+          if(gold) gold.textContent = String(norm.golden || "");
         }
       }
     } catch {}
@@ -1381,19 +1371,30 @@ function renderLines(el, arr){
       // Sidebar projects
       if(wsProjects){
         const items = [{ id:'', name:'All Projects', sections:[] }, ...projects];
-        wsProjects.innerHTML = items.map(p=>{
-          const active = String(p.id||'')===selP;
-          const count = p.id ? loadLibrary().filter(x=>x && String(x.projectId||'')===String(p.id)).length : loadLibrary().length;
+        const projectButtons = items.map(p=>{
+          const pid = String(p.id||'');
+          const active = pid===selP;
+          const count = pid ? loadLibrary().filter(x=>x && String(x.projectId||'')===pid).length : loadLibrary().length;
+          const dot = pid ? colorForKey(pid) : 'rgba(0,0,0,.25)';
           return `
-            <button class="libws__projbtn ${active?'is-active':''}" data-pid="${escapeHtml(String(p.id||''))}" type="button">
+            <button class="libws__projbtn ${active?'is-active':''}" data-pid="${escapeHtml(pid)}" type="button">
+              <span class="libws__dot" style="background:${dot}"></span>
               <span class="libws__projmeta">
                 <span>${escapeHtml(String(p.name||''))}</span>
                 <span class="chip chip--time">${count}</span>
               </span>
-              ${p.id ? `<span class="muted">›</span>` : ``}
+              ${pid ? `<span class="muted">›</span>` : ``}
             </button>
           `;
         }).join('');
+
+        // Collapsible group (Notion-ish)
+        wsProjects.innerHTML = `
+          <details class="wsGroup" open>
+            <summary>Projects</summary>
+            <div class="wsGroup__body">${projectButtons}</div>
+          </details>
+        `;
 
         wsProjects.querySelectorAll('[data-pid]').forEach(b=>{
           b.addEventListener('click', ()=>{
@@ -2091,15 +2092,10 @@ function renderLines(el, arr){
         if(Array.isArray(parsed)){
           // allow importing a plain Library array
           saveLibrary(parsed);
-        ensureCategoriesInUI();
-        ensureProjectsInUI();
         } else {
           applyImportBundle(parsed);
-          ensureCategoriesInUI();
-          ensureProjectsInUI();
         }
         renderLibrary();
-        renderWorkspace();
         setStatus('Imported ✅');
         setTimeout(()=>setStatus(''), 900);
       } catch {

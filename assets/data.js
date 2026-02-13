@@ -74,13 +74,13 @@ window.PB_DATA = {
       <div class="card card--flat" style="margin-top:10px">
         <div class="card__body">
           <h3 style="margin:0 0 8px">Theme</h3>
-          <div class="stack" style="gap:10px">
-            <label class="check"><input type="radio" name="pbTheme" data-theme="modern" data-variant="default"> Modern Calm</label>
-            <label class="check"><input type="radio" name="pbTheme" data-theme="retro" data-variant="neon-grid"> Neon Grid</label>
-            <label class="check"><input type="radio" name="pbTheme" data-theme="retro" data-variant="candy-console"> Candy Console</label>
-            <label class="check"><input type="radio" name="pbTheme" data-theme="nostalgia" data-variant="cardboard-arcade"> Cardboard Arcade</label>
-            <label class="check"><input type="radio" name="pbTheme" data-theme="glitter" data-variant="default"> Fancy Glitter</label>
-            <label class="check"><input type="radio" name="pbTheme" data-theme="terminal" data-variant="default"> Terminal Hacker</label>
+          <div class="theme-grid" id="themePicker" aria-label="Theme picker">
+            <label class="theme-chip"><input type="radio" name="pbTheme" data-theme="modern" data-variant="default"> <span>Modern Calm</span></label>
+            <label class="theme-chip"><input type="radio" name="pbTheme" data-theme="retro" data-variant="neon-grid"> <span>Neon Grid</span></label>
+            <label class="theme-chip"><input type="radio" name="pbTheme" data-theme="retro" data-variant="candy-console"> <span>Candy Console</span></label>
+            <label class="theme-chip"><input type="radio" name="pbTheme" data-theme="nostalgia" data-variant="cardboard-arcade"> <span>Cardboard Arcade</span></label>
+            <label class="theme-chip"><input type="radio" name="pbTheme" data-theme="glitter" data-variant="default"> <span>Fancy Glitter</span></label>
+            <label class="theme-chip"><input type="radio" name="pbTheme" data-theme="terminal" data-variant="default"> <span>Terminal Hacker</span></label>
           </div>
         </div>
       </div>
