@@ -12,7 +12,8 @@ a{color:inherit}button,a.navbtn{font:inherit}
 
 /* Desktop: make the “cabinet” feel bigger without touching mobile */
 @media (min-width: 1100px){
-  body{font-size:17px}
+  body{font-size:18px}
+  input,textarea,select{font-size:1em}
   .console{padding:22px 14px}
   .screen{width:min(1680px,96vw)}
   .screen{aspect-ratio:auto; min-height:86vh}
@@ -412,56 +413,7 @@ body[data-theme="nostalgia"][data-variant="cardboard-arcade"] .btn--primary{
   border-color: rgba(196,69,105,.25);
 }
 
-/* Nostalgia Variant B — Magnetic Tape (VHS dream) */
-body[data-theme="nostalgia"][data-variant="magnetic-tape"]{
-  --indigo:#2a2d43; --pink:#ff7eb3; --aqua:#7afcff; --amber:#ffd166; --lav:#b3a6ff;
-}
-body[data-theme="nostalgia"][data-variant="magnetic-tape"] .screen__bg{
-  opacity:.70;
-  background:
-    radial-gradient(60% 55% at 70% 30%, rgba(122,252,255,.18), transparent 62%),
-    radial-gradient(60% 55% at 25% 70%, rgba(255,126,179,.16), transparent 62%),
-    linear-gradient(180deg, rgba(42,45,67,.16), rgba(12,12,13,.42));
-}
-/* VHS tracking lines + slight color bleed */
-body[data-theme="nostalgia"][data-variant="magnetic-tape"] .screen:after{
-  opacity:.34;
-}
-body[data-theme="nostalgia"][data-variant="magnetic-tape"] .screen:before{
-  content:"";
-  position:absolute; inset:0;
-  pointer-events:none;
-  opacity:.18;
-  background:
-    repeating-linear-gradient(to bottom, rgba(255,255,255,.06) 0 1px, transparent 1px 6px),
-    radial-gradient(1200px 600px at 50% 110%, rgba(255,126,179,.12), transparent 55%);
-  mix-blend-mode: screen;
-}
-/* Quick win: pill buttons + glossy highlight */
-body[data-theme="nostalgia"][data-variant="magnetic-tape"] .btn{
-  border-radius: 999px;
-  position: relative;
-  overflow: hidden;
-}
-body[data-theme="nostalgia"][data-variant="magnetic-tape"] .btn:before{
-  content:"";
-  position:absolute; inset:0;
-  background: linear-gradient(180deg, rgba(255,255,255,.22), transparent 55%);
-  opacity:.55;
-  pointer-events:none;
-}
-body[data-theme="nostalgia"][data-variant="magnetic-tape"] .btn--primary{
-  border-color: rgba(122,252,255,.35);
-  background: rgba(122,252,255,.12);
-}
-body[data-theme="nostalgia"][data-variant="magnetic-tape"] .btn:focus,
-body[data-theme="nostalgia"][data-variant="magnetic-tape"] .btn:focus-visible,
-body[data-theme="nostalgia"][data-variant="magnetic-tape"] .field__input:focus,
-body[data-theme="nostalgia"][data-variant="magnetic-tape"] select:focus,
-body[data-theme="nostalgia"][data-variant="magnetic-tape"] .output:focus{
-  box-shadow: 0 0 0 2px rgba(122,252,255,.28);
-  border-color: rgba(122,252,255,.45);
-}
+
 
 /* ---------- Readability safety net (no black-on-black) ---------- */
 body[data-theme="retro"],
@@ -1083,3 +1035,49 @@ body[data-theme="terminal"] .pill{background:rgba(0,0,0,.28); border-color:rgba(
 @media (min-width: 1500px){
   .libws__grid{grid-template-columns:repeat(3,minmax(320px,1fr))}
 }
+
+
+/* Premium Golden Prompt highlight */
+.pc__section--gold{
+  border:1px solid rgba(255, 210, 120, .35);
+  background: linear-gradient(180deg, rgba(255, 210, 120, .10), rgba(255,255,255,.02));
+  box-shadow: 0 10px 30px rgba(0,0,0,.10);
+  position: relative;
+  overflow: hidden;
+}
+body[data-theme="terminal"][data-variant="terminal-hacker"] .pc__section--gold,
+body[data-theme="hacker"][data-variant="terminal-hacker"] .pc__section--gold{
+  border-color: rgba(120, 255, 180, .28);
+  background: linear-gradient(180deg, rgba(120,255,180,.08), rgba(0,0,0,.0));
+  box-shadow: 0 10px 34px rgba(0,0,0,.35);
+}
+.pc__section--gold .pc__h{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.pc__section--gold .pc__h:after{
+  content:"Premium";
+  font-size:12px;
+  letter-spacing:.04em;
+  padding:3px 8px;
+  border-radius:999px;
+  border:1px solid rgba(255, 210, 120, .40);
+  background: rgba(255, 210, 120, .14);
+  opacity:.92;
+}
+.pc__section--gold.pb-filled .pc__pre{
+  border:1px solid rgba(255, 210, 120, .30);
+  background: rgba(255,255,255,.55);
+}
+body[data-theme="terminal"][data-variant="terminal-hacker"] .pc__section--gold.pb-filled .pc__pre{
+  background: rgba(0,0,0,.22);
+}
+@keyframes pbPopIn{
+  from{transform: translateY(6px); opacity: 0;}
+  to{transform: translateY(0); opacity: 1;}
+}
+.pc__section--gold.pb-pop{
+  animation: pbPopIn 180ms ease-out both;
+}
+

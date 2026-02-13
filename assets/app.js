@@ -496,7 +496,17 @@
           renderLines(diag, norm.diagnosis);
           renderLines(miss, norm.missing);
           renderLines(sugg, norm.improvements);
-          if(gold) gold.textContent = String(norm.golden || "");
+          if(gold){
+            const txt = String(norm.golden || "");
+            gold.textContent = txt;
+            const goldSec = document.querySelector(".pc__section--gold");
+            if(goldSec){
+              goldSec.classList.toggle("pb-filled", !!txt.trim());
+              goldSec.classList.remove("pb-pop");
+              void goldSec.offsetWidth;
+              if(txt.trim()) goldSec.classList.add("pb-pop");
+            }
+          }
         }
       }
     } catch {}

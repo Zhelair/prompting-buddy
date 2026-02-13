@@ -67,7 +67,7 @@ window.PB_DATA = {
           <p class="muted" style="margin:0 0 10px">
             Buy a passphrase on BuyMeACoffee. I may rotate the passphrase monthly. Support keeps the project ad-free, evolving, and without data sharing.
           </p>
-          <a class="btn btn--primary" id="pbSupportLink" href="#" target="_blank" rel="noopener">Get passphrase on BuyMeACoffee</a>
+          <a class="btn btn--primary" id="pbSupportLink" href="#" target="_blank" rel="noopener">Get passphrase</a>
         </div>
       </div>
 
@@ -79,7 +79,6 @@ window.PB_DATA = {
             <label class="check"><input type="radio" name="pbTheme" data-theme="retro" data-variant="neon-grid"> Neon Grid</label>
             <label class="check"><input type="radio" name="pbTheme" data-theme="retro" data-variant="candy-console"> Candy Console</label>
             <label class="check"><input type="radio" name="pbTheme" data-theme="nostalgia" data-variant="cardboard-arcade"> Cardboard Arcade</label>
-            <label class="check"><input type="radio" name="pbTheme" data-theme="nostalgia" data-variant="magnetic-tape"> Magnetic Tape</label>
             <label class="check"><input type="radio" name="pbTheme" data-theme="glitter" data-variant="default"> Fancy Glitter</label>
             <label class="check"><input type="radio" name="pbTheme" data-theme="terminal" data-variant="default"> Terminal Hacker</label>
           </div>
