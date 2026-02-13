@@ -339,7 +339,9 @@ function corsHeaders(request, env) {
   return {
     "Access-Control-Allow-Origin": allowOrigin,
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type,Authorization,x-ou-pass",
+    // Include custom headers used by the web app.
+    // Keep them lowercase here to match browser preflight checks.
+    "Access-Control-Allow-Headers": "content-type,authorization,x-ou-pass,x-ou-device,x-client-id",
     "Vary": "Origin"
   };
 }
