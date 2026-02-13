@@ -27,6 +27,7 @@
   const LS = {
     token: "pb_token",
     tokenExp: "pb_token_exp",
+    deviceId: "pb_device_id_v1",
     vault: "pb_vault_v1",
     library: "pb_library_v1",
     projects: "pb_projects_v1",
@@ -41,6 +42,24 @@
     libSelProject: "pb_lib_sel_project_v1",
     libSelSection: "pb_lib_sel_section_v1"
   };
+
+  function getDeviceId(){
+    try{
+      let id = localStorage.getItem(LS.deviceId);
+      if(id && String(id).trim()) return String(id);
+      const arr = new Uint8Array(16);
+      if(typeof crypto !== "undefined" && crypto.getRandomValues){
+        crypto.getRandomValues(arr);
+      } else {
+        for(let i=0;i<arr.length;i++){ arr[i] = Math.floor(Math.random()*256); }
+      }
+      id = Array.from(arr).map(b=>b.toString(16).padStart(2,"0")).join("");
+      localStorage.setItem(LS.deviceId, id);
+      return id;
+    }catch{
+      return "device-unknown";
+    }
+  }
 
   // Tiny localStorage helpers (defensive, because we never want a bad JSON to brick the app).
   function getLS(key, fallback){
@@ -493,19 +512,6 @@
       const pass = String(input?.value || "").trim();
       if(!pass){ status.textContent = "Paste your passphrase."; return; }
 
-      // Two tiers: Free (no passphrase) and Premium (passphrase).
-      if(!isPremiumPassphrase(pass)){
-        status.textContent = "Wrong passphrase.";
-        return;
-      }
-
-      // Always set local plan immediately so counters never show 0/0.
-      try{
-        localStorage.setItem(LS.passphrase, pass);
-        localStorage.setItem(LS.plan, "premium");
-      }catch{}
-      updateHeaderFromLocal();
-
       status.textContent = "Unlocking...";
       try {
         const j = await api("/unlock", {
@@ -513,21 +519,27 @@
           headers: {
             "Content-Type": "application/json",
             "Accept": "application/json",
-            "X-OU-PASS": pass
+            "X-OU-PASS": pass,
+            "X-OU-DEVICE": getDeviceId()
           },
           body: { passphrase: pass, pass: pass, code: pass, key: pass }
         });
         if(j && j.token){
+          try{
+            localStorage.setItem(LS.passphrase, pass);
+            localStorage.setItem(LS.plan, "premium");
+          }catch{}
+          updateHeaderFromLocal();
           setToken(j.token, j.expiresAt);
           status.textContent = "Unlocked ✅";
         } else {
           // Worker may not return a token (or may be down). Keep Premium locally.
-          status.textContent = "Unlocked locally ✅ (server token missing).";
+          status.textContent = "No token returned. Check passphrase / Worker.";
         }
         await refreshStatus();
         setTimeout(cleanup, 450);
       } catch (err){
-        status.textContent = "Unlocked locally ✅ (server error).";
+        status.textContent = "Server error. Check passphrase / Worker.";
         await refreshStatus();
         setTimeout(cleanup, 650);
       }
