@@ -1,6 +1,5 @@
 *{box-sizing:border-box}html,body{height:100%}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:radial-gradient(1200px 800px at 50% 20%,#2a2a2a 0%,#171616 55%,#0f0f10 100%);color:#1c1c1c}
-:root{
-  --base-font: 15.5px;--paper:#f6f1e6;--accent:#ff8a3d}
+:root{--paper:#f6f1e6;--accent:#ff8a3d}
 a{color:inherit}button,a.navbtn{font:inherit}
 .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.16);background:rgba(245,239,226,.92);position:sticky;top:0;z-index:5;backdrop-filter:blur(10px)}
 .brand{display:flex;align-items:center;gap:10px}.brand__badge{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:rgba(255,138,61,.18);border:1px solid rgba(255,138,61,.35);font-weight:800}
@@ -8,19 +7,20 @@ a{color:inherit}button,a.navbtn{font:inherit}
 .topnav{display:flex;gap:8px;flex-wrap:wrap}.navbtn{padding:6px 10px;border-radius:12px;border:1px solid rgba(0,0,0,.10);background:rgba(255,255,255,.72);cursor:pointer}
 .navbtn:hover{border-color:rgba(0,0,0,.18);background:rgba(255,255,255,.92)}
 .navbtn.is-active{background:rgba(255,138,61,.18);border-color:rgba(255,138,61,.35)}
-.console{min-height:calc(100vh - 110px);display:grid;place-items:center;padding:18px 12px}
-.screen{width:min(1400px,96vw);aspect-ratio:4/3;border-radius:18px;border:1px solid rgba(255,255,255,.22);background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,.06));box-shadow:0 30px 90px rgba(0,0,0,.55);overflow:hidden;position:relative}
+.console{min-height:calc(100vh - 110px);display:grid;place-items:center;padding:12px 10px}
+.screen{width:min(1200px,94vw);aspect-ratio:4/3;border-radius:18px;border:1px solid rgba(255,255,255,.22);background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,.06));box-shadow:0 30px 90px rgba(0,0,0,.55);overflow:hidden;position:relative}
 
 /* Desktop: make the “cabinet” feel bigger without touching mobile */
 @media (min-width: 1100px){
   body{font-size:17px}
-  .console{padding:22px 14px}
-  .screen{width:min(1680px,97vw)}
+  .console{padding:12px 10px}
+  /* Wider + taller so the app uses more of the browser window on desktop */
+  .screen{width:min(1720px,98vw);height:calc(100vh - 140px);aspect-ratio:auto}
   .home__headline{font-size:30px}
 }
 .screen__bg{position:absolute;inset:0;opacity:.55;background:radial-gradient(70% 55% at 70% 30%,rgba(255,138,61,.18),transparent 60%),radial-gradient(60% 50% at 20% 65%,rgba(44,130,126,.16),transparent 60%),linear-gradient(180deg,rgba(245,239,226,.12),rgba(12,12,13,.35));pointer-events:none}
 .screen:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(to bottom,rgba(255,255,255,.05),rgba(255,255,255,.05) 1px,rgba(0,0,0,0) 4px,rgba(0,0,0,0) 7px);opacity:.22;pointer-events:none}
-.screen__ui{position:relative;height:100%;display:grid;grid-template-columns:220px 1fr;gap:14px;padding:14px}
+.screen__ui{position:relative;height:100%;display:grid;grid-template-columns:240px 1fr;gap:14px;padding:14px}
 .screen__menu,.screen__content{border-radius:14px;border:1px solid rgba(255,255,255,.20);background:rgba(246,241,230,.90);box-shadow:0 10px 30px rgba(0,0,0,.22);overflow:hidden}
 .screen__menu{padding:10px}
 .screen__content{padding:14px;overflow:auto;overflow-x:hidden}
@@ -57,12 +57,9 @@ a{color:inherit}button,a.navbtn{font:inherit}
 .btn{padding:9px 12px;border-radius:14px;border:1px solid rgba(0,0,0,.12);background:rgba(255,255,255,.92);cursor:pointer;text-decoration:none;color:inherit}
 .btn:hover{background:rgba(255,255,255,1);border-color:rgba(0,0,0,.18)}
 .btn--primary{background:rgba(255,138,61,.18);border-color:rgba(255,138,61,.35)}
-.btn--secondary{background:rgba(44,130,126,.12);border-color:rgba(44,130,126,.25)}
-.btn--secondary:hover{background:rgba(44,130,126,.18)}
-.btn--ghost{background:transparent;border-color:rgba(0,0,0,.12)}
-.btn--ghost:hover{background:rgba(0,0,0,.04)}
-
-.buddy__layout{display:grid;grid-template-columns:220px 1fr;gap:12px}
+.btn--ghost{background:rgba(255,255,255,.40);border-color:rgba(0,0,0,.10)}
+.btn--ghost:hover{background:rgba(255,255,255,.65)}
+.buddy__layout{display:grid;grid-template-columns:240px 1fr;gap:12px}
 .buddy__modules{border-radius:14px;border:1px solid rgba(0,0,0,.10);background:rgba(255,255,255,.75);padding:10px}
 .buddy__title{font-weight:800;margin-bottom:10px}
 .buddy__mod{display:block;width:100%;text-align:left;padding:9px 10px;border-radius:12px;border:1px solid transparent;background:transparent;cursor:pointer}
@@ -1043,10 +1040,10 @@ body[data-theme="terminal"] .menu__item.is-active{
 
 /* --- Library Workspace (v2) --- */
 .libws{display:grid;grid-template-columns:220px 1fr;gap:14px;align-items:stretch;min-height:520px}
-.libws__sidebar{background:rgba(0,0,0,.08);border:1px solid rgba(0,0,0,.12);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:10px}
+.libws__sidebar{background:rgba(0,0,0,.08);border:1px solid rgba(0,0,0,.12);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:8px}
 body[data-theme] .libws__sidebar{background:rgba(255,255,255,.35)}
 .libws__sidehead{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 2px}
-.libws__projlist{display:flex;flex-direction:column;gap:6px;overflow:auto;max-height:420px;padding-right:2px}
+.libws__projlist{display:flex;flex-direction:column;gap:6px;overflow:auto;max-height:360px;padding-right:2px}
 .libws__projbtn{width:100%;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 10px;border-radius:12px;border:1px solid rgba(0,0,0,.12);background:rgba(255,255,255,.55);cursor:pointer}
 .libws__projbtn:hover{filter:brightness(0.98)}
 .libws__projbtn.is-active{outline:2px solid rgba(0,0,0,.25)}
@@ -1057,6 +1054,9 @@ body[data-theme] .libws__sidebar{background:rgba(255,255,255,.35)}
 
 .libws__main{display:flex;flex-direction:column;gap:10px}
 .libws__toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.libws__toolbarLeft{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.libws__btnGroup{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.libws__btnGroup--io{margin-left:2px}
 .libws__toolbarRight{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .libws__toolbarRight #libSearch{min-width:320px}
 
