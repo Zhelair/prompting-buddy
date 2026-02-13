@@ -17,7 +17,7 @@
   const brandName = document.getElementById("brandName");
   const unlockBtn = document.getElementById("unlockBtn");
   const pillPrompts = document.getElementById("pillPrompts");
-  const pillReview = document.getElementById("pillReview");
+  const pillCoach = document.getElementById("pillCoach");
   const pillCoach = document.getElementById("pillCoach");
   const promptsLeftEl = document.getElementById("promptsLeft");
   const promptsLimitEl = document.getElementById("promptsLimit");
@@ -161,10 +161,12 @@
     const u = getUsage(planId);
     const leftPrompts = Math.max(0, (lim.prompt || 0) - (u.promptUsed || 0));
     const leftCoach = Math.max(0, (lim.coach || 0) - (u.coachUsed || 0));
-    pillPrompts.textContent = `${leftPrompts}/${lim.prompt || 0}`;
-    pillReview.textContent = `${leftCoach}/${lim.coach || 0}`;
-    pillPrompts.hidden = false;
-    pillReview.hidden = false;
+    if (promptsLeftEl) promptsLeftEl.textContent = String(leftPrompts);
+    if (promptsLimitEl) promptsLimitEl.textContent = String(lim.prompt || 0);
+    if (coachLeftEl) coachLeftEl.textContent = String(leftCoach);
+    if (coachLimitEl) coachLimitEl.textContent = String(lim.coach || 0);
+    if (pillPrompts) if(pillPrompts) pillPrompts.hidden = false;
+    if (pillCoach) if(pillCoach) pillCoach.hidden = false;
   }
 
 
@@ -362,10 +364,13 @@
     }
     return t;
   }
-  function setToken(token, expiresAtISO){
+  function setToken(token, expiresAt){
     localStorage.setItem(LS.token, token);
-    const expMs = expiresAtISO ? Date.parse(expiresAtISO) : 0;
-    if(expMs) localStorage.setItem(LS.tokenExp, String(expMs));
+    let expMs = 0;
+    if (typeof expiresAt === 'number') expMs = expiresAt;
+    else if (typeof expiresAt === 'string') expMs = Date.parse(expiresAt);
+    if (!expMs && expiresAt && !Number.isNaN(Number(expiresAt))) expMs = Number(expiresAt);
+    if (expMs) localStorage.setItem(LS.tokenExp, String(expMs));
   }
   function clearToken(){
     localStorage.removeItem(LS.token);
@@ -377,9 +382,10 @@
   async function api(path, { method="GET", headers={}, body=null }={}){
     if(!hasEndpoint()) throw new Error("Worker endpoint not set. Edit assets/data.js and set house.endpoint.");
     const url = ENDPOINT.replace(/\/+$/,'') + path;
+    const mergedHeaders = { ...(headers||{}), "X-OU-DEVICE": getDeviceId() };
     const res = await fetch(url, {
       method,
-      headers,
+      headers: mergedHeaders,
       body: body==null ? null : (typeof body === "string" ? body : JSON.stringify(body))
     });
     const txt = await res.text();
@@ -399,8 +405,8 @@
     const tok = getToken();
     if(!tok){
       // No token - we still show plan-based limits locally.
-      pillPrompts.hidden = false;
-      pillCoach.hidden = false;
+      if(pillPrompts) pillPrompts.hidden = false;
+      if(pillCoach) pillCoach.hidden = false;
       return;
     }
 
@@ -427,16 +433,16 @@
       const p = sanitizeQuota(st && st.prompt ? st.prompt : null, promptLimit);
       const c = sanitizeQuota(st && st.coach ? st.coach : null, coachLimit);
 
-      pillPrompts.hidden = false;
-      pillCoach.hidden = false;
+      if(pillPrompts) pillPrompts.hidden = false;
+      if(pillCoach) pillCoach.hidden = false;
       promptsLeftEl.textContent = String(p.left);
       promptsLimitEl.textContent = String(p.limit);
       coachLeftEl.textContent = String(c.left);
       coachLimitEl.textContent = String(c.limit);
     } catch {
       // If status fails, we still keep local plan limits visible.
-      pillPrompts.hidden = false;
-      pillCoach.hidden = false;
+      if(pillPrompts) pillPrompts.hidden = false;
+      if(pillCoach) pillCoach.hidden = false;
       updateHeaderFromLocal();
     }
   }
@@ -530,7 +536,7 @@
             localStorage.setItem(LS.plan, "premium");
           }catch{}
           updateHeaderFromLocal();
-          setToken(j.token, j.expiresAt);
+          setToken(j.token, (j.exp ?? j.expiresAt));
           status.textContent = "Unlocked ✅";
         } else {
           // Worker may not return a token (or may be down). Keep Premium locally.
