@@ -68,6 +68,7 @@ window.PB_DATA = {
             Buy a passphrase on BuyMeACoffee. I may rotate the passphrase monthly. Support keeps the project ad-free, evolving, and without data sharing.
           </p>
           <a class="btn btn--primary" id="pbSupportLink" href="#" target="_blank" rel="noopener">Get passphrase</a>
+          <button class="btn" id="pbAboutUnlock" type="button">Unlock</button>
         </div>
       </div>
 
@@ -98,90 +99,91 @@ window.PB_DATA = {
 `,
 
   tipsHtml: `
-  <details class="block pbAcc" open>
-    <summary>🚀 Start in 60 seconds</summary>
-    <div class="pbAcc__content">
-      <ol class="pc__list" style="margin:0; padding-left:18px">
-        <li>Paste a rough prompt into <strong>Buddy</strong>.</li>
-        <li>Pick a lens: <strong>Thinker</strong> if unsure.</li>
-        <li>Click <strong>Run Prompt Check</strong>.</li>
-        <li>Copy the <strong>Golden Prompt</strong>.</li>
-        <li>Paste it into ChatGPT / Claude / Suno / etc.</li>
-      </ol>
-      <p class="muted" style="margin:10px 0 0">If you do only one thing: copy Golden. That’s where the token savings are.</p>
-    </div>
-  </details>
+  <div class="pbTips">
+    <details class="pbAcc" open>
+      <summary>🚀 Start in 60 seconds</summary>
+      <div class="pbAcc__body">
+        <ol class="pbList">
+          <li>Paste a rough prompt into <strong>Buddy</strong>.</li>
+          <li>Pick a lens: <strong>Thinker</strong> if unsure.</li>
+          <li>Click <strong>Run Prompt Check</strong>.</li>
+          <li>Copy the <strong>Golden Prompt</strong>.</li>
+          <li>Paste it into ChatGPT / Claude / Suno / etc.</li>
+        </ol>
+        <p class="muted" style="margin:8px 0 0">If you do only one thing: copy Golden. That’s where the token savings are.</p>
+      </div>
+    </details>
 
-  <details class="block pbAcc">
-    <summary>💡 How it saves tokens</summary>
-    <div class="pbAcc__content">
-      <ul class="pc__list" style="margin:0">
-        <li>Removes vague instructions and repeats.</li>
-        <li>Forces a clean output structure so the AI doesn’t ramble.</li>
-        <li>Compresses wording without losing meaning.</li>
-        <li>Prevents the “here’s a novel before the answer” problem.</li>
-      </ul>
-      <p class="muted" style="margin:10px 0 0"><strong>Quick rule:</strong> clearer inputs = shorter (and better) outputs.</p>
-    </div>
-  </details>
+    <details class="pbAcc">
+      <summary>💡 How it saves tokens</summary>
+      <div class="pbAcc__body">
+        <ul class="pbList">
+          <li>Removes vague instructions and repeats.</li>
+          <li>Forces a clean output structure so the AI doesn’t ramble.</li>
+          <li>Compresses wording without losing meaning.</li>
+          <li>Prevents the “here’s a novel before the answer” problem.</li>
+        </ul>
+        <p style="margin:8px 0 0"><strong>Quick rule:</strong> clearer inputs = shorter (and better) outputs.</p>
+      </div>
+    </details>
 
-  <details class="block pbAcc">
-    <summary>🎯 Picking the right lens</summary>
-    <div class="pbAcc__content">
-      <ul class="pc__list" style="margin:0">
-        <li><strong>Auditor</strong> - sharp and picky. Best for final prompts and maximum token efficiency.</li>
-        <li><strong>Thinker</strong> - the “smart friend” default. Best for everyday prompts.</li>
-        <li><strong>Creator</strong> - playful and expansive. Best for brainstorming, variations, angles.</li>
-      </ul>
-    </div>
-  </details>
+    <details class="pbAcc">
+      <summary>🎯 Picking the right lens</summary>
+      <div class="pbAcc__body">
+        <ul class="pbList">
+          <li><strong>Auditor</strong> - sharp and picky. Best when you want a clean final prompt that won’t waste tokens.</li>
+          <li><strong>Thinker</strong> - the default “smart friend” mode. Best for everyday prompts.</li>
+          <li><strong>Creator</strong> - playful and expansive. Best for brainstorming, story beats, marketing angles, variations.</li>
+        </ul>
+      </div>
+    </details>
 
-  <details class="block pbAcc">
-    <summary>🔁 Real workflows (the ones you’ll actually use)</summary>
-    <div class="pbAcc__content">
-      <ul class="pc__list" style="margin:0">
-        <li><strong>Improve a prompt:</strong> Buddy → Golden → paste into your AI tool.</li>
-        <li><strong>Build reusable templates:</strong> Buddy → Vault → refine → Library → tag.</li>
-        <li><strong>Move between devices:</strong> Library → Export JSON → Import on another device.</li>
-        <li><strong>Batch optimize:</strong> run a few variants (Creator) → keep the best in Library.</li>
-      </ul>
-    </div>
-  </details>
+    <details class="pbAcc">
+      <summary>🔁 Real workflows (the ones you’ll actually use)</summary>
+      <div class="pbAcc__body">
+        <ul class="pbList">
+          <li><strong>Improve a prompt:</strong> Buddy → Golden → paste into your AI tool.</li>
+          <li><strong>Build reusable templates:</strong> Buddy → Vault → refine → Library → tag.</li>
+          <li><strong>Portable setup:</strong> Library → Export JSON → Import on another device.</li>
+          <li><strong>Batch upgrade:</strong> run 3-5 similar prompts, keep the best, save to Library.</li>
+        </ul>
+      </div>
+    </details>
 
-  <details class="block pbAcc">
-    <summary>📂 Vault vs Library (quick rule)</summary>
-    <div class="pbAcc__content">
-      <ul class="pc__list" style="margin:0">
-        <li><strong>Vault</strong> = your recent attempts (last 10). Great for “what did I do earlier”.</li>
-        <li><strong>Library</strong> = your best prompts (tagged + searchable). Great for “my reusable templates”.</li>
-      </ul>
-    </div>
-  </details>
+    <details class="pbAcc">
+      <summary>📂 Vault vs Library (quick rule)</summary>
+      <div class="pbAcc__body">
+        <ul class="pbList">
+          <li><strong>Vault</strong> = your recent attempts (last 10). Great for “what did I do earlier?”.</li>
+          <li><strong>Library</strong> = your best prompts (tagged + searchable). Great for reusable templates.</li>
+        </ul>
+      </div>
+    </details>
 
-  <details class="block pbAcc">
-    <summary>🧩 Using the Extension (when installed)</summary>
-    <div class="pbAcc__content">
-      <ol class="pc__list" style="margin:0; padding-left:18px">
-        <li>Select text on any webpage.</li>
-        <li>Send to Buddy.</li>
-        <li>Pick a lens → Run Prompt Check.</li>
-        <li>Copy Golden → paste into your AI tool.</li>
-      </ol>
-      <p class="muted" style="margin:10px 0 0">Goal: turn “random text” into a clean, executable prompt in under 30 seconds.</p>
-    </div>
-  </details>
+    <details class="pbAcc">
+      <summary>🧩 Using the Extension (when installed)</summary>
+      <div class="pbAcc__body">
+        <ol class="pbList">
+          <li>Select text on any webpage.</li>
+          <li>Send it to Buddy.</li>
+          <li>Refine → copy Golden → done.</li>
+        </ol>
+      </div>
+    </details>
 
-  <details class="block pbAcc">
-    <summary>🎬 TikTok / Reels ideas (quick)</summary>
-    <div class="pbAcc__content">
-      <ul class="pc__list" style="margin:0">
-        <li>“Bad prompt → Golden prompt” (15s) - show only before/after.</li>
-        <li>“Auditor vs Creator” (20s) - same prompt, different lens.</li>
-        <li>“Vault → Library” (15s) - turn one good result into a reusable template.</li>
-      </ul>
-    </div>
-  </details>
+    <details class="pbAcc">
+      <summary>🎬 TikTok / Reels ideas (quick)</summary>
+      <div class="pbAcc__body">
+        <ul class="pbList">
+          <li>“Bad prompt → Golden prompt” (15s) - show only before/after.</li>
+          <li>“Auditor vs Creator” (20s) - same prompt, different lens.</li>
+          <li>“Vault → Library” (15s) - turn one good result into a reusable template.</li>
+        </ul>
+      </div>
+    </details>
+  </div>
   `,
+
 
 
   libraryCategories: [
@@ -200,7 +202,7 @@ window.PB_DATA = {
     dailyCoachLimit: 5,
     // Prompt Check input cap (client-side). Buddy textarea itself can be any size,
     // but we use this to guard requests sent to the Worker.
-    promptMaxChars: 20000,
+    promptMaxChars: 5000,
     coachMaxChars: 8000,
     timezone: "Europe/Sofia"
   }

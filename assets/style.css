@@ -100,13 +100,6 @@ a{color:inherit}button,a.navbtn{font:inherit}
 .fold__body{display:grid;gap:8px;margin-top:10px}.fold__body label{display:flex;gap:8px;align-items:center}
 .block{border:1px solid rgba(0,0,0,.10);border-radius:16px;background:rgba(255,255,255,.78);padding:12px;margin:10px 0}
 .block__text{white-space:pre-wrap;margin:0}
-
-/* Tips accordion (uses <details>) */
-.pbAcc > summary{cursor:pointer;user-select:none;font-weight:800;display:flex;align-items:center;justify-content:space-between;gap:12px;outline:none}
-.pbAcc > summary::-webkit-details-marker{display:none}
-.pbAcc > summary::after{content:"▾";opacity:.7;font-weight:700}
-.pbAcc[open] > summary::after{content:"▴"}
-.pbAcc__content{margin-top:10px}
 .footer{padding:10px 14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;font-size:12px;background:rgba(245,239,226,.92);border-top:1px solid rgba(255,255,255,.16)}
 .footer__sep{opacity:.5}
 body[data-theme=nostalgia]{filter:saturate(1.05)}body[data-theme=nostalgia] .screen:after{opacity:.30}
@@ -1119,3 +1112,15 @@ body[data-theme] .pbmodal{background:rgba(255,255,255,.92)}
 .pbmodal__hd{padding:14px 16px;border-bottom:1px solid rgba(0,0,0,.12);display:flex;align-items:center;justify-content:space-between;gap:10px}
 .pbmodal__bd{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
 .pbmodal__ft{padding:14px 16px;border-top:1px solid rgba(0,0,0,.12);display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+
+
+/* Tips accordion */
+.pbTips{display:flex;flex-direction:column;gap:10px}
+.pbAcc{border:1px solid rgba(0,0,0,.10);border-radius:16px;background:rgba(255,255,255,.78);overflow:hidden}
+.pbAcc>summary{cursor:pointer;padding:12px 14px;font-weight:700;list-style:none;outline:none;user-select:none}
+.pbAcc>summary::-webkit-details-marker{display:none}
+.pbAcc>summary:after{content:"▾";float:right;opacity:.6}
+.pbAcc[open]>summary:after{content:"▴"}
+.pbAcc__body{padding:0 14px 12px}
+.pbList{margin:0;padding-left:18px}
+.pbList li{margin:6px 0}
