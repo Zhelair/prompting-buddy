@@ -8,13 +8,13 @@ a{color:inherit}button,a.navbtn{font:inherit}
 .navbtn:hover{border-color:rgba(0,0,0,.18);background:rgba(255,255,255,.92)}
 .navbtn.is-active{background:rgba(255,138,61,.18);border-color:rgba(255,138,61,.35)}
 .console{min-height:calc(100vh - 110px);display:grid;place-items:center;padding:18px 12px}
-.screen{width:min(1320px,94vw);aspect-ratio:16/10;min-height:72vh;border-radius:18px;border:1px solid rgba(255,255,255,.22);background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,.06));box-shadow:0 30px 90px rgba(0,0,0,.55);overflow:hidden;position:relative}
+.screen{width:min(1200px,94vw);aspect-ratio:4/3;border-radius:18px;border:1px solid rgba(255,255,255,.22);background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,.06));box-shadow:0 30px 90px rgba(0,0,0,.55);overflow:hidden;position:relative}
 
 /* Desktop: make the “cabinet” feel bigger without touching mobile */
 @media (min-width: 1100px){
   body{font-size:17px}
   .console{padding:22px 14px}
-  .screen{width:min(1680px,96vw)}
+  .screen{width:min(1480px,96vw)}
   .home__headline{font-size:30px}
 }
 .screen__bg{position:absolute;inset:0;opacity:.55;background:radial-gradient(70% 55% at 70% 30%,rgba(255,138,61,.18),transparent 60%),radial-gradient(60% 50% at 20% 65%,rgba(44,130,126,.16),transparent 60%),linear-gradient(180deg,rgba(245,239,226,.12),rgba(12,12,13,.35));pointer-events:none}
@@ -100,6 +100,13 @@ a{color:inherit}button,a.navbtn{font:inherit}
 .fold__body{display:grid;gap:8px;margin-top:10px}.fold__body label{display:flex;gap:8px;align-items:center}
 .block{border:1px solid rgba(0,0,0,.10);border-radius:16px;background:rgba(255,255,255,.78);padding:12px;margin:10px 0}
 .block__text{white-space:pre-wrap;margin:0}
+
+/* Tips accordion (uses <details>) */
+.pbAcc > summary{cursor:pointer;user-select:none;font-weight:800;display:flex;align-items:center;justify-content:space-between;gap:12px;outline:none}
+.pbAcc > summary::-webkit-details-marker{display:none}
+.pbAcc > summary::after{content:"▾";opacity:.7;font-weight:700}
+.pbAcc[open] > summary::after{content:"▴"}
+.pbAcc__content{margin-top:10px}
 .footer{padding:10px 14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;font-size:12px;background:rgba(245,239,226,.92);border-top:1px solid rgba(255,255,255,.16)}
 .footer__sep{opacity:.5}
 body[data-theme=nostalgia]{filter:saturate(1.05)}body[data-theme=nostalgia] .screen:after{opacity:.30}
@@ -1065,16 +1072,16 @@ body[data-theme="terminal"] .menu__item.is-active{
 }
 
 /* --- Library Workspace (v2) --- */
-.libws{display:grid;grid-template-columns:230px 1fr;gap:14px;align-items:stretch;min-height:520px}
-.libws__sidebar{background:rgba(0,0,0,.08);border:1px solid rgba(0,0,0,.12);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:10px}
+.libws{display:grid;grid-template-columns:260px 1fr;gap:14px;align-items:stretch;min-height:520px}
+.libws__sidebar{background:rgba(0,0,0,.08);border:1px solid rgba(0,0,0,.12);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px}
 body[data-theme] .libws__sidebar{background:rgba(255,255,255,.35)}
 .libws__sidehead{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 2px}
-.libws__projlist{display:flex;flex-direction:column;gap:4px;overflow:auto;max-height:360px;padding-right:2px}
-.libws__projbtn{width:100%;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;padding:8px 8px;border-radius:12px;border:1px solid rgba(0,0,0,.12);background:rgba(255,255,255,.55);cursor:pointer}
+.libws__projlist{display:flex;flex-direction:column;gap:6px;overflow:auto;max-height:420px;padding-right:2px}
+.libws__projbtn{width:100%;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 10px;border-radius:12px;border:1px solid rgba(0,0,0,.12);background:rgba(255,255,255,.55);cursor:pointer}
 .libws__projbtn:hover{filter:brightness(0.98)}
 .libws__projbtn.is-active{outline:2px solid rgba(0,0,0,.25)}
 .libws__left{display:flex;align-items:center;gap:10px;min-width:0}
-.libws__dot{width:8px;height:8px;border-radius:999px;flex:0 0 8px;box-shadow:0 0 0 2px rgba(255,255,255,.65)}
+.libws__dot{width:10px;height:10px;border-radius:999px;flex:0 0 10px;box-shadow:0 0 0 2px rgba(255,255,255,.65)}
 .libws__projname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 .wsGroup{border:1px solid rgba(0,0,0,.08);border-radius:14px;background:rgba(255,255,255,.35);padding:8px}
@@ -1089,13 +1096,6 @@ body[data-theme] .libws__sidebar{background:rgba(255,255,255,.35)}
 .libws__sideactions{margin-top:auto;display:flex;gap:8px}
 
 .libws__main{display:flex;flex-direction:column;gap:10px}
-.libws__toolbarLeft{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.libws__toolbarLeft .btn{padding:7px 10px;border-radius:12px;font-size:13px}
-.libws__toolbarLeft .btn--primary{box-shadow:inset 0 2px 0 rgba(255,255,255,.35)}
-.libws__toolbarRight .field__input,
-.libws__toolbarRight select{height:34px}
-.libws__toolbarRight .check{font-size:13px}
-
 .libws__toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .libws__toolbarRight{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .libws__toolbarRight #libSearch{min-width:320px}
@@ -1119,126 +1119,3 @@ body[data-theme] .pbmodal{background:rgba(255,255,255,.92)}
 .pbmodal__hd{padding:14px 16px;border-bottom:1px solid rgba(0,0,0,.12);display:flex;align-items:center;justify-content:space-between;gap:10px}
 .pbmodal__bd{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
 .pbmodal__ft{padding:14px 16px;border-top:1px solid rgba(0,0,0,.12);display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
-
-
-/* =========================================================
-   Theme readability patches (modals, selects, backgrounds)
-   - Keeps latest app.js logic intact (CSS-only)
-   ========================================================= */
-
-/* 1) Modern Calm: silver outer background (desktop) */
-body[data-theme="modern"]{
-  background:
-    radial-gradient(900px 650px at 25% 20%, rgba(0,0,0,.06), transparent 60%),
-    radial-gradient(900px 650px at 80% 30%, rgba(0,0,0,.05), transparent 60%),
-    linear-gradient(180deg, #f2f3f5 0%, #d6d9df 100%);
-}
-
-/* 2) Modal base: always readable */
-.pbmodal{
-  color:#121316;
-}
-.pbmodal .muted{color:rgba(18,19,22,.72)}
-.pbmodal .field__input,
-.pbmodal select,
-.pbmodal input[type="text"],
-.pbmodal input[type="password"],
-.pbmodal textarea{
-  color:#121316;
-  background:rgba(255,255,255,.92);
-  border-color:rgba(0,0,0,.18);
-}
-
-/* 3) Retro: Neon Grid + Candy Console — dark modal to avoid white-on-white */
-body[data-theme="retro"][data-variant="neon-grid"] .pbmodal,
-body[data-theme="retro"][data-variant="candy-console"] .pbmodal{
-  background: rgba(8,8,16,.94);
-  border-color: rgba(255,255,255,.16);
-  color:#f0f0ff;
-}
-body[data-theme="retro"][data-variant="neon-grid"] .pbmodal__hd,
-body[data-theme="retro"][data-variant="candy-console"] .pbmodal__hd,
-body[data-theme="retro"][data-variant="neon-grid"] .pbmodal__ft,
-body[data-theme="retro"][data-variant="candy-console"] .pbmodal__ft{
-  border-color: rgba(255,255,255,.12);
-}
-body[data-theme="retro"][data-variant="neon-grid"] .pbmodal .muted,
-body[data-theme="retro"][data-variant="candy-console"] .pbmodal .muted{
-  color: rgba(240,240,255,.70);
-}
-body[data-theme="retro"][data-variant="neon-grid"] .pbmodal .field__input,
-body[data-theme="retro"][data-variant="neon-grid"] .pbmodal select,
-body[data-theme="retro"][data-variant="neon-grid"] .pbmodal input[type="text"],
-body[data-theme="retro"][data-variant="neon-grid"] .pbmodal input[type="password"],
-body[data-theme="retro"][data-variant="neon-grid"] .pbmodal textarea,
-body[data-theme="retro"][data-variant="candy-console"] .pbmodal .field__input,
-body[data-theme="retro"][data-variant="candy-console"] .pbmodal select,
-body[data-theme="retro"][data-variant="candy-console"] .pbmodal input[type="text"],
-body[data-theme="retro"][data-variant="candy-console"] .pbmodal input[type="password"],
-body[data-theme="retro"][data-variant="candy-console"] .pbmodal textarea{
-  background: rgba(0,0,0,.40);
-  border-color: rgba(255,255,255,.18);
-  color:#f0f0ff;
-}
-
-/* 4) Terminal Hacker — dark modal + readable text */
-body[data-theme="terminal"] .pbmodal{
-  background: rgba(2,18,10,.94);
-  border-color: rgba(0,255,128,.18);
-  color:#d6ffd9;
-}
-body[data-theme="terminal"] .pbmodal__hd,
-body[data-theme="terminal"] .pbmodal__ft{
-  border-color: rgba(0,255,128,.14);
-}
-body[data-theme="terminal"] .pbmodal .muted{
-  color: rgba(214,255,217,.72);
-}
-body[data-theme="terminal"] .pbmodal .field__input,
-body[data-theme="terminal"] .pbmodal select,
-body[data-theme="terminal"] .pbmodal input[type="text"],
-body[data-theme="terminal"] .pbmodal input[type="password"],
-body[data-theme="terminal"] .pbmodal textarea{
-  background: rgba(0,0,0,.24);
-  border-color: rgba(0,255,128,.18);
-  color:#d6ffd9;
-}
-
-/* 5) Dropdown/options readability in dark themes */
-body[data-theme="retro"] select option{
-  background:#0b0b16;
-  color:#f0f0ff;
-}
-body[data-theme="terminal"] select option{
-  background:#02110a;
-  color:#d6ffd9;
-}
-
-/* 6) Terminal Hacker: left sidebar readability (no black-on-black) */
-body[data-theme="terminal"] .menu__title{
-  color: rgba(214,255,217,.80);
-}
-body[data-theme="terminal"] .menu__item{
-  color:#d6ffd9;
-  opacity:1;
-}
-body[data-theme="terminal"] .menu__item:hover{
-  background: rgba(0,255,128,.10);
-  border-color: rgba(0,255,128,.18);
-}
-body[data-theme="terminal"] .menu__item.is-active{
-  background: rgba(0,255,128,.14);
-  border-color: rgba(0,255,128,.28);
-}
-
-/* 7) Terminal Hacker: bigger text in Vault / Library / Golden areas */
-body[data-theme="terminal"] .pre,
-body[data-theme="terminal"] .pc__pre,
-body[data-theme="terminal"] .output{
-  font-size:15px;
-  line-height:1.45;
-}
-body[data-theme="terminal"] .output--input{
-  font-size:15px;
-  line-height:1.45;
-}
