@@ -1119,3 +1119,126 @@ body[data-theme] .pbmodal{background:rgba(255,255,255,.92)}
 .pbmodal__hd{padding:14px 16px;border-bottom:1px solid rgba(0,0,0,.12);display:flex;align-items:center;justify-content:space-between;gap:10px}
 .pbmodal__bd{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
 .pbmodal__ft{padding:14px 16px;border-top:1px solid rgba(0,0,0,.12);display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+
+
+/* =========================================================
+   Theme readability patches (modals, selects, backgrounds)
+   - Keeps latest app.js logic intact (CSS-only)
+   ========================================================= */
+
+/* 1) Modern Calm: silver outer background (desktop) */
+body[data-theme="modern"]{
+  background:
+    radial-gradient(900px 650px at 25% 20%, rgba(0,0,0,.06), transparent 60%),
+    radial-gradient(900px 650px at 80% 30%, rgba(0,0,0,.05), transparent 60%),
+    linear-gradient(180deg, #f2f3f5 0%, #d6d9df 100%);
+}
+
+/* 2) Modal base: always readable */
+.pbmodal{
+  color:#121316;
+}
+.pbmodal .muted{color:rgba(18,19,22,.72)}
+.pbmodal .field__input,
+.pbmodal select,
+.pbmodal input[type="text"],
+.pbmodal input[type="password"],
+.pbmodal textarea{
+  color:#121316;
+  background:rgba(255,255,255,.92);
+  border-color:rgba(0,0,0,.18);
+}
+
+/* 3) Retro: Neon Grid + Candy Console — dark modal to avoid white-on-white */
+body[data-theme="retro"][data-variant="neon-grid"] .pbmodal,
+body[data-theme="retro"][data-variant="candy-console"] .pbmodal{
+  background: rgba(8,8,16,.94);
+  border-color: rgba(255,255,255,.16);
+  color:#f0f0ff;
+}
+body[data-theme="retro"][data-variant="neon-grid"] .pbmodal__hd,
+body[data-theme="retro"][data-variant="candy-console"] .pbmodal__hd,
+body[data-theme="retro"][data-variant="neon-grid"] .pbmodal__ft,
+body[data-theme="retro"][data-variant="candy-console"] .pbmodal__ft{
+  border-color: rgba(255,255,255,.12);
+}
+body[data-theme="retro"][data-variant="neon-grid"] .pbmodal .muted,
+body[data-theme="retro"][data-variant="candy-console"] .pbmodal .muted{
+  color: rgba(240,240,255,.70);
+}
+body[data-theme="retro"][data-variant="neon-grid"] .pbmodal .field__input,
+body[data-theme="retro"][data-variant="neon-grid"] .pbmodal select,
+body[data-theme="retro"][data-variant="neon-grid"] .pbmodal input[type="text"],
+body[data-theme="retro"][data-variant="neon-grid"] .pbmodal input[type="password"],
+body[data-theme="retro"][data-variant="neon-grid"] .pbmodal textarea,
+body[data-theme="retro"][data-variant="candy-console"] .pbmodal .field__input,
+body[data-theme="retro"][data-variant="candy-console"] .pbmodal select,
+body[data-theme="retro"][data-variant="candy-console"] .pbmodal input[type="text"],
+body[data-theme="retro"][data-variant="candy-console"] .pbmodal input[type="password"],
+body[data-theme="retro"][data-variant="candy-console"] .pbmodal textarea{
+  background: rgba(0,0,0,.40);
+  border-color: rgba(255,255,255,.18);
+  color:#f0f0ff;
+}
+
+/* 4) Terminal Hacker — dark modal + readable text */
+body[data-theme="terminal"] .pbmodal{
+  background: rgba(2,18,10,.94);
+  border-color: rgba(0,255,128,.18);
+  color:#d6ffd9;
+}
+body[data-theme="terminal"] .pbmodal__hd,
+body[data-theme="terminal"] .pbmodal__ft{
+  border-color: rgba(0,255,128,.14);
+}
+body[data-theme="terminal"] .pbmodal .muted{
+  color: rgba(214,255,217,.72);
+}
+body[data-theme="terminal"] .pbmodal .field__input,
+body[data-theme="terminal"] .pbmodal select,
+body[data-theme="terminal"] .pbmodal input[type="text"],
+body[data-theme="terminal"] .pbmodal input[type="password"],
+body[data-theme="terminal"] .pbmodal textarea{
+  background: rgba(0,0,0,.24);
+  border-color: rgba(0,255,128,.18);
+  color:#d6ffd9;
+}
+
+/* 5) Dropdown/options readability in dark themes */
+body[data-theme="retro"] select option{
+  background:#0b0b16;
+  color:#f0f0ff;
+}
+body[data-theme="terminal"] select option{
+  background:#02110a;
+  color:#d6ffd9;
+}
+
+/* 6) Terminal Hacker: left sidebar readability (no black-on-black) */
+body[data-theme="terminal"] .menu__title{
+  color: rgba(214,255,217,.80);
+}
+body[data-theme="terminal"] .menu__item{
+  color:#d6ffd9;
+  opacity:1;
+}
+body[data-theme="terminal"] .menu__item:hover{
+  background: rgba(0,255,128,.10);
+  border-color: rgba(0,255,128,.18);
+}
+body[data-theme="terminal"] .menu__item.is-active{
+  background: rgba(0,255,128,.14);
+  border-color: rgba(0,255,128,.28);
+}
+
+/* 7) Terminal Hacker: bigger text in Vault / Library / Golden areas */
+body[data-theme="terminal"] .pre,
+body[data-theme="terminal"] .pc__pre,
+body[data-theme="terminal"] .output{
+  font-size:15px;
+  line-height:1.45;
+}
+body[data-theme="terminal"] .output--input{
+  font-size:15px;
+  line-height:1.45;
+}
