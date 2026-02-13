@@ -67,11 +67,10 @@ var index_default = {
       }
       if (!passphrase) return corsJson(request, env, 400, { error: "missing_passphrase" });
       const allowed = getAllowedPassphrases(env);
-      if (!allowed.length || !allowed.includes(passphrase.trim())) {
+      if (!allowed.length || !allowed.includes(passphrase)) {
         return corsJson(request, env, 401, { error: "invalid_passphrase" });
       }
-      const device = (request.headers.get('x-ou-device') || request.headers.get('user-agent') || '').trim();
-      const sub = await sha256Hex(passphrase.trim() + '|' + device);
+      const sub = await getSubFromRequest(request);
       const ttlDays = Number(env.TOKEN_TTL_DAYS || 30);
       const exp = Date.now() + Math.max(1, ttlDays) * 24 * 60 * 60 * 1e3;
       const token = await signToken({ sub, exp }, env.TOKEN_SECRET || "");
@@ -339,9 +338,7 @@ function corsHeaders(request, env) {
   return {
     "Access-Control-Allow-Origin": allowOrigin,
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-    // Include custom headers used by the web app.
-    // Keep them lowercase here to match browser preflight checks.
-    "Access-Control-Allow-Headers": "content-type,authorization,x-ou-pass,x-ou-device,x-client-id",
+    "Access-Control-Allow-Headers": "Content-Type,Authorization,x-ou-pass",
     "Vary": "Origin"
   };
 }
