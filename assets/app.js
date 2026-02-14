@@ -2355,6 +2355,23 @@ function renderLines(el, arr){
   });
 
   function boot(){
+    // Extension / deep-link support.
+    // If pb_in is present, treat it like "Send to Buddy" and then scrub the URL.
+    try{
+      const url = new URL(location.href);
+      const pbIn = url.searchParams.get('pb_in');
+      if(pbIn && pbIn.trim()){
+        const decoded = decodeURIComponent(pbIn);
+        setDraftPromptForce(decoded);
+        // Force Buddy view.
+        if((location.hash||"") !== "#buddy") location.hash = "buddy";
+        // Remove the param to avoid leaving the prompt in the address bar/history.
+        url.searchParams.delete('pb_in');
+        const qs = url.searchParams.toString();
+        history.replaceState(null, '', url.pathname + (qs ? ('?' + qs) : '') + (location.hash || ''));
+      }
+    } catch {}
+
     const r = (location.hash || "#buddy").replace('#','') || 'buddy';
     render(r);
     refreshStatus();
