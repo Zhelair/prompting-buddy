@@ -1242,3 +1242,15 @@ body[data-theme="terminal"] .output--input{
   font-size:15px;
   line-height:1.45;
 }
+
+/* Terminal mode: Library card prompt blocks (pre.pre--sm) were inheriting the default light background.
+   Fix: make <pre class="pre"> use the same dark surface as inputs so green text stays readable. */
+body[data-theme="terminal"] .pre,
+body[data-theme="terminal"] .pc__pre{
+  background: rgba(0,0,0,.24);
+  border-color: rgba(26,205,128,.18);
+  color: #e7fff0;
+}
+body[data-theme="terminal"] .pre--sm{
+  background: rgba(0,0,0,.24);
+}
