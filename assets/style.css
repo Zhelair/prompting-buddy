@@ -780,7 +780,7 @@ body[data-theme="terminal"] .menu__item.is-active{background:rgba(0,255,128,.14)
 
 /* Library meta chips */
 .lib__meta{ display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
-.lib__meta .chip{ background:rgba(0,0,0,.22); }
+.lib__meta .chip{ background:rgba(255,255,255,.85); }
 
 /* Fancy Glitter (Tiffany teal + gold) */
 body[data-theme="glitter"]{
@@ -872,14 +872,6 @@ body[data-theme="terminal"] .muted{ color:var(--term-muted) !important; }
 body[data-theme="terminal"] .modal{ background:rgba(0,0,0,.68) !important; border-color:rgba(0,255,110,.28) !important; }
 body[data-theme="terminal"] .modal__head{ background:rgba(0,0,0,.72) !important; border-bottom-color:rgba(0,255,110,.22) !important; }
 body[data-theme="terminal"] .modal h3, body[data-theme="terminal"] .modal label{ color:var(--term-ink) !important; }
-
-/* Terminal: Library sidebar readability (avoid light-on-light) */
-body[data-theme="terminal"] .wsGroup{ background:rgba(0,0,0,.32); border-color:rgba(0,255,110,.22); }
-body[data-theme="terminal"] .wsGroup summary{ color:var(--term-ink); }
-body[data-theme="terminal"] .libws__projbtn{ background:rgba(0,0,0,.42); border-color:rgba(0,255,110,.22); color:var(--term-ink); }
-body[data-theme="terminal"] .libws__projbtn:hover{ background:rgba(0,0,0,.58); }
-body[data-theme="terminal"] .libws__projbtn.is-active{ background:rgba(0,0,0,.72); border-color:rgba(0,255,110,.52); }
-
 
 /* Scanlines overlay */
 body[data-theme="terminal"] .screen::before{
@@ -1263,313 +1255,62 @@ body[data-theme="terminal"] .pre--sm{
   background: rgba(0,0,0,.24);
 }
 
-/* =========================================================
-   UI tweaks (2026-02-15) — Library + Terminal readability
-   - Larger category dropdown in Library toolbar
-   - Bigger prompt text in Library (Golden/Working/Original)
-   - Terminal theme: replace neon-green with warmer accent (#cc5302)
-   ========================================================= */
+/* ------------------------------------------------------------
+   Fixes: Retro Neon Grid + Candy Console readability (Tips + Notes)
+   ------------------------------------------------------------ */
 
-/* 1) Library toolbar: make Category dropdown less cramped */
-#libCat{
-  min-width: 220px;
-  height: 40px;
-  padding: 10px 12px;
-  line-height: 1.2;
+/* Retro textareas (Library "Notes" and any textarea) */
+body[data-theme="retro"] textarea,
+body[data-theme="retro"] textarea.field__textarea,
+body[data-theme="retro"] .field__textarea{
+  background: rgba(0,0,0,.35);
+  color: rgba(240,240,255,.95);
+  border: 1px solid rgba(255,255,255,.14);
 }
-
-/* Keep search usable next to bigger dropdown */
-#libSearch{ min-height: 40px; }
-
-/* 2) Library prompt blocks: bigger mono text */
-#libList .pre,
-#libList .pc__pre,
-#libEditorWrap .output,
-#libEditorWrap textarea.output,
-#libEditorWrap textarea.field__textarea{
-  font-size: 15px;
-  line-height: 1.45;
-}
-@media (min-width: 1100px){
-  #libList .pre,
-  #libEditorWrap .output,
-  #libEditorWrap textarea.output{
-    font-size: 16px;
-  }
+body[data-theme="retro"] textarea::placeholder,
+body[data-theme="retro"] .field__textarea::placeholder{
+  color: rgba(240,240,255,.55);
 }
 
-/* 3) Terminal theme: warm + readable (no neon-green on green) */
-body[data-theme="terminal"]{
-  --term-accent-hex: #cc5302; /* warm orange */
-  color: rgba(246,241,230,.92);
-  background:
-    radial-gradient(1200px 800px at 15% 10%, rgba(204,83,2,.10), transparent 55%),
-    radial-gradient(900px 650px at 85% 25%, rgba(120,128,3,.08), transparent 55%),
-    linear-gradient(180deg, #0f120e 0%, #070806 100%);
+/* Tips page: details/summary blocks were light-on-light in Neon Grid / Candy Console */
+body[data-theme="retro"][data-variant="neon-grid"] .tips details.fold,
+body[data-theme="retro"][data-variant="neon-grid"] .tips .fold{
+  background: rgba(0,0,0,.30);
+  border: 1px solid rgba(77,255,204,.22);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.04) inset, 0 0 18px rgba(77,255,204,.08);
+}
+body[data-theme="retro"][data-variant="neon-grid"] .tips details.fold > summary,
+body[data-theme="retro"][data-variant="neon-grid"] .tips .fold__sum{
+  color: rgba(234,255,255,.95);
+  background: linear-gradient(90deg, rgba(77,255,204,.14), rgba(255,77,204,.10));
+  border-bottom: 1px solid rgba(77,255,204,.18);
+  text-shadow: 0 0 10px rgba(77,255,204,.18);
+}
+body[data-theme="retro"][data-variant="neon-grid"] .tips .fold__body,
+body[data-theme="retro"][data-variant="neon-grid"] .tips .fold__body *{
+  color: rgba(234,255,255,.90);
+}
+body[data-theme="retro"][data-variant="neon-grid"] .tips .muted{
+  color: rgba(234,255,255,.65) !important;
 }
 
-/* Chrome top/bottom bars */
-body[data-theme="terminal"] .topbar,
-body[data-theme="terminal"] .footer{
-  background: rgba(10,10,9,.86);
-  border-color: rgba(204,83,2,.18);
-  color: rgba(246,241,230,.92);
-}
-
-/* Main frame */
-body[data-theme="terminal"] .screen{
-  border-color: rgba(204,83,2,.16);
-  box-shadow: 0 34px 110px rgba(0,0,0,.55);
-}
-body[data-theme="terminal"] .screen__menu,
-body[data-theme="terminal"] .screen__content{
-  background: rgba(10,10,9,.78);
-  border-color: rgba(204,83,2,.12);
-}
-
-/* Buttons + nav pills */
-body[data-theme="terminal"] .btn,
-body[data-theme="terminal"] .navbtn{
-  color: rgba(246,241,230,.92);
-  background: rgba(204,83,2,.10);
-  border-color: rgba(204,83,2,.22);
-}
-body[data-theme="terminal"] .btn:hover,
-body[data-theme="terminal"] .navbtn:hover{
-  background: rgba(204,83,2,.14);
-  border-color: rgba(204,83,2,.30);
-}
-body[data-theme="terminal"] .btn--primary{
-  background: rgba(204,83,2,.18);
-  border-color: rgba(204,83,2,.38);
-}
-
-/* Inputs + selects */
-body[data-theme="terminal"] .field__input,
-body[data-theme="terminal"] select,
-body[data-theme="terminal"] textarea,
-body[data-theme="terminal"] input[type=password],
-body[data-theme="terminal"] .output{
-  color: rgba(246,241,230,.92);
-  background: rgba(0,0,0,.24);
-  border-color: rgba(204,83,2,.18);
-}
-
-/* Muted text */
-body[data-theme="terminal"] .muted{
-  color: rgba(246,241,230,.70) !important;
-}
-
-/* Menu */
-body[data-theme="terminal"] .menu__title{
-  color: rgba(246,241,230,.78);
-}
-body[data-theme="terminal"] .menu__item{
-  color: rgba(246,241,230,.92);
-}
-body[data-theme="terminal"] .menu__item:hover{
-  background: rgba(204,83,2,.10);
-  border-color: rgba(204,83,2,.18);
-}
-body[data-theme="terminal"] .menu__item.is-active{
-  background: rgba(204,83,2,.14);
-  border-color: rgba(204,83,2,.28);
-}
-
-/* Long prompt blocks in Terminal */
-body[data-theme="terminal"] .pre,
-body[data-theme="terminal"] .pc__pre{
-  background: rgba(0,0,0,.26);
-  border-color: rgba(204,83,2,.18);
-  color: rgba(246,241,230,.92);
-}
-
-/* Dropdown options (important for Library categories in dark UI) */
-body[data-theme="terminal"] select option{
-  background:#0b0c0a;
-  color: rgba(246,241,230,.92);
-}
-
-/* Scanlines: soften */
-body[data-theme="terminal"] .screen::before{
-  opacity:.22;
-}
-
-/* ---------------------------------------------------------
-   UI polish (retro + terminal)
-   - Color-code Library meta chips in Neon Grid / Candy Console
-   - Improve readability of Tips/About in Neon Grid / Candy / Terminal
----------------------------------------------------------- */
-
-/* 1) Library meta chips: Neon Grid + Candy Console */
-body[data-theme="retro"][data-variant="neon-grid"] .lib__meta .chip,
-body[data-theme="retro"][data-variant="candy-console"] .lib__meta .chip{
+body[data-theme="retro"][data-variant="candy-console"] .tips details.fold,
+body[data-theme="retro"][data-variant="candy-console"] .tips .fold{
   background: rgba(0,0,0,.28);
-  border-color: rgba(255,255,255,.12);
-  color: rgba(240,240,255,.92);
+  border: 1px solid rgba(255,120,210,.22);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.04) inset, 0 0 18px rgba(255,120,210,.08);
 }
-
-/* Per-chip accents (warmer tones like #798003 / #874401 / #cc5302) */
-body[data-theme="retro"][data-variant="neon-grid"] .lib__meta .chip--mode,
-body[data-theme="retro"][data-variant="candy-console"] .lib__meta .chip--mode{
-  border-color: rgba(121,128,3,.55);
-  color:#c7cf5a;
+body[data-theme="retro"][data-variant="candy-console"] .tips details.fold > summary,
+body[data-theme="retro"][data-variant="candy-console"] .tips .fold__sum{
+  color: rgba(255,245,255,.96);
+  background: linear-gradient(90deg, rgba(255,120,210,.14), rgba(120,210,255,.10));
+  border-bottom: 1px solid rgba(255,120,210,.18);
+  text-shadow: 0 0 10px rgba(255,120,210,.18);
 }
-body[data-theme="retro"][data-variant="neon-grid"] .lib__meta .chip--model,
-body[data-theme="retro"][data-variant="candy-console"] .lib__meta .chip--model{
-  border-color: rgba(204,83,2,.55);
-  color:#ffb07a;
+body[data-theme="retro"][data-variant="candy-console"] .tips .fold__body,
+body[data-theme="retro"][data-variant="candy-console"] .tips .fold__body *{
+  color: rgba(255,245,255,.90);
 }
-body[data-theme="retro"][data-variant="neon-grid"] .lib__meta .chip--tags,
-body[data-theme="retro"][data-variant="candy-console"] .lib__meta .chip--tags{
-  border-color: rgba(135,68,1,.55);
-  color:#ffd0a6;
+body[data-theme="retro"][data-variant="candy-console"] .tips .muted{
+  color: rgba(255,245,255,.65) !important;
 }
-body[data-theme="retro"][data-variant="neon-grid"] .lib__meta .chip--proj,
-body[data-theme="retro"][data-variant="candy-console"] .lib__meta .chip--proj{
-  border-color: rgba(130,210,255,.40);
-  color: rgba(210,238,255,.95);
-}
-body[data-theme="retro"][data-variant="neon-grid"] .lib__meta .chip--cat,
-body[data-theme="retro"][data-variant="candy-console"] .lib__meta .chip--cat{
-  border-color: rgba(255,255,255,.14);
-}
-body[data-theme="retro"][data-variant="neon-grid"] .lib__meta .chip--cat .chip__dot,
-body[data-theme="retro"][data-variant="candy-console"] .lib__meta .chip--cat .chip__dot{
-  background: rgba(255,255,255,.60);
-}
-
-/* 2) Tips readability: Neon Grid + Candy Console */
-body[data-theme="retro"][data-variant="neon-grid"] .tips__box,
-body[data-theme="retro"][data-variant="candy-console"] .tips__box{
-  background: rgba(0,0,0,.22);
-  border-color: rgba(255,255,255,.14);
-  color: rgba(240,240,255,.92);
-}
-body[data-theme="retro"][data-variant="neon-grid"] .tips__title,
-body[data-theme="retro"][data-variant="candy-console"] .tips__title{
-  opacity: .86;
-  color: rgba(240,240,255,.82);
-}
-body[data-theme="retro"][data-variant="neon-grid"] .tips__list,
-body[data-theme="retro"][data-variant="candy-console"] .tips__list{
-  color: rgba(240,240,255,.92);
-}
-
-/* 3) Terminal: Tips + About (tone down neon green) */
-body[data-theme="terminal"] .tips__box{
-  background: rgba(0,0,0,.28);
-  border-color: rgba(0,255,128,.18);
-  color:#cfe3d3;
-}
-body[data-theme="terminal"] .tips__title{opacity:.86;color:rgba(207,227,211,.90)}
-body[data-theme="terminal"] .tips__list{color:#cfe3d3}
-body[data-theme="terminal"] .card__desc,
-body[data-theme="terminal"] .card__note,
-body[data-theme="terminal"] .card__body{color:#cfe3d3}
-body[data-theme="terminal"] a{color:rgba(207,227,211,.92)}
-
-/* =========================================================
-   HOTFIX — Tips/About readability (Retro Neon/Candy + Terminal)
-   Fixes: white-on-white in Tips + green-on-green in Terminal About.
-   Kept scoped so we don't touch other themes.
-   ========================================================= */
-
-/* Retro (Neon Grid + Candy Console): force Tips boxes to be dark */
-body[data-theme="retro"][data-variant="neon-grid"] .tips__box,
-body[data-theme="retro"][data-variant="candy-console"] .tips__box{
-  background: rgba(0,0,0,.32) !important;
-  border-color: rgba(255,255,255,.16) !important;
-  color: rgba(240,240,255,.94) !important;
-}
-body[data-theme="retro"][data-variant="neon-grid"] .tips__box *,
-body[data-theme="retro"][data-variant="candy-console"] .tips__box *{
-  color: rgba(240,240,255,.94) !important;
-}
-body[data-theme="retro"][data-variant="neon-grid"] .tips__title,
-body[data-theme="retro"][data-variant="candy-console"] .tips__title{
-  color: rgba(240,240,255,.84) !important;
-  opacity: .90 !important;
-}
-
-/* Terminal: switch from neon-green ink to warm terminal ink (still “terminal”, just readable). */
-body[data-theme="terminal"]{
-  --term-ink: #efe6d6;
-  --term-muted: rgba(239,230,214,.72);
-  --term-accent: #cc5302;
-  --term-accent-2: #798003;
-  --term-border: rgba(204,83,2,.35);
-  --term-panel: rgba(0,0,0,.30);
-}
-
-body[data-theme="terminal"] .tips__box{
-  background: var(--term-panel) !important;
-  border-color: var(--term-border) !important;
-  color: var(--term-ink) !important;
-}
-body[data-theme="terminal"] .tips__box *{color: var(--term-ink) !important;}
-body[data-theme="terminal"] .tips__title{color: var(--term-accent) !important; opacity:.92 !important;}
-
-/* Terminal About page blocks/cards: kill green-on-green by forcing readable ink + darker panels */
-body[data-theme="terminal"] .card,
-body[data-theme="terminal"] .panel,
-body[data-theme="terminal"] .pc__section,
-body[data-theme="terminal"] .block,
-body[data-theme="terminal"] .fold{
-  background: var(--term-panel) !important;
-  border-color: var(--term-border) !important;
-  color: var(--term-ink) !important;
-}
-body[data-theme="terminal"] .card *,
-body[data-theme="terminal"] .panel *,
-body[data-theme="terminal"] .pc__section *,
-body[data-theme="terminal"] .block *,
-body[data-theme="terminal"] .fold *{
-  color: var(--term-ink) !important;
-}
-body[data-theme="terminal"] a{color: var(--term-accent) !important;}
-
-
-/* --- UI polish: ensure readability in Tips + Library chips across themes --- */
-body[data-theme="glitter"] .fold{ background:rgba(255,255,255,.86); border-color:rgba(0,0,0,.10); }
-body[data-theme="glitter"] .fold__body{ background:rgba(255,255,255,.70); }
-body[data-theme="glitter"] .lib__meta .chip{ background:rgba(255,255,255,.88); }
-
-/* Dark-theme library sidebar should not inherit light panel */
-body[data-theme="modern"] .libws__sidebar,
-body[data-theme="retro"] .libws__sidebar,
-body[data-theme="terminal"] .libws__sidebar,
-body[data-theme="nostalgia"] .libws__sidebar{
-  background:rgba(0,0,0,.18);
-  border-color:rgba(255,255,255,.10);
-  color:inherit;
-}
-
-/* MySpace-ish micro-interactions (CSS-only, safe) */
-@media (prefers-reduced-motion: no-preference){
-  .btn, .topnav__tab, .nav__item, .pill, .chip{
-    transition: transform .12s ease, box-shadow .18s ease, filter .18s ease;
-  }
-  .btn:hover, .topnav__tab:hover, .nav__item:hover{
-    transform: translateY(-1px) scale(1.01);
-    filter: brightness(1.05);
-  }
-  .btn:active, .topnav__tab:active, .nav__item:active{
-    transform: translateY(0) scale(0.99);
-  }
-}
-
-/* Subtle arcade grid overlay for all themes */
-body::before{
-  content:"";
-  position:fixed;
-  inset:0;
-  pointer-events:none;
-  background:
-    linear-gradient(to bottom, rgba(255,255,255,.06), transparent 40%),
-    repeating-linear-gradient(to right, rgba(255,255,255,.05) 0, rgba(255,255,255,.05) 1px, transparent 1px, transparent 64px),
-    repeating-linear-gradient(to bottom, rgba(255,255,255,.04) 0, rgba(255,255,255,.04) 1px, transparent 1px, transparent 64px);
-  mix-blend-mode: overlay;
-  opacity:.35;
-}
-body[data-theme="glitter"] body::before{ opacity:.18; }
