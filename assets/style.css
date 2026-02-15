@@ -1386,3 +1386,53 @@ body[data-theme="terminal"] select option{
 body[data-theme="terminal"] .screen::before{
   opacity:.22;
 }
+
+
+/* =========================================================
+   Terminal theme palette swap (2026-02-15b)
+   Goal: use warmer readable text accents (requested: #cc5302 or #798003)
+   - Keep body text light for readability
+   - Use orange/olive as accent text + borders
+   ========================================================= */
+
+body[data-theme="terminal"]{
+  --term-ink: rgba(246,241,230,.92);   /* main readable text */
+  --term-muted: rgba(246,241,230,.70);
+  --term-accent: #cc5302;             /* warm orange */
+  --term-accent-2: #798003;           /* olive */
+  color: var(--term-ink);
+}
+
+/* Accent text (small but visible) */
+body[data-theme="terminal"] .menu__title,
+body[data-theme="terminal"] .card__title,
+body[data-theme="terminal"] .pc__h,
+body[data-theme="terminal"] .featured__label{
+  color: var(--term-accent);
+}
+
+/* Muted text stays muted */
+body[data-theme="terminal"] .muted,
+body[data-theme="terminal"] .pc__muted{
+  color: var(--term-muted) !important;
+}
+
+/* Buttons + active pills lean orange (readable, not neon) */
+body[data-theme="terminal"] .btn,
+body[data-theme="terminal"] .navbtn{
+  border-color: rgba(204,83,2,.22);
+}
+body[data-theme="terminal"] .btn--primary,
+body[data-theme="terminal"] .navbtn.is-active{
+  background: rgba(204,83,2,.18);
+  border-color: rgba(204,83,2,.38);
+  color: var(--term-ink);
+}
+
+/* Optional olive accent for subtle highlights */
+body[data-theme="terminal"] .menu__item.is-active:before{
+  /* no-op unless pseudo exists; safe */
+}
+body[data-theme="terminal"] .lib__item:before{
+  background: rgba(121,128,3,.55);
+}
