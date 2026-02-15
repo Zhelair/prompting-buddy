@@ -1387,52 +1387,76 @@ body[data-theme="terminal"] .screen::before{
   opacity:.22;
 }
 
+/* ---------------------------------------------------------
+   UI polish (retro + terminal)
+   - Color-code Library meta chips in Neon Grid / Candy Console
+   - Improve readability of Tips/About in Neon Grid / Candy / Terminal
+---------------------------------------------------------- */
 
-/* =========================================================
-   Terminal theme palette swap (2026-02-15b)
-   Goal: use warmer readable text accents (requested: #cc5302 or #798003)
-   - Keep body text light for readability
-   - Use orange/olive as accent text + borders
-   ========================================================= */
-
-body[data-theme="terminal"]{
-  --term-ink: rgba(246,241,230,.92);   /* main readable text */
-  --term-muted: rgba(246,241,230,.70);
-  --term-accent: #cc5302;             /* warm orange */
-  --term-accent-2: #798003;           /* olive */
-  color: var(--term-ink);
+/* 1) Library meta chips: Neon Grid + Candy Console */
+body[data-theme="retro"][data-variant="neon-grid"] .lib__meta .chip,
+body[data-theme="retro"][data-variant="candy-console"] .lib__meta .chip{
+  background: rgba(0,0,0,.28);
+  border-color: rgba(255,255,255,.12);
+  color: rgba(240,240,255,.92);
 }
 
-/* Accent text (small but visible) */
-body[data-theme="terminal"] .menu__title,
-body[data-theme="terminal"] .card__title,
-body[data-theme="terminal"] .pc__h,
-body[data-theme="terminal"] .featured__label{
-  color: var(--term-accent);
+/* Per-chip accents (warmer tones like #798003 / #874401 / #cc5302) */
+body[data-theme="retro"][data-variant="neon-grid"] .lib__meta .chip--mode,
+body[data-theme="retro"][data-variant="candy-console"] .lib__meta .chip--mode{
+  border-color: rgba(121,128,3,.55);
+  color:#c7cf5a;
+}
+body[data-theme="retro"][data-variant="neon-grid"] .lib__meta .chip--model,
+body[data-theme="retro"][data-variant="candy-console"] .lib__meta .chip--model{
+  border-color: rgba(204,83,2,.55);
+  color:#ffb07a;
+}
+body[data-theme="retro"][data-variant="neon-grid"] .lib__meta .chip--tags,
+body[data-theme="retro"][data-variant="candy-console"] .lib__meta .chip--tags{
+  border-color: rgba(135,68,1,.55);
+  color:#ffd0a6;
+}
+body[data-theme="retro"][data-variant="neon-grid"] .lib__meta .chip--proj,
+body[data-theme="retro"][data-variant="candy-console"] .lib__meta .chip--proj{
+  border-color: rgba(130,210,255,.40);
+  color: rgba(210,238,255,.95);
+}
+body[data-theme="retro"][data-variant="neon-grid"] .lib__meta .chip--cat,
+body[data-theme="retro"][data-variant="candy-console"] .lib__meta .chip--cat{
+  border-color: rgba(255,255,255,.14);
+}
+body[data-theme="retro"][data-variant="neon-grid"] .lib__meta .chip--cat .chip__dot,
+body[data-theme="retro"][data-variant="candy-console"] .lib__meta .chip--cat .chip__dot{
+  background: rgba(255,255,255,.60);
 }
 
-/* Muted text stays muted */
-body[data-theme="terminal"] .muted,
-body[data-theme="terminal"] .pc__muted{
-  color: var(--term-muted) !important;
+/* 2) Tips readability: Neon Grid + Candy Console */
+body[data-theme="retro"][data-variant="neon-grid"] .tips__box,
+body[data-theme="retro"][data-variant="candy-console"] .tips__box{
+  background: rgba(0,0,0,.22);
+  border-color: rgba(255,255,255,.14);
+  color: rgba(240,240,255,.92);
+}
+body[data-theme="retro"][data-variant="neon-grid"] .tips__title,
+body[data-theme="retro"][data-variant="candy-console"] .tips__title{
+  opacity: .86;
+  color: rgba(240,240,255,.82);
+}
+body[data-theme="retro"][data-variant="neon-grid"] .tips__list,
+body[data-theme="retro"][data-variant="candy-console"] .tips__list{
+  color: rgba(240,240,255,.92);
 }
 
-/* Buttons + active pills lean orange (readable, not neon) */
-body[data-theme="terminal"] .btn,
-body[data-theme="terminal"] .navbtn{
-  border-color: rgba(204,83,2,.22);
+/* 3) Terminal: Tips + About (tone down neon green) */
+body[data-theme="terminal"] .tips__box{
+  background: rgba(0,0,0,.28);
+  border-color: rgba(0,255,128,.18);
+  color:#cfe3d3;
 }
-body[data-theme="terminal"] .btn--primary,
-body[data-theme="terminal"] .navbtn.is-active{
-  background: rgba(204,83,2,.18);
-  border-color: rgba(204,83,2,.38);
-  color: var(--term-ink);
-}
-
-/* Optional olive accent for subtle highlights */
-body[data-theme="terminal"] .menu__item.is-active:before{
-  /* no-op unless pseudo exists; safe */
-}
-body[data-theme="terminal"] .lib__item:before{
-  background: rgba(121,128,3,.55);
-}
+body[data-theme="terminal"] .tips__title{opacity:.86;color:rgba(207,227,211,.90)}
+body[data-theme="terminal"] .tips__list{color:#cfe3d3}
+body[data-theme="terminal"] .card__desc,
+body[data-theme="terminal"] .card__note,
+body[data-theme="terminal"] .card__body{color:#cfe3d3}
+body[data-theme="terminal"] a{color:rgba(207,227,211,.92)}
