@@ -1067,7 +1067,7 @@ body[data-theme="terminal"] .menu__item.is-active{
 /* --- Library Workspace (v2) --- */
 .libws{display:grid;grid-template-columns:230px 1fr;gap:14px;align-items:stretch;min-height:520px}
 .libws__sidebar{background:rgba(0,0,0,.08);border:1px solid rgba(0,0,0,.12);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:10px}
-body[data-theme="modern"] .libws__sidebar{background:rgba(255,255,255,.35)}
+body[data-theme] .libws__sidebar{background:rgba(255,255,255,.35)}
 .libws__sidehead{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 2px}
 .libws__projlist{display:flex;flex-direction:column;gap:4px;overflow:auto;max-height:360px;padding-right:2px}
 .libws__projbtn{width:100%;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;padding:8px 8px;border-radius:12px;border:1px solid rgba(0,0,0,.12);background:rgba(255,255,255,.55);cursor:pointer}
@@ -1520,110 +1520,3 @@ body[data-theme="terminal"] .fold *{
   color: var(--term-ink) !important;
 }
 body[data-theme="terminal"] a{color: var(--term-accent) !important;}
-
-
-/* ============================
-   UI polish - grid overlay + readable Tips/Terminal projects
-   ============================ */
-
-/* 1) Universal colourful grid overlay (applied via variables per theme).
-   Uses .screen__bg::before to avoid conflicts with existing scanline overlays. */
-.screen__bg::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  pointer-events:none;
-  opacity: var(--pb-grid-opacity, 0);
-  background-image:
-    linear-gradient(var(--pb-grid-color-a, rgba(255,255,255,.12)) 1px, transparent 1px),
-    linear-gradient(90deg, var(--pb-grid-color-b, rgba(255,255,255,.08)) 1px, transparent 1px);
-  background-size: var(--pb-grid-size, 56px) var(--pb-grid-size, 56px);
-  mix-blend-mode: screen;
-}
-
-/* Disable older per-variant :before overlays (we now use .screen__bg::before) */
-body[data-theme="retro"][data-variant="neon-grid"] .screen:before,
-body[data-theme="retro"][data-variant="candy-console"] .screen:before{
-  display:none;
-}
-
-/* Grid settings per theme */
-body[data-theme="retro"][data-variant="neon-grid"]{
-  --pb-grid-opacity:.18;
-  --pb-grid-color-a: rgba(0,243,255,.35);
-  --pb-grid-color-b: rgba(255,0,255,.28);
-  --pb-grid-size:48px;
-}
-body[data-theme="retro"][data-variant="candy-console"]{
-  --pb-grid-opacity:.10;
-  --pb-grid-color-a: rgba(255,255,255,.22);
-  --pb-grid-color-b: rgba(0,0,0,.10);
-  --pb-grid-size:36px;
-}
-body[data-theme="modern"]{
-  --pb-grid-opacity:.07;
-  --pb-grid-color-a: rgba(0,0,0,.18);
-  --pb-grid-color-b: rgba(255,138,61,.14);
-  --pb-grid-size:64px;
-}
-body[data-theme="nostalgia"]{
-  --pb-grid-opacity:.06;
-  --pb-grid-color-a: rgba(255,255,255,.18);
-  --pb-grid-color-b: rgba(0,0,0,.10);
-  --pb-grid-size:70px;
-}
-body[data-theme="glitter"]{
-  --pb-grid-opacity:.07;
-  --pb-grid-color-a: rgba(18,182,176,.18);
-  --pb-grid-color-b: rgba(216,179,106,.14);
-  --pb-grid-size:62px;
-}
-body[data-theme="terminal"]{
-  --pb-grid-opacity:.07;
-  --pb-grid-color-a: rgba(204,83,2,.22);
-  --pb-grid-color-b: rgba(255,255,255,.06);
-  --pb-grid-size:72px;
-}
-
-/* 2) Tips readability for Neon Grid / Candy Console / Terminal (fix white-on-white, green-on-green) */
-body[data-theme="retro"] .fold,
-body[data-theme="terminal"] .fold{
-  background: rgba(0,0,0,.22);
-  border-color: rgba(255,255,255,.14);
-  color: rgba(240,240,255,.92);
-}
-body[data-theme="retro"] .fold__sum,
-body[data-theme="terminal"] .fold__sum{
-  color: rgba(240,240,255,.92);
-}
-body[data-theme="retro"] .fold__body,
-body[data-theme="terminal"] .fold__body{
-  color: rgba(240,240,255,.92);
-}
-body[data-theme="retro"] .fold__body a,
-body[data-theme="terminal"] .fold__body a{
-  color: rgba(204,83,2,.95);
-  text-decoration-color: rgba(204,83,2,.55);
-}
-
-/* 3) Terminal: Library Projects sidebar should not be bright */
-body[data-theme="terminal"] .libws__sidebar{
-  background: rgba(0,0,0,.18);
-  border-color: rgba(204,83,2,.18);
-}
-body[data-theme="terminal"] .libws__projbtn{
-  background: rgba(0,0,0,.22);
-  border-color: rgba(204,83,2,.18);
-  color: rgba(246,241,230,.92);
-}
-body[data-theme="terminal"] .libws__projbtn:hover{
-  background: rgba(204,83,2,.10);
-}
-body[data-theme="terminal"] .libws__projbtn.is-active{
-  outline:2px solid rgba(204,83,2,.28);
-}
-body[data-theme="terminal"] .wsGroup{
-  background: rgba(0,0,0,.18);
-  border-color: rgba(204,83,2,.18);
-  color: rgba(246,241,230,.92);
-}
