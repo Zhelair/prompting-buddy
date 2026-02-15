@@ -780,7 +780,7 @@ body[data-theme="terminal"] .menu__item.is-active{background:rgba(0,255,128,.14)
 
 /* Library meta chips */
 .lib__meta{ display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
-.lib__meta .chip{ background:rgba(255,255,255,.85); }
+.lib__meta .chip{ background:rgba(0,0,0,.22); }
 
 /* Fancy Glitter (Tiffany teal + gold) */
 body[data-theme="glitter"]{
@@ -1528,3 +1528,48 @@ body[data-theme="terminal"] .fold *{
   color: var(--term-ink) !important;
 }
 body[data-theme="terminal"] a{color: var(--term-accent) !important;}
+
+
+/* --- UI polish: ensure readability in Tips + Library chips across themes --- */
+body[data-theme="glitter"] .fold{ background:rgba(255,255,255,.86); border-color:rgba(0,0,0,.10); }
+body[data-theme="glitter"] .fold__body{ background:rgba(255,255,255,.70); }
+body[data-theme="glitter"] .lib__meta .chip{ background:rgba(255,255,255,.88); }
+
+/* Dark-theme library sidebar should not inherit light panel */
+body[data-theme="modern"] .libws__sidebar,
+body[data-theme="retro"] .libws__sidebar,
+body[data-theme="terminal"] .libws__sidebar,
+body[data-theme="nostalgia"] .libws__sidebar{
+  background:rgba(0,0,0,.18);
+  border-color:rgba(255,255,255,.10);
+  color:inherit;
+}
+
+/* MySpace-ish micro-interactions (CSS-only, safe) */
+@media (prefers-reduced-motion: no-preference){
+  .btn, .topnav__tab, .nav__item, .pill, .chip{
+    transition: transform .12s ease, box-shadow .18s ease, filter .18s ease;
+  }
+  .btn:hover, .topnav__tab:hover, .nav__item:hover{
+    transform: translateY(-1px) scale(1.01);
+    filter: brightness(1.05);
+  }
+  .btn:active, .topnav__tab:active, .nav__item:active{
+    transform: translateY(0) scale(0.99);
+  }
+}
+
+/* Subtle arcade grid overlay for all themes */
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  background:
+    linear-gradient(to bottom, rgba(255,255,255,.06), transparent 40%),
+    repeating-linear-gradient(to right, rgba(255,255,255,.05) 0, rgba(255,255,255,.05) 1px, transparent 1px, transparent 64px),
+    repeating-linear-gradient(to bottom, rgba(255,255,255,.04) 0, rgba(255,255,255,.04) 1px, transparent 1px, transparent 64px);
+  mix-blend-mode: overlay;
+  opacity:.35;
+}
+body[data-theme="glitter"] body::before{ opacity:.18; }
