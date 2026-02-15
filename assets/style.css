@@ -873,6 +873,14 @@ body[data-theme="terminal"] .modal{ background:rgba(0,0,0,.68) !important; borde
 body[data-theme="terminal"] .modal__head{ background:rgba(0,0,0,.72) !important; border-bottom-color:rgba(0,255,110,.22) !important; }
 body[data-theme="terminal"] .modal h3, body[data-theme="terminal"] .modal label{ color:var(--term-ink) !important; }
 
+/* Terminal: Library sidebar readability (avoid light-on-light) */
+body[data-theme="terminal"] .wsGroup{ background:rgba(0,0,0,.32); border-color:rgba(0,255,110,.22); }
+body[data-theme="terminal"] .wsGroup summary{ color:var(--term-ink); }
+body[data-theme="terminal"] .libws__projbtn{ background:rgba(0,0,0,.42); border-color:rgba(0,255,110,.22); color:var(--term-ink); }
+body[data-theme="terminal"] .libws__projbtn:hover{ background:rgba(0,0,0,.58); }
+body[data-theme="terminal"] .libws__projbtn.is-active{ background:rgba(0,0,0,.72); border-color:rgba(0,255,110,.52); }
+
+
 /* Scanlines overlay */
 body[data-theme="terminal"] .screen::before{
   content:"";
