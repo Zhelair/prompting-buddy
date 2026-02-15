@@ -1254,3 +1254,135 @@ body[data-theme="terminal"] .pc__pre{
 body[data-theme="terminal"] .pre--sm{
   background: rgba(0,0,0,.24);
 }
+
+/* =========================================================
+   UI tweaks (2026-02-15) — Library + Terminal readability
+   - Larger category dropdown in Library toolbar
+   - Bigger prompt text in Library (Golden/Working/Original)
+   - Terminal theme: replace neon-green with warmer accent (#cc5302)
+   ========================================================= */
+
+/* 1) Library toolbar: make Category dropdown less cramped */
+#libCat{
+  min-width: 220px;
+  height: 40px;
+  padding: 10px 12px;
+  line-height: 1.2;
+}
+
+/* Keep search usable next to bigger dropdown */
+#libSearch{ min-height: 40px; }
+
+/* 2) Library prompt blocks: bigger mono text */
+#libList .pre,
+#libList .pc__pre,
+#libEditorWrap .output,
+#libEditorWrap textarea.output,
+#libEditorWrap textarea.field__textarea{
+  font-size: 15px;
+  line-height: 1.45;
+}
+@media (min-width: 1100px){
+  #libList .pre,
+  #libEditorWrap .output,
+  #libEditorWrap textarea.output{
+    font-size: 16px;
+  }
+}
+
+/* 3) Terminal theme: warm + readable (no neon-green on green) */
+body[data-theme="terminal"]{
+  --term-accent-hex: #cc5302; /* warm orange */
+  color: rgba(246,241,230,.92);
+  background:
+    radial-gradient(1200px 800px at 15% 10%, rgba(204,83,2,.10), transparent 55%),
+    radial-gradient(900px 650px at 85% 25%, rgba(120,128,3,.08), transparent 55%),
+    linear-gradient(180deg, #0f120e 0%, #070806 100%);
+}
+
+/* Chrome top/bottom bars */
+body[data-theme="terminal"] .topbar,
+body[data-theme="terminal"] .footer{
+  background: rgba(10,10,9,.86);
+  border-color: rgba(204,83,2,.18);
+  color: rgba(246,241,230,.92);
+}
+
+/* Main frame */
+body[data-theme="terminal"] .screen{
+  border-color: rgba(204,83,2,.16);
+  box-shadow: 0 34px 110px rgba(0,0,0,.55);
+}
+body[data-theme="terminal"] .screen__menu,
+body[data-theme="terminal"] .screen__content{
+  background: rgba(10,10,9,.78);
+  border-color: rgba(204,83,2,.12);
+}
+
+/* Buttons + nav pills */
+body[data-theme="terminal"] .btn,
+body[data-theme="terminal"] .navbtn{
+  color: rgba(246,241,230,.92);
+  background: rgba(204,83,2,.10);
+  border-color: rgba(204,83,2,.22);
+}
+body[data-theme="terminal"] .btn:hover,
+body[data-theme="terminal"] .navbtn:hover{
+  background: rgba(204,83,2,.14);
+  border-color: rgba(204,83,2,.30);
+}
+body[data-theme="terminal"] .btn--primary{
+  background: rgba(204,83,2,.18);
+  border-color: rgba(204,83,2,.38);
+}
+
+/* Inputs + selects */
+body[data-theme="terminal"] .field__input,
+body[data-theme="terminal"] select,
+body[data-theme="terminal"] textarea,
+body[data-theme="terminal"] input[type=password],
+body[data-theme="terminal"] .output{
+  color: rgba(246,241,230,.92);
+  background: rgba(0,0,0,.24);
+  border-color: rgba(204,83,2,.18);
+}
+
+/* Muted text */
+body[data-theme="terminal"] .muted{
+  color: rgba(246,241,230,.70) !important;
+}
+
+/* Menu */
+body[data-theme="terminal"] .menu__title{
+  color: rgba(246,241,230,.78);
+}
+body[data-theme="terminal"] .menu__item{
+  color: rgba(246,241,230,.92);
+}
+body[data-theme="terminal"] .menu__item:hover{
+  background: rgba(204,83,2,.10);
+  border-color: rgba(204,83,2,.18);
+}
+body[data-theme="terminal"] .menu__item.is-active{
+  background: rgba(204,83,2,.14);
+  border-color: rgba(204,83,2,.28);
+}
+
+/* Long prompt blocks in Terminal */
+body[data-theme="terminal"] .pre,
+body[data-theme="terminal"] .pc__pre{
+  background: rgba(0,0,0,.26);
+  border-color: rgba(204,83,2,.18);
+  color: rgba(246,241,230,.92);
+}
+
+/* Dropdown options (important for Library categories in dark UI) */
+body[data-theme="terminal"] select option{
+  background:#0b0c0a;
+  color: rgba(246,241,230,.92);
+}
+
+/* Scanlines: soften */
+body[data-theme="terminal"] .screen::before{
+  opacity:.22;
+}
