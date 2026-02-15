@@ -1460,3 +1460,63 @@ body[data-theme="terminal"] .card__desc,
 body[data-theme="terminal"] .card__note,
 body[data-theme="terminal"] .card__body{color:#cfe3d3}
 body[data-theme="terminal"] a{color:rgba(207,227,211,.92)}
+
+/* =========================================================
+   HOTFIX — Tips/About readability (Retro Neon/Candy + Terminal)
+   Fixes: white-on-white in Tips + green-on-green in Terminal About.
+   Kept scoped so we don't touch other themes.
+   ========================================================= */
+
+/* Retro (Neon Grid + Candy Console): force Tips boxes to be dark */
+body[data-theme="retro"][data-variant="neon-grid"] .tips__box,
+body[data-theme="retro"][data-variant="candy-console"] .tips__box{
+  background: rgba(0,0,0,.32) !important;
+  border-color: rgba(255,255,255,.16) !important;
+  color: rgba(240,240,255,.94) !important;
+}
+body[data-theme="retro"][data-variant="neon-grid"] .tips__box *,
+body[data-theme="retro"][data-variant="candy-console"] .tips__box *{
+  color: rgba(240,240,255,.94) !important;
+}
+body[data-theme="retro"][data-variant="neon-grid"] .tips__title,
+body[data-theme="retro"][data-variant="candy-console"] .tips__title{
+  color: rgba(240,240,255,.84) !important;
+  opacity: .90 !important;
+}
+
+/* Terminal: switch from neon-green ink to warm terminal ink (still “terminal”, just readable). */
+body[data-theme="terminal"]{
+  --term-ink: #efe6d6;
+  --term-muted: rgba(239,230,214,.72);
+  --term-accent: #cc5302;
+  --term-accent-2: #798003;
+  --term-border: rgba(204,83,2,.35);
+  --term-panel: rgba(0,0,0,.30);
+}
+
+body[data-theme="terminal"] .tips__box{
+  background: var(--term-panel) !important;
+  border-color: var(--term-border) !important;
+  color: var(--term-ink) !important;
+}
+body[data-theme="terminal"] .tips__box *{color: var(--term-ink) !important;}
+body[data-theme="terminal"] .tips__title{color: var(--term-accent) !important; opacity:.92 !important;}
+
+/* Terminal About page blocks/cards: kill green-on-green by forcing readable ink + darker panels */
+body[data-theme="terminal"] .card,
+body[data-theme="terminal"] .panel,
+body[data-theme="terminal"] .pc__section,
+body[data-theme="terminal"] .block,
+body[data-theme="terminal"] .fold{
+  background: var(--term-panel) !important;
+  border-color: var(--term-border) !important;
+  color: var(--term-ink) !important;
+}
+body[data-theme="terminal"] .card *,
+body[data-theme="terminal"] .panel *,
+body[data-theme="terminal"] .pc__section *,
+body[data-theme="terminal"] .block *,
+body[data-theme="terminal"] .fold *{
+  color: var(--term-ink) !important;
+}
+body[data-theme="terminal"] a{color: var(--term-accent) !important;}
