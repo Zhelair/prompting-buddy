@@ -263,19 +263,13 @@ body[data-theme="retro"] .pc__pre,
 body[data-theme="retro"] .pre,
 body[data-theme="retro"] .output,
 body[data-theme="retro"] .field__input,
-body[data-theme="retro"] textarea.field__textarea,
+body[data-theme="retro"] .field__textarea,
 body[data-theme="retro"] select,
 body[data-theme="retro"] input[type=password]{
   background: rgba(0,0,0,.35);
   border-color: rgba(255,255,255,.18);
   color:#f0f0ff;
 }
-body[data-theme="retro"] textarea.field__textarea::placeholder,
-body[data-theme="retro"] .output::placeholder,
-body[data-theme="retro"] input::placeholder{
-  color: rgba(240,240,255,.55);
-}
-
 
 /* Retro Variant A — Neon Grid (TRON-ish) */
 body[data-theme="retro"][data-variant="neon-grid"]{
@@ -315,7 +309,6 @@ body[data-theme="retro"][data-variant="neon-grid"] .btn:focus,
 body[data-theme="retro"][data-variant="neon-grid"] .btn:focus-visible,
 body[data-theme="retro"][data-variant="neon-grid"] .field__input:focus,
 body[data-theme="retro"][data-variant="neon-grid"] select:focus,
-body[data-theme="retro"][data-variant="neon-grid"] textarea.field__textarea:focus,
 body[data-theme="retro"][data-variant="neon-grid"] .output:focus{
   box-shadow:
     0 0 0 2px rgba(0,243,255,.38),
@@ -1581,3 +1574,25 @@ body::before{
   opacity:.35;
 }
 body[data-theme="glitter"] body::before{ opacity:.18; }
+
+
+/* =========================================================
+   Fix: Tips/About readability in Retro + Terminal themes
+   - Fold panels were light while text is light -> "white on white"
+   - Notes textarea (field__textarea) now matches inputs
+   ========================================================= */
+body[data-theme="retro"] .fold{
+  background: rgba(0,0,0,.22);
+  border-color: rgba(255,255,255,.14);
+  color: rgba(240,240,255,.92);
+}
+body[data-theme="retro"] .fold__sum{ color: rgba(240,240,255,.92); }
+body[data-theme="retro"] .fold__body{ color: rgba(240,240,255,.92); }
+
+body[data-theme="terminal"] .fold{
+  background: rgba(0,0,0,.30);
+  border-color: rgba(204,83,2,.18);
+  color: rgba(246,241,230,.92);
+}
+body[data-theme="terminal"] .fold__sum{ color: rgba(246,241,230,.92); }
+body[data-theme="terminal"] .fold__body{ color: rgba(246,241,230,.92); }
