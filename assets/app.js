@@ -932,7 +932,7 @@ function renderLines(el, arr){
               tags: "#from-vault",
               model: "",
               notes: "",
-              cat: "General",
+              cat: "Various",
               fav: false,
               modeUsed: String(item.modeUsed||"")
             });
@@ -1248,20 +1248,15 @@ function renderLines(el, arr){
 
     const CATS = Array.isArray(data.libraryCategories) && data.libraryCategories.length
       ? data.libraryCategories.slice(0,50)
-      : ["Daily drivers","Writing","Coding","Research / OSINT","Visuals","Creators","Business","Life / Mood"];
+      : ["Various","Daily drivers","Writing","Coding","Research / OSINT","Visuals","Creators","Marketing","Business","Finances","Life / Mood"];
 
     const LS_LIB_SEEDED = "pb_library_seeded_v1";
     const LS_IDEAS_SEEDED = "pb_ideas_seeded_v1";
 
-    function ensureCategoriesInUI(){
+        function ensureCategoriesInUI(){
       if(!catSel || !fCat) return;
-      // Category filter dropdown
+      // Category filter dropdown ("All categories" already exists in HTML)
       if(catSel.options.length <= 1){
-        // Add 'General' as a real category filter option
-        const g = document.createElement('option');
-        g.value = 'General';
-        g.textContent = 'General';
-        catSel.appendChild(g);
         CATS.forEach(c=>{
           const o = document.createElement('option');
           o.value = c;
@@ -1269,11 +1264,11 @@ function renderLines(el, arr){
           catSel.appendChild(o);
         });
       }
-      // Editor dropdown
+      // Editor dropdown (allow no category)
       if(fCat.options.length === 0){
         const o0 = document.createElement('option');
         o0.value = "";
-        o0.textContent = "General";
+        o0.textContent = "(none)";
         fCat.appendChild(o0);
         CATS.forEach(c=>{
           const o = document.createElement('option');

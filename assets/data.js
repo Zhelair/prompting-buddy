@@ -151,13 +151,16 @@ window.PB_DATA = {
 
 
   libraryCategories: [
+    "Various",
     "Daily drivers",
     "Writing",
     "Coding",
     "Research / OSINT",
     "Visuals",
     "Creators",
+    "Marketing",
     "Business",
+    "Finances",
     "Life / Mood"
   ],
   house: {

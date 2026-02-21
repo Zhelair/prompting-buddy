@@ -1596,3 +1596,13 @@ body[data-theme="terminal"] .fold{
 }
 body[data-theme="terminal"] .fold__sum{ color: rgba(246,241,230,.92); }
 body[data-theme="terminal"] .fold__body{ color: rgba(246,241,230,.92); }
+
+
+/* =========================================================
+   Library meta chips: keep them colorful in ALL themes
+   ========================================================= */
+.lib__meta .chip--mode{ border-color: rgba(121,128,3,.55); color:#c7cf5a !important; }
+.lib__meta .chip--model{ border-color: rgba(204,83,2,.55); color:#ffb07a !important; }
+.lib__meta .chip--tags{ border-color: rgba(135,68,1,.55); color:#ffd0a6 !important; }
+.lib__meta .chip--proj{ border-color: rgba(130,210,255,.40); color: rgba(210,238,255,.95) !important; }
+
