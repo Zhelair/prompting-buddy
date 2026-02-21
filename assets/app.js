@@ -341,9 +341,6 @@ function colorForKey(key){
     } else if(route === "ideas") {
       app.appendChild(tpl("tpl-ideas"));
       initIdeas();
-    } else if(route === "extension") {
-      app.appendChild(tpl("tpl-extension"));
-      initExtension();
     } else if(route === "tips") {
       app.appendChild(tpl("tpl-tips"));
       initTips();
@@ -932,7 +929,7 @@ function renderLines(el, arr){
               tags: "#from-vault",
               model: "",
               notes: "",
-              cat: "Various",
+              cat: "General",
               fav: false,
               modeUsed: String(item.modeUsed||"")
             });
@@ -1248,15 +1245,20 @@ function renderLines(el, arr){
 
     const CATS = Array.isArray(data.libraryCategories) && data.libraryCategories.length
       ? data.libraryCategories.slice(0,50)
-      : ["Various","Daily drivers","Writing","Coding","Research / OSINT","Visuals","Creators","Marketing","Business","Finances","Life / Mood"];
+      : ["Various","Daily drivers","Writing","Coding","Research / OSINT","Visuals","Marketing","Business","Finances","Life / Mood"];
 
     const LS_LIB_SEEDED = "pb_library_seeded_v1";
     const LS_IDEAS_SEEDED = "pb_ideas_seeded_v1";
 
-        function ensureCategoriesInUI(){
+    function ensureCategoriesInUI(){
       if(!catSel || !fCat) return;
-      // Category filter dropdown ("All categories" already exists in HTML)
+      // Category filter dropdown
       if(catSel.options.length <= 1){
+        // Add "None" so users can intentionally filter prompts without a category.
+        const n = document.createElement('option');
+        n.value = '__none__';
+        n.textContent = 'None';
+        catSel.appendChild(n);
         CATS.forEach(c=>{
           const o = document.createElement('option');
           o.value = c;
@@ -1264,11 +1266,11 @@ function renderLines(el, arr){
           catSel.appendChild(o);
         });
       }
-      // Editor dropdown (allow no category)
+      // Editor dropdown
       if(fCat.options.length === 0){
         const o0 = document.createElement('option');
         o0.value = "";
-        o0.textContent = "(none)";
+        o0.textContent = "None";
         fCat.appendChild(o0);
         CATS.forEach(c=>{
           const o = document.createElement('option');
@@ -1824,7 +1826,8 @@ function renderLines(el, arr){
       if(fGolden) fGolden.value = existing?.golden || existing?.text || '';
       if(fPromptW) fPromptW.value = existing?.prompt || '';
       if(fOriginal) fOriginal.value = existing?.original || '';
-      if(fCat) fCat.value = existing?.cat || '';
+      const legacyCat = String(existing?.cat || '').trim();
+      if(fCat) fCat.value = (legacyCat.toLowerCase() === 'general') ? '' : legacyCat;
 
       // Defaults for new items: inherit current workspace selection.
       const defaultPid = isEdit ? String(existing?.projectId||'') : String(getSelectedProjectId()||'');
@@ -1865,11 +1868,15 @@ function renderLines(el, arr){
       const projectName = (pid)=> (projects.find(p=>p.id===pid)?.name || "");
       const sectionName = (pid,sid)=> (projects.find(p=>p.id===pid)?.sections||[]).find(s=>s.id===sid)?.name || "";
 
+      // Normalize legacy category values.
+      // Older builds used "General" as a category; we now treat that as "None".
       const libAllRaw = loadLibrary().map(it=>{
         if(!it || typeof it!=='object') return it;
+        const rawCat = String(it.cat || "").trim();
+        const normCat = (rawCat.toLowerCase() === 'general') ? "" : rawCat;
         return {
           ...it,
-          cat: it.cat || "",
+          cat: normCat,
           fav: !!it.fav
         };
       });
@@ -1886,7 +1893,13 @@ function renderLines(el, arr){
 
       const lib = libAll.filter(it=>{
         if(!it) return false;
-        if(cat && String(it.cat||'') !== cat) return false;
+        if(cat){
+          if(cat === '__none__'){
+            if(String(it.cat||'').trim()) return false;
+          } else {
+            if(String(it.cat||'') !== cat) return false;
+          }
+        }
         if(selP && String(it.projectId||"") !== selP) return false;
         if(selS && String(it.sectionId||"") !== selS) return false;
         if(favOnly && !it.fav) return false;
@@ -2019,6 +2032,8 @@ function renderLines(el, arr){
     });
 
     btnSave?.addEventListener('click', ()=>{
+      const rawCat = String(fCat?.value || '').trim();
+      const safeCat = (rawCat.toLowerCase() === 'general') ? '' : rawCat;
       const item = {
         id: editingId || `lib_${Date.now()}_${Math.random().toString(16).slice(2)}`,
         t: editingCreatedAt || Date.now(),
@@ -2028,7 +2043,7 @@ function renderLines(el, arr){
         original: String(fOriginal?.value || '').trim(),
         // legacy field for backward compatibility
         text: String(fGolden?.value || '').trim(),
-        cat: String(fCat?.value || '').trim(),
+        cat: safeCat,
         projectId: String(fProject?.value || '').trim(),
         sectionId: String(fSection?.value || '').trim(),
         modeUsed: String(fMode?.value || '').trim(),
@@ -2210,14 +2225,6 @@ function renderLines(el, arr){
     return node;
   }
 
-  function initExtension(){
-    const zipLink = document.getElementById('extZipLink');
-    const storeLink = document.getElementById('extStoreLink');
-
-    if(zipLink) zipLink.href = (data.extZipUrl || '#');
-    if(storeLink) storeLink.href = (data.extStoreUrl || '#');
-  }
-
   function initTips(){
     const box = document.getElementById('tipsBody');
     if(!box) return;
@@ -2367,7 +2374,9 @@ function renderLines(el, arr){
       }
     } catch {}
 
-    const r = (location.hash || "#buddy").replace('#','') || 'buddy';
+    let r = (location.hash || "#buddy").replace('#','') || 'buddy';
+    // Extension page is disabled for now.
+    if(r === 'extension') r = 'buddy';
     render(r);
     refreshStatus();
   }

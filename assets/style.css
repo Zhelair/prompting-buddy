@@ -627,6 +627,12 @@ body[data-theme="glitter"] .btn:hover:before{
 .lib__meta{ margin-top:6px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
 .lib__actions{ display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end; }
 .lib__notes{ margin-top:10px; font-size:14px; color:rgba(0,0,0,.72); }
+
+/* Retro variants: Library notes must be readable on dark cards */
+body[data-theme="retro"][data-variant="neon-grid"] .lib__notes,
+body[data-theme="retro"][data-variant="candy-console"] .lib__notes{
+  color: rgba(255,255,255,.86);
+}
 .lib__pre{ margin-top:10px; }
 
 
@@ -1596,13 +1602,3 @@ body[data-theme="terminal"] .fold{
 }
 body[data-theme="terminal"] .fold__sum{ color: rgba(246,241,230,.92); }
 body[data-theme="terminal"] .fold__body{ color: rgba(246,241,230,.92); }
-
-
-/* =========================================================
-   Library meta chips: keep them colorful in ALL themes
-   ========================================================= */
-.lib__meta .chip--mode{ border-color: rgba(121,128,3,.55); color:#c7cf5a !important; }
-.lib__meta .chip--model{ border-color: rgba(204,83,2,.55); color:#ffb07a !important; }
-.lib__meta .chip--tags{ border-color: rgba(135,68,1,.55); color:#ffd0a6 !important; }
-.lib__meta .chip--proj{ border-color: rgba(130,210,255,.40); color: rgba(210,238,255,.95) !important; }
-
