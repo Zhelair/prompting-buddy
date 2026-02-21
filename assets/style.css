@@ -627,6 +627,12 @@ body[data-theme="glitter"] .btn:hover:before{
 .lib__meta{ margin-top:6px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
 .lib__actions{ display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end; }
 .lib__notes{ margin-top:10px; font-size:14px; color:rgba(0,0,0,.72); }
+
+/* Retro variants: Library notes must be readable on dark cards */
+body[data-theme="retro"][data-variant="neon-grid"] .lib__notes,
+body[data-theme="retro"][data-variant="candy-console"] .lib__notes{
+  color: rgba(255,255,255,.86);
+}
 .lib__pre{ margin-top:10px; }
 
 
