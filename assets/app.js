@@ -260,7 +260,8 @@ function colorForKey(key){
           title: String(x?.title||'').slice(0,120),
           text: String(x?.text||'')
         }))
-        .filter(x=>x.text.trim())
+        // Keep empty slots too (manual slots). We already ignore empties when running Coach.
+        .filter(x=>x.id)
         .slice(0,5);
       localStorage.setItem(LS.coachBoard, JSON.stringify(safe));
     } catch {}
@@ -1277,6 +1278,10 @@ function renderLines(el, arr){
     const capEl = document.getElementById('coachCap');
 
     const outWrap = document.getElementById('coachOut');
+    const outMini = document.getElementById('coachOutMini');
+    const outMiniWhen = document.getElementById('coachOutMiniWhen');
+    const miniShowBtn = document.getElementById('coachMiniShow');
+    const miniClearBtn = document.getElementById('coachMiniClear');
     const outWhen = document.getElementById('coachOutWhen');
     const outMist = document.getElementById('coachOutMistakes');
     const outFix = document.getElementById('coachOutFixes');
@@ -1284,7 +1289,6 @@ function renderLines(el, arr){
     const outRaw = document.getElementById('coachOutRaw');
     const copyBtn = document.getElementById('coachCopy');
     const hideBtn = document.getElementById('coachHide');
-    const showBtn = document.getElementById('coachShow');
     const clearResBtn = document.getElementById('coachClearResult');
 
     if(capEl) capEl.textContent = String(COACH_MAX_CHARS);
@@ -1303,7 +1307,7 @@ function renderLines(el, arr){
       if(!board.length){
         slotsWrap.innerHTML = `
           <div class="muted" style="padding:10px 0">
-            No prompts yet. Add from Library (Send to Coach) or click “Add empty”.
+            No prompts yet. Add from Library (Send to Coach) or click “Add slot”.
           </div>
         `;
         return;
@@ -1317,6 +1321,7 @@ function renderLines(el, arr){
             <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
               <strong>Slot ${i+1}</strong>
               <div style="display:flex;gap:8px;align-items:center">
+                <button class="btn btn--mini" data-act="save" type="button">Save</button>
                 <button class="btn btn--mini" data-act="remove" type="button">Remove</button>
               </div>
             </div>
@@ -1335,6 +1340,17 @@ function renderLines(el, arr){
       }).join('');
 
       // Wire actions
+      slotsWrap.querySelectorAll('[data-act="save"]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const block = btn.closest('[data-id]');
+          const id = String(block?.getAttribute('data-id')||'');
+          const titleEl = block?.querySelector('input[data-role="title"]');
+          const textEl = block?.querySelector('textarea[data-role="text"]');
+          updateCoachBoardSlot(id, { title: titleEl?.value || '', text: textEl?.value || '' });
+          setStatus('Saved ✅');
+          setTimeout(()=>setStatus(''), 700);
+        });
+      });
       slotsWrap.querySelectorAll('[data-act="remove"]').forEach(btn=>{
         btn.addEventListener('click', ()=>{
           const block = btn.closest('[data-id]');
@@ -1366,25 +1382,24 @@ function renderLines(el, arr){
     function renderResult(){
       const data = loadLastCoach();
       const hidden = isCoachHidden();
-      if(showBtn) showBtn.hidden = !hidden;
       if(hideBtn) hideBtn.hidden = hidden;
 
       if(!outWrap) return;
       if(!data){
         outWrap.hidden = true;
+        if(outMini) outMini.hidden = true;
         return;
       }
-      outWrap.hidden = false;
 
       if(hidden){
-        // Only show the header + show button
-        if(outWhen) outWhen.textContent = `${fmtWhen(data.t)} (hidden)`;
-        if(outMist) outMist.innerHTML = '';
-        if(outFix) outFix.innerHTML = '';
-        if(outMeta) outMeta.textContent = '';
-        if(outRaw) outRaw.textContent = '';
+        outWrap.hidden = true;
+        if(outMini) outMini.hidden = false;
+        if(outMiniWhen) outMiniWhen.textContent = `${fmtWhen(data.t)} (hidden)`;
         return;
       }
+
+      if(outMini) outMini.hidden = true;
+      outWrap.hidden = false;
 
       if(outWhen) outWhen.textContent = fmtWhen(data.t);
       const cleanList = (arr)=> (arr||[]).map(x=>String(x??'').trim()).filter(Boolean).slice(0, 12);
@@ -1518,12 +1533,9 @@ function renderLines(el, arr){
     addEmptyBtn?.addEventListener('click', ()=>{
       const cur = loadCoachBoard();
       if(cur.length >= 5){ setStatus('Max 5 slots. Remove one first.'); return; }
-      addToCoachBoard({ title: `Slot ${cur.length+1}`, text: '' });
-      // We keep empty only in UI, but saveCoachBoard filters empty.
-      // So we instead create a minimal placeholder text to keep the slot.
       const id = `cb_${Date.now()}_${Math.random().toString(16).slice(2)}`;
-      const next = [{ id, t: Date.now(), title: `Slot ${cur.length+1}`, text: ' ' }, ...cur].slice(0,5);
-      try{ localStorage.setItem(LS.coachBoard, JSON.stringify(next)); }catch{}
+      const next = [{ id, t: Date.now(), title: `Slot ${cur.length+1}`, text: '' }, ...cur].slice(0,5);
+      saveCoachBoard(next);
       renderSlots();
       setStatus('Added ✅');
       setTimeout(()=>setStatus(''), 700);
@@ -1547,8 +1559,16 @@ function renderLines(el, arr){
       setTimeout(()=>setStatus(''), 900);
     });
     hideBtn?.addEventListener('click', ()=>{ setCoachHidden(true); renderResult(); });
-    showBtn?.addEventListener('click', ()=>{ setCoachHidden(false); renderResult(); });
+    miniShowBtn?.addEventListener('click', ()=>{ setCoachHidden(false); renderResult(); });
     clearResBtn?.addEventListener('click', ()=>{
+      try{ localStorage.removeItem(LS_LAST.coach); }catch{}
+      try{ localStorage.removeItem(LS_LAST.coachHidden); }catch{}
+      renderResult();
+      setStatus('Result cleared ✅');
+      setTimeout(()=>setStatus(''), 900);
+    });
+
+    miniClearBtn?.addEventListener('click', ()=>{
       try{ localStorage.removeItem(LS_LAST.coach); }catch{}
       try{ localStorage.removeItem(LS_LAST.coachHidden); }catch{}
       renderResult();

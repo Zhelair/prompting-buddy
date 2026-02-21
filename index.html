@@ -156,7 +156,7 @@
       <p class="card__desc">Pick up to <strong>5</strong> prompts (from Library or manual) and get a review: mistakes, fixes, and a reusable meta-prompt.</p>
 
       <div class="panel__actions">
-        <button class="btn" id="coachAddEmpty" type="button">Add empty</button>
+        <button class="btn" id="coachAddEmpty" type="button">Add slot</button>
         <button class="btn" id="coachClearAll" type="button">Clear slots</button>
         <button class="btn btn--primary" id="coachRun" type="button">Run Coach</button>
       </div>
@@ -164,12 +164,22 @@
       <p class="panel__note">Coach cap: <strong id="coachCap">8,000</strong> characters combined.</p>
 
       <!-- Last Coach result (kept near the top so it's visible right after running Coach) -->
+      <div class="block" id="coachOutMini" hidden>
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+          <strong>Last Coach result</strong>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span class="muted" style="font-size:12px" id="coachOutMiniWhen"></span>
+            <button class="btn btn--mini" id="coachMiniShow" type="button">Show</button>
+            <button class="btn btn--mini" id="coachMiniClear" type="button">Clear</button>
+          </div>
+        </div>
+      </div>
+
       <div class="block" id="coachOut" hidden>
         <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
           <strong>Last Coach result</strong>
           <div style="display:flex;gap:8px;align-items:center">
             <span class="muted" style="font-size:12px" id="coachOutWhen"></span>
-            <button class="btn btn--mini" id="coachShow" type="button" hidden>Show</button>
             <button class="btn btn--mini" id="coachHide" type="button">Hide</button>
             <button class="btn btn--mini" id="coachClearResult" type="button">Clear</button>
           </div>
