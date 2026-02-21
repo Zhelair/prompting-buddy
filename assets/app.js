@@ -37,7 +37,6 @@ function colorForKey(key){
     tokenExp: "pb_token_exp",
     vault: "pb_vault_v1",
     library: "pb_library_v1",
-    coachBoard: "pb_coach_board_v1",
     projects: "pb_projects_v1",
     ideas: "pb_ideas_v1",
     draftPrompt: "pb_draft_prompt_v1",
@@ -225,8 +224,9 @@ function colorForKey(key){
       vault: loadVault(),
       library: loadLibrary(),
       projects: loadProjects(),
-      coachBoard: loadCoachBoard(),
-      lastCoach: loadLastCoach()
+      coachBoard: (()=>{ try{ return localStorage.getItem('pb_coach_board_v1') || ""; }catch{ return ""; } })(),
+      lastCoach: loadLastCoach(),
+      coachHidden: isCoachHidden() ? 1 : 0
     };
   }
   function applyImportBundle(bundle){
@@ -234,69 +234,20 @@ function colorForKey(key){
     const v = Array.isArray(bundle.vault) ? bundle.vault : [];
     const l = Array.isArray(bundle.library) ? bundle.library : [];
     const p = Array.isArray(bundle.projects) ? bundle.projects : null;
-    const cb = Array.isArray(bundle.coachBoard) ? bundle.coachBoard : null;
-    const lc = (bundle.lastCoach && typeof bundle.lastCoach === 'object') ? bundle.lastCoach : null;
     saveVault(v);
     saveLibrary(l);
     if(p && p.length) saveProjects(p);
-    if(cb) saveCoachBoard(cb);
-    if(lc) saveLastCoach(lc);
-  }
 
-  // --- Coach Board (choose up to 5 prompts to review)
-  function loadCoachBoard(){
-    try {
-      const raw = localStorage.getItem(LS.coachBoard);
-      const arr = raw ? JSON.parse(raw) : [];
-      return Array.isArray(arr) ? arr : [];
-    } catch { return []; }
-  }
-  function saveCoachBoard(arr){
+    // Coach (optional)
     try{
-      const safe = (Array.isArray(arr)?arr:[])
-        .map(x=>({
-          id: String(x?.id||''),
-          t: Number(x?.t||0)||Date.now(),
-          title: String(x?.title||'').slice(0,120),
-          text: String(x?.text||'')
-        }))
-        .filter(x=>x.text.trim())
-        .slice(0,5);
-      localStorage.setItem(LS.coachBoard, JSON.stringify(safe));
+      if(typeof bundle.coachBoard === 'string') localStorage.setItem('pb_coach_board_v1', bundle.coachBoard);
+      if(bundle.lastCoach && typeof bundle.lastCoach === 'object'){
+        // Preserve as-is
+        localStorage.setItem(LS_LAST.coach, JSON.stringify(bundle.lastCoach));
+      }
+      if(bundle.coachHidden === 1 || bundle.coachHidden === '1') localStorage.setItem(LS_LAST.coachHidden, '1');
+      else localStorage.removeItem(LS_LAST.coachHidden);
     } catch {}
-  }
-  function addToCoachBoard(entry){
-    const cur = loadCoachBoard();
-    const e = {
-      id: `cb_${Date.now()}_${Math.random().toString(16).slice(2)}`,
-      t: Date.now(),
-      title: String(entry?.title||'').trim().slice(0,120),
-      text: String(entry?.text||'')
-    };
-    if(!e.text.trim()) return cur;
-    // Deduplicate by exact text (keeps the newest)
-    const next = [e, ...cur.filter(x=>String(x?.text||'') !== e.text)].slice(0,5);
-    saveCoachBoard(next);
-    return next;
-  }
-  function updateCoachBoardSlot(id, patch){
-    const cur = loadCoachBoard();
-    const next = cur.map(x=>{
-      if(!x || String(x.id)!==String(id)) return x;
-      return {
-        ...x,
-        title: (patch?.title != null) ? String(patch.title).slice(0,120) : x.title,
-        text: (patch?.text != null) ? String(patch.text) : x.text
-      };
-    });
-    saveCoachBoard(next);
-    return next;
-  }
-  function removeCoachBoardSlot(id){
-    const cur = loadCoachBoard();
-    const next = cur.filter(x=>x && String(x.id)!==String(id));
-    saveCoachBoard(next);
-    return next;
   }
 
   // --- Auth / token
@@ -400,7 +351,7 @@ function colorForKey(key){
       initVault();
     } else if(route === "coach") {
       app.appendChild(tpl("tpl-coachpage"));
-      initCoach();
+      initCoachPage();
     } else if(route === "library") {
       app.appendChild(tpl("tpl-library"));
       initLibrary();
@@ -1267,225 +1218,193 @@ function renderLines(el, arr){
     renderVault();
   }
 
-  // --- Coach (choose up to 5 prompts and run Coach agent)
-  function initCoach(){
+  function initCoachPage(){
+    const status = document.getElementById('coachPageStatus');
     const slotsWrap = document.getElementById('coachSlots');
-    const addEmptyBtn = document.getElementById('coachAddEmpty');
-    const clearBtn = document.getElementById('coachClearAll');
-    const runBtn = document.getElementById('coachRun');
-    const statusEl = document.getElementById('coachPageStatus');
-    const capEl = document.getElementById('coachCap');
 
-    const outWrap = document.getElementById('coachOut');
+    const btnAdd = document.getElementById('coachAddEmpty');
+    const btnClear = document.getElementById('coachClearAll');
+    const btnRun = document.getElementById('coachRun');
+
+    const out = document.getElementById('coachOut');
     const outWhen = document.getElementById('coachOutWhen');
     const outMist = document.getElementById('coachOutMistakes');
     const outFix = document.getElementById('coachOutFixes');
     const outMeta = document.getElementById('coachOutMeta');
     const outRaw = document.getElementById('coachOutRaw');
-    const copyBtn = document.getElementById('coachCopy');
-    const hideBtn = document.getElementById('coachHide');
-    const showBtn = document.getElementById('coachShow');
-    const clearResBtn = document.getElementById('coachClearResult');
+    const btnCopy = document.getElementById('coachCopy');
+    const btnHide = document.getElementById('coachHide');
+    const btnShow = document.getElementById('coachShow');
+    const btnClearRes = document.getElementById('coachClearResult');
 
-    if(capEl) capEl.textContent = String(COACH_MAX_CHARS);
+    const KEY = 'pb_coach_board_v1';
+    const MAX_SLOTS = 5;
+    const CAP = 8000;
 
-    const setStatus = (m)=>{ if(statusEl) statusEl.textContent = m||""; };
+    const setStatus = (m)=>{ if(status) status.textContent = m || ""; };
+    const fmtWhen = (ts)=>{ try{ return ts ? new Date(ts).toLocaleString() : ""; } catch { return ""; } };
 
-    function fmtWhen(ts){
-      if(!ts) return "";
-      try{ return new Date(ts).toLocaleString(); }catch{ return ""; }
-    }
-
-    function renderSlots(){
-      const board = loadCoachBoard();
-      if(!slotsWrap) return;
-
-      if(!board.length){
-        slotsWrap.innerHTML = `
-          <div class="muted" style="padding:10px 0">
-            No prompts yet. Add from Library (Send to Coach) or click “Add empty”.
-          </div>
-        `;
-        return;
-      }
-
-      slotsWrap.innerHTML = board.map((x, i)=>{
-        const title = escapeHtml(String(x.title||`Prompt ${i+1}`));
-        const text = escapeHtml(String(x.text||""));
-        return `
-          <div class="block" data-id="${escapeHtml(String(x.id||""))}">
-            <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
-              <strong>Slot ${i+1}</strong>
-              <div style="display:flex;gap:8px;align-items:center">
-                <button class="btn btn--mini" data-act="remove" type="button">Remove</button>
-              </div>
-            </div>
-            <div class="libws__editgrid" style="margin-top:10px">
-              <label class="field">
-                <span class="field__label">Title</span>
-                <input class="field__input" data-role="title" type="text" value="${title}" placeholder="Short name" />
-              </label>
-              <label class="field" style="grid-column:1/-1">
-                <span class="field__label">Prompt text</span>
-                <textarea class="field__input" data-role="text" rows="7" placeholder="Paste a prompt...">${text}</textarea>
-                <span class="field__hint">This is local. Export/Import includes Coach slots.</span>
-              </label>
-            </div>
-          </div>
-        `;
-      }).join('');
-
-      // Wire actions
-      slotsWrap.querySelectorAll('[data-act="remove"]').forEach(btn=>{
-        btn.addEventListener('click', ()=>{
-          const block = btn.closest('[data-id]');
-          const id = String(block?.getAttribute('data-id')||'');
-          removeCoachBoardSlot(id);
-          renderSlots();
-          setStatus('Removed ✅');
-          setTimeout(()=>setStatus(''), 700);
-        });
-      });
-
-      // Persist edits on input (fast + safe)
-      slotsWrap.querySelectorAll('input[data-role="title"]').forEach(inp=>{
-        inp.addEventListener('input', ()=>{
-          const block = inp.closest('[data-id]');
-          const id = String(block?.getAttribute('data-id')||'');
-          updateCoachBoardSlot(id, { title: inp.value });
-        });
-      });
-      slotsWrap.querySelectorAll('textarea[data-role="text"]').forEach(ta=>{
-        ta.addEventListener('input', ()=>{
-          const block = ta.closest('[data-id]');
-          const id = String(block?.getAttribute('data-id')||'');
-          updateCoachBoardSlot(id, { text: ta.value });
-        });
-      });
-    }
-
-    function renderResult(){
-      const data = loadLastCoach();
-      const hidden = isCoachHidden();
-      if(showBtn) showBtn.hidden = !hidden;
-      if(hideBtn) hideBtn.hidden = hidden;
-
-      if(!outWrap) return;
-      if(!data){
-        outWrap.hidden = true;
-        return;
-      }
-      outWrap.hidden = false;
-
-      if(hidden){
-        // Only show the header + show button
-        if(outWhen) outWhen.textContent = `${fmtWhen(data.t)} (hidden)`;
-        if(outMist) outMist.innerHTML = '';
-        if(outFix) outFix.innerHTML = '';
-        if(outMeta) outMeta.textContent = '';
-        if(outRaw) outRaw.textContent = '';
-        return;
-      }
-
-      if(outWhen) outWhen.textContent = fmtWhen(data.t);
-      const cleanList = (arr)=> (arr||[]).map(x=>String(x??'').trim()).filter(Boolean).slice(0, 12);
-      const m = cleanList(data.mistakes);
-      const f = cleanList(data.fixes);
-      if(outMist) outMist.innerHTML = (m.length?m:['—']).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('');
-      if(outFix) outFix.innerHTML = (f.length?f:['—']).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('');
-      if(outMeta) outMeta.textContent = String(data.metaPrompt||'');
-      if(outRaw) outRaw.textContent = String(data.raw||'');
-    }
-
-    function parseJsonFromText(txt){
-      if(!txt) return null;
-      const s0 = String(txt).trim();
-      if(!s0) return null;
-
-      const tryParse = (str) => {
-        if(!str) return null;
-        const repaired = String(str)
-          .replace(/,\s*([}\]])/g, "$1")
-          .replace(/[“”]/g, '"')
-          .replace(/[‘’]/g, "'")
-          .trim();
-        try { return JSON.parse(repaired); } catch { return null; }
-      };
-
-      const fenceMatch = s0.match(/```\s*json\s*([\s\S]*?)```/i) || s0.match(/```\s*([\s\S]*?)```/i);
-      if(fenceMatch && fenceMatch[1]){
-        const fromFence = tryParse(fenceMatch[1]);
-        if(fromFence) return fromFence;
-      }
-
-      const direct = tryParse(s0);
-      if(direct) return direct;
-
-      // balanced object extraction
-      let start = -1, depth = 0, inStr = false, esc = false;
-      for(let i=0;i<s0.length;i++){
-        const ch = s0[i];
-        if(inStr){
-          if(esc){ esc = false; continue; }
-          if(ch==='\\'){ esc = true; continue; }
-          if(ch==='"'){ inStr = false; continue; }
-          continue;
-        }
-        if(ch==='"'){ inStr = true; continue; }
-        if(ch==='{'){ if(depth===0) start=i; depth++; continue; }
-        if(ch==='}'){ if(depth>0) depth--; if(depth===0 && start!==-1){
-          const slice = s0.slice(start, i+1);
-          return tryParse(slice);
-        }}
-      }
-      return null;
-    }
-
-    function normalizeCoachPayload(maybe){
-      let obj = maybe;
-      if(typeof obj === 'string') obj = parseJsonFromText(obj) || { metaPrompt: obj };
-      if(obj && typeof obj === 'object'){
-        if(typeof obj.metaPrompt === 'string' && (!Array.isArray(obj.mistakes) || !Array.isArray(obj.fixes))){
-          const parsed = parseJsonFromText(obj.metaPrompt);
-          if(parsed && typeof parsed === 'object') obj = { ...obj, ...parsed };
-        }
+    const loadBoard = ()=>{
+      try{
+        const raw = localStorage.getItem(KEY);
+        if(!raw) return { slots: [] };
+        const obj = JSON.parse(raw);
+        const slots = Array.isArray(obj?.slots) ? obj.slots : [];
         return {
-          mistakes: Array.isArray(obj.mistakes) ? obj.mistakes : [],
-          fixes: Array.isArray(obj.fixes) ? obj.fixes : [],
-          metaPrompt: String(obj.metaPrompt||obj.meta||'').trim(),
-          _raw: obj
+          slots: slots
+            .map(s=>({
+              id: String(s?.id || crypto?.randomUUID?.() || Math.random().toString(16).slice(2)),
+              title: String(s?.title || "").slice(0,120),
+              text: String(s?.text || ""),
+              t: Number(s?.t || 0)
+            }))
+            .slice(0, MAX_SLOTS)
         };
-      }
-      return { mistakes: [], fixes: [], metaPrompt: String(maybe||'') };
+      } catch { return { slots: [] }; }
+    };
+
+    const saveBoard = (b)=>{
+      try{ localStorage.setItem(KEY, JSON.stringify({ slots: b.slots })); } catch {}
+    };
+
+    let board = loadBoard();
+    if(!board.slots.length){
+      board.slots = [{ id: Math.random().toString(16).slice(2), title: "", text: "", t: Date.now() }];
+      saveBoard(board);
     }
 
-    async function runCoach(){
-      setStatus('');
+    const renderSlots = ()=>{
+      if(!slotsWrap) return;
+      slotsWrap.innerHTML = "";
+      board.slots.forEach((slot, idx)=>{
+        const wrap = document.createElement('div');
+        wrap.className = 'block';
+        wrap.style.marginTop = '12px';
+        wrap.innerHTML = `
+          <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+            <strong>Slot ${idx+1}</strong>
+            <div style="display:flex;gap:10px;align-items:center">
+              <span class="muted" style="font-size:12px" data-role="when">${escapeHtml(fmtWhen(slot.t))}</span>
+              <button class="btn btn--mini" type="button" data-role="remove">Remove</button>
+            </div>
+          </div>
+
+          <label class="field" style="margin-top:10px">
+            <span class="field__label">Title</span>
+            <input class="field__input" type="text" data-role="title" placeholder="Short label" value="${escapeHtml(slot.title)}" />
+          </label>
+
+          <label class="field" style="margin-top:10px">
+            <span class="field__label">Prompt text</span>
+            <textarea class="output output--input" rows="6" data-role="text" placeholder="Paste a prompt (or type one)">${escapeHtml(slot.text)}</textarea>
+          </label>
+        `;
+        slotsWrap.appendChild(wrap);
+
+        const elWhen = wrap.querySelector('[data-role="when"]');
+        const inpTitle = wrap.querySelector('[data-role="title"]');
+        const inpText = wrap.querySelector('[data-role="text"]');
+        const btnRem = wrap.querySelector('[data-role="remove"]');
+
+        const touch = ()=>{
+          slot.t = Date.now();
+          if(elWhen) elWhen.textContent = fmtWhen(slot.t);
+          saveBoard(board);
+        };
+
+        inpTitle?.addEventListener('input', ()=>{
+          slot.title = String(inpTitle.value || "").slice(0,120);
+          touch();
+        });
+        inpText?.addEventListener('input', ()=>{
+          slot.text = String(inpText.value || "");
+          touch();
+        });
+
+        btnRem?.addEventListener('click', ()=>{
+          board.slots = board.slots.filter(s=>s.id !== slot.id);
+          if(!board.slots.length) board.slots = [{ id: Math.random().toString(16).slice(2), title: "", text: "", t: Date.now() }];
+          saveBoard(board);
+          renderSlots();
+        });
+      });
+    };
+
+    const clearOut = ()=>{ try{ localStorage.removeItem(LS_LAST.coach); }catch{} };
+
+    const renderOut = (data)=>{
+      if(!out) return;
+      if(!data){ out.hidden = true; return; }
+
+      const cleanList = (arr)=> (arr||[]).map(x=>String(x ?? '').trim()).filter(Boolean).slice(0,3);
+      const mList = cleanList(data.mistakes);
+      const fList = cleanList(data.fixes);
+
+      out.hidden = false;
+      if(outWhen) outWhen.textContent = fmtWhen(data.t);
+      if(outMist) outMist.innerHTML = (mList.length?mList:["—"]).map(x=>`<li>${escapeHtml(x)}</li>`).join('');
+      if(outFix) outFix.innerHTML = (fList.length?fList:["—"]).map(x=>`<li>${escapeHtml(x)}</li>`).join('');
+      if(outMeta) outMeta.textContent = String(data.metaPrompt || "").trim();
+      if(outRaw) outRaw.textContent = String(data.raw || "");
+
+      const hidden = isCoachHidden();
+      if(btnShow) btnShow.hidden = !hidden;
+      if(btnHide) btnHide.hidden = hidden;
+      // If hidden: keep the block visible but collapse the sections by hiding list/meta.
+      if(hidden){
+        out.querySelectorAll('section, details')?.forEach(el=>{ el.style.display = 'none'; });
+      } else {
+        out.querySelectorAll('section, details')?.forEach(el=>{ el.style.display = ''; });
+      }
+    };
+
+    btnCopy?.addEventListener('click', async ()=>{
+      const txt = String(outMeta?.textContent || '').trim();
+      if(!txt) return;
+      try{ await navigator.clipboard.writeText(txt); setStatus("Meta-prompt copied ✅"); }
+      catch{ setStatus("Copy failed."); }
+      setTimeout(()=>setStatus(""), 900);
+    });
+
+    btnHide?.addEventListener('click', ()=>{ setCoachHidden(true); renderOut(loadLastCoach()); });
+    btnShow?.addEventListener('click', ()=>{ setCoachHidden(false); renderOut(loadLastCoach()); });
+    btnClearRes?.addEventListener('click', ()=>{ clearOut(); renderOut(null); setCoachHidden(false); });
+
+    btnAdd?.addEventListener('click', ()=>{
+      if(board.slots.length >= MAX_SLOTS){ setStatus(`Max ${MAX_SLOTS} slots.`); return; }
+      board.slots.push({ id: Math.random().toString(16).slice(2), title: "", text: "", t: Date.now() });
+      saveBoard(board);
+      renderSlots();
+      setStatus("");
+    });
+
+    btnClear?.addEventListener('click', ()=>{
+      board.slots = [{ id: Math.random().toString(16).slice(2), title: "", text: "", t: Date.now() }];
+      saveBoard(board);
+      renderSlots();
+      setStatus("");
+    });
+
+    btnRun?.addEventListener('click', async ()=>{
       const tok = getToken();
-      if(!tok){ setStatus('🔒 Unlock to use Coach.'); return; }
+      if(!tok){ setStatus("🔒 Unlock to use Coach."); return; }
 
-      const board = loadCoachBoard();
-      if(!board.length){ setStatus('Add at least 1 prompt first.'); return; }
+      const items = board.slots
+        .map(s=>({ prompt: String(s.text||"").trim(), aiReply: "" }))
+        .filter(x=>x.prompt);
+      if(!items.length){ setStatus("Add at least one prompt."); return; }
 
-      // Build items (prompts + optional other AI reply - none for now)
-      const items = board.slice(0,5).map(x=>({
-        prompt: String(x.text||'').slice(0, PROMPT_MAX_CHARS),
-        aiReply: ""
-      })).filter(x=>x.prompt.trim());
-      if(!items.length){ setStatus('No usable prompt text.'); return; }
+      const combined = items.map((it,i)=>`#${i+1} PROMPT\n${it.prompt}`).join("\n\n");
+      const clipped = combined.slice(0, CAP);
 
-      const combined = items.map((it,i)=>`#${i+1} PROMPT\n${String(it.prompt||'')}`).join("\n\n");
-      const clipped = combined.slice(0, COACH_MAX_CHARS);
-
-      runBtn && (runBtn.disabled = true);
-      setStatus('Coaching...');
-
-      try {
+      btnRun.disabled = true;
+      setStatus("Coaching... (max 8,000 chars)");
+      try{
         const res = await fetch(`${ENDPOINT.replace(/\/+$/,'')}/coach-last5`, {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${tok}`
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${tok}`
           },
           body: JSON.stringify({ text: clipped, items })
         });
@@ -1502,61 +1421,21 @@ function renderLines(el, arr){
           metaPrompt: parsed.metaPrompt,
           raw: txt
         });
-        setCoachHidden(false);
-        renderResult();
-        setStatus('Done ✅');
-        setTimeout(()=>setStatus(''), 900);
-        await refreshStatus();
-      } catch (err){
-        setStatus(String(err?.message || err));
+        renderOut(loadLastCoach());
+
+        // Bring result into view (it sits above slots).
+        out?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+        setStatus("Done ✅");
+        setTimeout(()=>setStatus(""), 900);
+      } catch (e){
+        setStatus(String(e?.message || e || "Coach failed."));
       } finally {
-        runBtn && (runBtn.disabled = false);
+        btnRun.disabled = false;
       }
-    }
-
-    addEmptyBtn?.addEventListener('click', ()=>{
-      const cur = loadCoachBoard();
-      if(cur.length >= 5){ setStatus('Max 5 slots. Remove one first.'); return; }
-      addToCoachBoard({ title: `Slot ${cur.length+1}`, text: '' });
-      // We keep empty only in UI, but saveCoachBoard filters empty.
-      // So we instead create a minimal placeholder text to keep the slot.
-      const id = `cb_${Date.now()}_${Math.random().toString(16).slice(2)}`;
-      const next = [{ id, t: Date.now(), title: `Slot ${cur.length+1}`, text: ' ' }, ...cur].slice(0,5);
-      try{ localStorage.setItem(LS.coachBoard, JSON.stringify(next)); }catch{}
-      renderSlots();
-      setStatus('Added ✅');
-      setTimeout(()=>setStatus(''), 700);
-    });
-
-    clearBtn?.addEventListener('click', ()=>{
-      if(!confirm('Clear Coach slots?')) return;
-      saveCoachBoard([]);
-      renderSlots();
-      setStatus('Cleared ✅');
-      setTimeout(()=>setStatus(''), 700);
-    });
-
-    runBtn?.addEventListener('click', runCoach);
-
-    copyBtn?.addEventListener('click', async ()=>{
-      const txt = String(outMeta?.textContent||'').trim();
-      if(!txt) return;
-      try{ await navigator.clipboard.writeText(txt); setStatus('Meta-prompt copied ✅'); }
-      catch{ setStatus('Copy failed.'); }
-      setTimeout(()=>setStatus(''), 900);
-    });
-    hideBtn?.addEventListener('click', ()=>{ setCoachHidden(true); renderResult(); });
-    showBtn?.addEventListener('click', ()=>{ setCoachHidden(false); renderResult(); });
-    clearResBtn?.addEventListener('click', ()=>{
-      try{ localStorage.removeItem(LS_LAST.coach); }catch{}
-      try{ localStorage.removeItem(LS_LAST.coachHidden); }catch{}
-      renderResult();
-      setStatus('Result cleared ✅');
-      setTimeout(()=>setStatus(''), 900);
     });
 
     renderSlots();
-    renderResult();
+    renderOut(loadLastCoach());
   }
 
   // --- Library
@@ -1603,7 +1482,7 @@ function renderLines(el, arr){
 
     const CATS = Array.isArray(data.libraryCategories) && data.libraryCategories.length
       ? data.libraryCategories.slice(0,50)
-      : ["Various","Daily drivers","Writing","Coding","Research / OSINT","Visuals","Marketing","Business","Finances","Life / Mood"];
+      : ["Daily drivers","Writing","Coding","Research / OSINT","Visuals","Creators","Business","Life / Mood"];
 
     const LS_LIB_SEEDED = "pb_library_seeded_v1";
     const LS_IDEAS_SEEDED = "pb_ideas_seeded_v1";
@@ -1612,11 +1491,11 @@ function renderLines(el, arr){
       if(!catSel || !fCat) return;
       // Category filter dropdown
       if(catSel.options.length <= 1){
-        // Add "None" so users can intentionally filter prompts without a category.
-        const n = document.createElement('option');
-        n.value = '__none__';
-        n.textContent = 'None';
-        catSel.appendChild(n);
+        // Add 'General' as a real category filter option
+        const g = document.createElement('option');
+        g.value = 'General';
+        g.textContent = 'General';
+        catSel.appendChild(g);
         CATS.forEach(c=>{
           const o = document.createElement('option');
           o.value = c;
@@ -1628,7 +1507,7 @@ function renderLines(el, arr){
       if(fCat.options.length === 0){
         const o0 = document.createElement('option');
         o0.value = "";
-        o0.textContent = "None";
+        o0.textContent = "General";
         fCat.appendChild(o0);
         CATS.forEach(c=>{
           const o = document.createElement('option');
@@ -2184,8 +2063,7 @@ function renderLines(el, arr){
       if(fGolden) fGolden.value = existing?.golden || existing?.text || '';
       if(fPromptW) fPromptW.value = existing?.prompt || '';
       if(fOriginal) fOriginal.value = existing?.original || '';
-      const legacyCat = String(existing?.cat || '').trim();
-      if(fCat) fCat.value = (legacyCat.toLowerCase() === 'general') ? '' : legacyCat;
+      if(fCat) fCat.value = existing?.cat || '';
 
       // Defaults for new items: inherit current workspace selection.
       const defaultPid = isEdit ? String(existing?.projectId||'') : String(getSelectedProjectId()||'');
@@ -2226,15 +2104,11 @@ function renderLines(el, arr){
       const projectName = (pid)=> (projects.find(p=>p.id===pid)?.name || "");
       const sectionName = (pid,sid)=> (projects.find(p=>p.id===pid)?.sections||[]).find(s=>s.id===sid)?.name || "";
 
-      // Normalize legacy category values.
-      // Older builds used "General" as a category; we now treat that as "None".
       const libAllRaw = loadLibrary().map(it=>{
         if(!it || typeof it!=='object') return it;
-        const rawCat = String(it.cat || "").trim();
-        const normCat = (rawCat.toLowerCase() === 'general') ? "" : rawCat;
         return {
           ...it,
-          cat: normCat,
+          cat: it.cat || "",
           fav: !!it.fav
         };
       });
@@ -2251,13 +2125,7 @@ function renderLines(el, arr){
 
       const lib = libAll.filter(it=>{
         if(!it) return false;
-        if(cat){
-          if(cat === '__none__'){
-            if(String(it.cat||'').trim()) return false;
-          } else {
-            if(String(it.cat||'') !== cat) return false;
-          }
-        }
+        if(cat && String(it.cat||'') !== cat) return false;
         if(selP && String(it.projectId||"") !== selP) return false;
         if(selS && String(it.sectionId||"") !== selS) return false;
         if(favOnly && !it.fav) return false;
@@ -2308,7 +2176,6 @@ function renderLines(el, arr){
                   <button class="btn btn--mini btn--star" data-act="fav" type="button">${item.fav ? "★" : "☆"}</button>
                   <button class="btn btn--mini" data-act="copy" type="button">Copy</button>
                   <button class="btn btn--mini" data-act="send" type="button">Send to Buddy</button>
-                  <button class="btn btn--mini" data-act="coach" type="button">Send to Coach</button>
                   <button class="btn btn--mini" data-act="edit" type="button">Edit</button>
                   <button class="btn btn--mini" data-act="del" type="button">Delete</button>
                 </div>
@@ -2360,20 +2227,6 @@ function renderLines(el, arr){
             setDraftPromptForce(String(item.golden||item.text||""));
             location.hash = 'buddy';
           }
-          if(act === 'coach'){
-            const txt = String(item.golden||item.text||"");
-            if(!txt.trim()){
-              setStatus('Nothing to send.');
-              setTimeout(()=>setStatus(''), 900);
-              return;
-            }
-            addToCoachBoard({
-              title: String(item.title||'').trim() || (txt.split(/\n|\r/)[0]||'').slice(0,60),
-              text: txt
-            });
-            setStatus('Sent to Coach ✅');
-            setTimeout(()=>setStatus(''), 900);
-          }
           if(act === 'edit'){
             openEditor(item);
           }
@@ -2405,8 +2258,6 @@ function renderLines(el, arr){
     });
 
     btnSave?.addEventListener('click', ()=>{
-      const rawCat = String(fCat?.value || '').trim();
-      const safeCat = (rawCat.toLowerCase() === 'general') ? '' : rawCat;
       const item = {
         id: editingId || `lib_${Date.now()}_${Math.random().toString(16).slice(2)}`,
         t: editingCreatedAt || Date.now(),
@@ -2416,7 +2267,7 @@ function renderLines(el, arr){
         original: String(fOriginal?.value || '').trim(),
         // legacy field for backward compatibility
         text: String(fGolden?.value || '').trim(),
-        cat: safeCat,
+        cat: String(fCat?.value || '').trim(),
         projectId: String(fProject?.value || '').trim(),
         sectionId: String(fSection?.value || '').trim(),
         modeUsed: String(fMode?.value || '').trim(),
@@ -2598,6 +2449,14 @@ function renderLines(el, arr){
     return node;
   }
 
+  function initExtension(){
+    const zipLink = document.getElementById('extZipLink');
+    const storeLink = document.getElementById('extStoreLink');
+
+    if(zipLink) zipLink.href = (data.extZipUrl || '#');
+    if(storeLink) storeLink.href = (data.extStoreUrl || '#');
+  }
+
   function initTips(){
     const box = document.getElementById('tipsBody');
     if(!box) return;
@@ -2747,9 +2606,7 @@ function renderLines(el, arr){
       }
     } catch {}
 
-    let r = (location.hash || "#buddy").replace('#','') || 'buddy';
-    // Extension page is disabled for now.
-    if(r === 'extension') r = 'buddy';
+    const r = (location.hash || "#buddy").replace('#','') || 'buddy';
     render(r);
     refreshStatus();
   }

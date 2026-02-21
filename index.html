@@ -163,8 +163,6 @@
       <div class="settings__status" id="coachPageStatus" aria-live="polite"></div>
       <p class="panel__note">Coach cap: <strong id="coachCap">8,000</strong> characters combined.</p>
 
-      <div id="coachSlots"></div>
-
       <div class="block" id="coachOut" hidden>
         <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
           <strong>Last Coach result</strong>
@@ -201,6 +199,8 @@
           </div>
         </details>
       </div>
+
+      <div id="coachSlots"></div>
     </div>
   </div>
 </template>
@@ -373,6 +373,43 @@
   </div>
 </template>
 
+
+<template id="tpl-extension">
+  <div class="card">
+    <div class="card__body">
+      <h2 class="card__title">Chrome Extension</h2>
+      <p class="card__desc">Use Prompting Buddy on <strong>any webpage</strong>: select text, send it to Buddy, refine, save to Library.</p>
+
+      <div class="block">
+        <h3 style="margin:0 0 8px">Quick start</h3>
+        <ol class="pc__list" style="margin:0; padding-left:18px">
+          <li>Install the extension in Chrome.</li>
+          <li>On any page, select text (or your prompt) → click <strong>Send to Prompting Buddy</strong>.</li>
+          <li>Prompting Buddy opens on the <strong>Buddy</strong> tab with your text ready.</li>
+        </ol>
+      </div>
+
+      <div class="block">
+        <h3 style="margin:0 0 8px">Install</h3>
+        <div class="callout">
+          <div style="font-weight:700; margin-bottom:6px">Option A: Install the .zip (dev build)</div>
+          <p class="muted" style="margin:0 0 10px">Download the .zip and load it via Chrome → Extensions → Developer mode → Load unpacked.</p>
+          <a class="btn" id="extZipLink" href="#" target="_blank" rel="noopener">Download extension .zip</a>
+        </div>
+
+        <div class="callout" style="margin-top:10px">
+          <div style="font-weight:700; margin-bottom:6px">Option B: Chrome Web Store (soon)</div>
+          <p class="muted" style="margin:0 0 10px">Once approved, you’ll be able to install it like a normal extension.</p>
+          <a class="btn btn--ghost" id="extStoreLink" href="#" target="_blank" rel="noopener">Open Chrome Web Store listing</a>
+        </div>
+      </div>
+
+      <p class="muted" style="margin:12px 0 0">
+        Privacy: the extension only sends the text you choose. Vault/Library are still stored locally in your browser.
+      </p>
+    </div>
+  </div>
+</template>
 
 <template id="tpl-tips">
   <div class="card">

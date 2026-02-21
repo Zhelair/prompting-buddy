@@ -29,6 +29,7 @@ window.PB_DATA = {
           <li><strong>Buddy</strong> — analyzes your prompt and outputs a Golden Prompt.</li>
           <li><strong>Vault</strong> — keeps your last 10 runs (local, in this browser).</li>
           <li><strong>Library</strong> — your best prompts (tags, search, favorites, export/import JSON).</li>
+          <li><strong>Extension</strong> — send selected text from any webpage to Buddy.</li>
         </ul>
       </div>
 
@@ -125,6 +126,17 @@ window.PB_DATA = {
   </details>
 
   <details class="fold">
+    <summary class="fold__sum">USING THE EXTENSION (WHEN INSTALLED)</summary>
+    <div class="fold__body">
+      <ul class="pc__list" style="margin:0">
+        <li>Select text on any webpage.</li>
+        <li>Send it to Buddy.</li>
+        <li>Refine, copy Golden, done.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="fold">
     <summary class="fold__sum">QUICK DEMO IDEAS (YOU CAN RECORD THESE LATER)</summary>
     <div class="fold__body">
       <ul class="pc__list" style="margin:0">
@@ -139,15 +151,13 @@ window.PB_DATA = {
 
 
   libraryCategories: [
-    "Various",
     "Daily drivers",
     "Writing",
     "Coding",
     "Research / OSINT",
     "Visuals",
-    "Marketing",
+    "Creators",
     "Business",
-    "Finances",
     "Life / Mood"
   ],
   house: {
