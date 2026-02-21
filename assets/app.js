@@ -37,6 +37,7 @@ function colorForKey(key){
     tokenExp: "pb_token_exp",
     vault: "pb_vault_v1",
     library: "pb_library_v1",
+    coachBoard: "pb_coach_board_v1",
     projects: "pb_projects_v1",
     ideas: "pb_ideas_v1",
     draftPrompt: "pb_draft_prompt_v1",
@@ -223,7 +224,9 @@ function colorForKey(key){
       exportedAt: new Date().toISOString(),
       vault: loadVault(),
       library: loadLibrary(),
-      projects: loadProjects()
+      projects: loadProjects(),
+      coachBoard: loadCoachBoard(),
+      lastCoach: loadLastCoach()
     };
   }
   function applyImportBundle(bundle){
@@ -231,9 +234,69 @@ function colorForKey(key){
     const v = Array.isArray(bundle.vault) ? bundle.vault : [];
     const l = Array.isArray(bundle.library) ? bundle.library : [];
     const p = Array.isArray(bundle.projects) ? bundle.projects : null;
+    const cb = Array.isArray(bundle.coachBoard) ? bundle.coachBoard : null;
+    const lc = (bundle.lastCoach && typeof bundle.lastCoach === 'object') ? bundle.lastCoach : null;
     saveVault(v);
     saveLibrary(l);
     if(p && p.length) saveProjects(p);
+    if(cb) saveCoachBoard(cb);
+    if(lc) saveLastCoach(lc);
+  }
+
+  // --- Coach Board (choose up to 5 prompts to review)
+  function loadCoachBoard(){
+    try {
+      const raw = localStorage.getItem(LS.coachBoard);
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch { return []; }
+  }
+  function saveCoachBoard(arr){
+    try{
+      const safe = (Array.isArray(arr)?arr:[])
+        .map(x=>({
+          id: String(x?.id||''),
+          t: Number(x?.t||0)||Date.now(),
+          title: String(x?.title||'').slice(0,120),
+          text: String(x?.text||'')
+        }))
+        .filter(x=>x.text.trim())
+        .slice(0,5);
+      localStorage.setItem(LS.coachBoard, JSON.stringify(safe));
+    } catch {}
+  }
+  function addToCoachBoard(entry){
+    const cur = loadCoachBoard();
+    const e = {
+      id: `cb_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+      t: Date.now(),
+      title: String(entry?.title||'').trim().slice(0,120),
+      text: String(entry?.text||'')
+    };
+    if(!e.text.trim()) return cur;
+    // Deduplicate by exact text (keeps the newest)
+    const next = [e, ...cur.filter(x=>String(x?.text||'') !== e.text)].slice(0,5);
+    saveCoachBoard(next);
+    return next;
+  }
+  function updateCoachBoardSlot(id, patch){
+    const cur = loadCoachBoard();
+    const next = cur.map(x=>{
+      if(!x || String(x.id)!==String(id)) return x;
+      return {
+        ...x,
+        title: (patch?.title != null) ? String(patch.title).slice(0,120) : x.title,
+        text: (patch?.text != null) ? String(patch.text) : x.text
+      };
+    });
+    saveCoachBoard(next);
+    return next;
+  }
+  function removeCoachBoardSlot(id){
+    const cur = loadCoachBoard();
+    const next = cur.filter(x=>x && String(x.id)!==String(id));
+    saveCoachBoard(next);
+    return next;
   }
 
   // --- Auth / token
@@ -335,6 +398,9 @@ function colorForKey(key){
     if(route === "vault") {
       app.appendChild(tpl("tpl-vault"));
       initVault();
+    } else if(route === "coach") {
+      app.appendChild(tpl("tpl-coachpage"));
+      initCoach();
     } else if(route === "library") {
       app.appendChild(tpl("tpl-library"));
       initLibrary();
@@ -1201,6 +1267,298 @@ function renderLines(el, arr){
     renderVault();
   }
 
+  // --- Coach (choose up to 5 prompts and run Coach agent)
+  function initCoach(){
+    const slotsWrap = document.getElementById('coachSlots');
+    const addEmptyBtn = document.getElementById('coachAddEmpty');
+    const clearBtn = document.getElementById('coachClearAll');
+    const runBtn = document.getElementById('coachRun');
+    const statusEl = document.getElementById('coachPageStatus');
+    const capEl = document.getElementById('coachCap');
+
+    const outWrap = document.getElementById('coachOut');
+    const outWhen = document.getElementById('coachOutWhen');
+    const outMist = document.getElementById('coachOutMistakes');
+    const outFix = document.getElementById('coachOutFixes');
+    const outMeta = document.getElementById('coachOutMeta');
+    const outRaw = document.getElementById('coachOutRaw');
+    const copyBtn = document.getElementById('coachCopy');
+    const hideBtn = document.getElementById('coachHide');
+    const showBtn = document.getElementById('coachShow');
+    const clearResBtn = document.getElementById('coachClearResult');
+
+    if(capEl) capEl.textContent = String(COACH_MAX_CHARS);
+
+    const setStatus = (m)=>{ if(statusEl) statusEl.textContent = m||""; };
+
+    function fmtWhen(ts){
+      if(!ts) return "";
+      try{ return new Date(ts).toLocaleString(); }catch{ return ""; }
+    }
+
+    function renderSlots(){
+      const board = loadCoachBoard();
+      if(!slotsWrap) return;
+
+      if(!board.length){
+        slotsWrap.innerHTML = `
+          <div class="muted" style="padding:10px 0">
+            No prompts yet. Add from Library (Send to Coach) or click “Add empty”.
+          </div>
+        `;
+        return;
+      }
+
+      slotsWrap.innerHTML = board.map((x, i)=>{
+        const title = escapeHtml(String(x.title||`Prompt ${i+1}`));
+        const text = escapeHtml(String(x.text||""));
+        return `
+          <div class="block" data-id="${escapeHtml(String(x.id||""))}">
+            <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+              <strong>Slot ${i+1}</strong>
+              <div style="display:flex;gap:8px;align-items:center">
+                <button class="btn btn--mini" data-act="remove" type="button">Remove</button>
+              </div>
+            </div>
+            <div class="libws__editgrid" style="margin-top:10px">
+              <label class="field">
+                <span class="field__label">Title</span>
+                <input class="field__input" data-role="title" type="text" value="${title}" placeholder="Short name" />
+              </label>
+              <label class="field" style="grid-column:1/-1">
+                <span class="field__label">Prompt text</span>
+                <textarea class="field__input" data-role="text" rows="7" placeholder="Paste a prompt...">${text}</textarea>
+                <span class="field__hint">This is local. Export/Import includes Coach slots.</span>
+              </label>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Wire actions
+      slotsWrap.querySelectorAll('[data-act="remove"]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const block = btn.closest('[data-id]');
+          const id = String(block?.getAttribute('data-id')||'');
+          removeCoachBoardSlot(id);
+          renderSlots();
+          setStatus('Removed ✅');
+          setTimeout(()=>setStatus(''), 700);
+        });
+      });
+
+      // Persist edits on input (fast + safe)
+      slotsWrap.querySelectorAll('input[data-role="title"]').forEach(inp=>{
+        inp.addEventListener('input', ()=>{
+          const block = inp.closest('[data-id]');
+          const id = String(block?.getAttribute('data-id')||'');
+          updateCoachBoardSlot(id, { title: inp.value });
+        });
+      });
+      slotsWrap.querySelectorAll('textarea[data-role="text"]').forEach(ta=>{
+        ta.addEventListener('input', ()=>{
+          const block = ta.closest('[data-id]');
+          const id = String(block?.getAttribute('data-id')||'');
+          updateCoachBoardSlot(id, { text: ta.value });
+        });
+      });
+    }
+
+    function renderResult(){
+      const data = loadLastCoach();
+      const hidden = isCoachHidden();
+      if(showBtn) showBtn.hidden = !hidden;
+      if(hideBtn) hideBtn.hidden = hidden;
+
+      if(!outWrap) return;
+      if(!data){
+        outWrap.hidden = true;
+        return;
+      }
+      outWrap.hidden = false;
+
+      if(hidden){
+        // Only show the header + show button
+        if(outWhen) outWhen.textContent = `${fmtWhen(data.t)} (hidden)`;
+        if(outMist) outMist.innerHTML = '';
+        if(outFix) outFix.innerHTML = '';
+        if(outMeta) outMeta.textContent = '';
+        if(outRaw) outRaw.textContent = '';
+        return;
+      }
+
+      if(outWhen) outWhen.textContent = fmtWhen(data.t);
+      const cleanList = (arr)=> (arr||[]).map(x=>String(x??'').trim()).filter(Boolean).slice(0, 12);
+      const m = cleanList(data.mistakes);
+      const f = cleanList(data.fixes);
+      if(outMist) outMist.innerHTML = (m.length?m:['—']).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('');
+      if(outFix) outFix.innerHTML = (f.length?f:['—']).map(x=>`<li>${escapeHtml(String(x))}</li>`).join('');
+      if(outMeta) outMeta.textContent = String(data.metaPrompt||'');
+      if(outRaw) outRaw.textContent = String(data.raw||'');
+    }
+
+    function parseJsonFromText(txt){
+      if(!txt) return null;
+      const s0 = String(txt).trim();
+      if(!s0) return null;
+
+      const tryParse = (str) => {
+        if(!str) return null;
+        const repaired = String(str)
+          .replace(/,\s*([}\]])/g, "$1")
+          .replace(/[“”]/g, '"')
+          .replace(/[‘’]/g, "'")
+          .trim();
+        try { return JSON.parse(repaired); } catch { return null; }
+      };
+
+      const fenceMatch = s0.match(/```\s*json\s*([\s\S]*?)```/i) || s0.match(/```\s*([\s\S]*?)```/i);
+      if(fenceMatch && fenceMatch[1]){
+        const fromFence = tryParse(fenceMatch[1]);
+        if(fromFence) return fromFence;
+      }
+
+      const direct = tryParse(s0);
+      if(direct) return direct;
+
+      // balanced object extraction
+      let start = -1, depth = 0, inStr = false, esc = false;
+      for(let i=0;i<s0.length;i++){
+        const ch = s0[i];
+        if(inStr){
+          if(esc){ esc = false; continue; }
+          if(ch==='\\'){ esc = true; continue; }
+          if(ch==='"'){ inStr = false; continue; }
+          continue;
+        }
+        if(ch==='"'){ inStr = true; continue; }
+        if(ch==='{'){ if(depth===0) start=i; depth++; continue; }
+        if(ch==='}'){ if(depth>0) depth--; if(depth===0 && start!==-1){
+          const slice = s0.slice(start, i+1);
+          return tryParse(slice);
+        }}
+      }
+      return null;
+    }
+
+    function normalizeCoachPayload(maybe){
+      let obj = maybe;
+      if(typeof obj === 'string') obj = parseJsonFromText(obj) || { metaPrompt: obj };
+      if(obj && typeof obj === 'object'){
+        if(typeof obj.metaPrompt === 'string' && (!Array.isArray(obj.mistakes) || !Array.isArray(obj.fixes))){
+          const parsed = parseJsonFromText(obj.metaPrompt);
+          if(parsed && typeof parsed === 'object') obj = { ...obj, ...parsed };
+        }
+        return {
+          mistakes: Array.isArray(obj.mistakes) ? obj.mistakes : [],
+          fixes: Array.isArray(obj.fixes) ? obj.fixes : [],
+          metaPrompt: String(obj.metaPrompt||obj.meta||'').trim(),
+          _raw: obj
+        };
+      }
+      return { mistakes: [], fixes: [], metaPrompt: String(maybe||'') };
+    }
+
+    async function runCoach(){
+      setStatus('');
+      const tok = getToken();
+      if(!tok){ setStatus('🔒 Unlock to use Coach.'); return; }
+
+      const board = loadCoachBoard();
+      if(!board.length){ setStatus('Add at least 1 prompt first.'); return; }
+
+      // Build items (prompts + optional other AI reply - none for now)
+      const items = board.slice(0,5).map(x=>({
+        prompt: String(x.text||'').slice(0, PROMPT_MAX_CHARS),
+        aiReply: ""
+      })).filter(x=>x.prompt.trim());
+      if(!items.length){ setStatus('No usable prompt text.'); return; }
+
+      const combined = items.map((it,i)=>`#${i+1} PROMPT\n${String(it.prompt||'')}`).join("\n\n");
+      const clipped = combined.slice(0, COACH_MAX_CHARS);
+
+      runBtn && (runBtn.disabled = true);
+      setStatus('Coaching...');
+
+      try {
+        const res = await fetch(`${ENDPOINT.replace(/\/+$/,'')}/coach-last5`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${tok}`
+          },
+          body: JSON.stringify({ text: clipped, items })
+        });
+        if(!res.ok){
+          const t = await res.text().catch(()=>"");
+          throw new Error(t || `HTTP ${res.status}`);
+        }
+        const txt = await res.text();
+        const parsed = normalizeCoachPayload(parseJsonFromText(txt) || txt);
+
+        saveLastCoach({
+          mistakes: parsed.mistakes,
+          fixes: parsed.fixes,
+          metaPrompt: parsed.metaPrompt,
+          raw: txt
+        });
+        setCoachHidden(false);
+        renderResult();
+        setStatus('Done ✅');
+        setTimeout(()=>setStatus(''), 900);
+        await refreshStatus();
+      } catch (err){
+        setStatus(String(err?.message || err));
+      } finally {
+        runBtn && (runBtn.disabled = false);
+      }
+    }
+
+    addEmptyBtn?.addEventListener('click', ()=>{
+      const cur = loadCoachBoard();
+      if(cur.length >= 5){ setStatus('Max 5 slots. Remove one first.'); return; }
+      addToCoachBoard({ title: `Slot ${cur.length+1}`, text: '' });
+      // We keep empty only in UI, but saveCoachBoard filters empty.
+      // So we instead create a minimal placeholder text to keep the slot.
+      const id = `cb_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+      const next = [{ id, t: Date.now(), title: `Slot ${cur.length+1}`, text: ' ' }, ...cur].slice(0,5);
+      try{ localStorage.setItem(LS.coachBoard, JSON.stringify(next)); }catch{}
+      renderSlots();
+      setStatus('Added ✅');
+      setTimeout(()=>setStatus(''), 700);
+    });
+
+    clearBtn?.addEventListener('click', ()=>{
+      if(!confirm('Clear Coach slots?')) return;
+      saveCoachBoard([]);
+      renderSlots();
+      setStatus('Cleared ✅');
+      setTimeout(()=>setStatus(''), 700);
+    });
+
+    runBtn?.addEventListener('click', runCoach);
+
+    copyBtn?.addEventListener('click', async ()=>{
+      const txt = String(outMeta?.textContent||'').trim();
+      if(!txt) return;
+      try{ await navigator.clipboard.writeText(txt); setStatus('Meta-prompt copied ✅'); }
+      catch{ setStatus('Copy failed.'); }
+      setTimeout(()=>setStatus(''), 900);
+    });
+    hideBtn?.addEventListener('click', ()=>{ setCoachHidden(true); renderResult(); });
+    showBtn?.addEventListener('click', ()=>{ setCoachHidden(false); renderResult(); });
+    clearResBtn?.addEventListener('click', ()=>{
+      try{ localStorage.removeItem(LS_LAST.coach); }catch{}
+      try{ localStorage.removeItem(LS_LAST.coachHidden); }catch{}
+      renderResult();
+      setStatus('Result cleared ✅');
+      setTimeout(()=>setStatus(''), 900);
+    });
+
+    renderSlots();
+    renderResult();
+  }
+
   // --- Library
   function initLibrary(){
     const list = document.getElementById('libList');
@@ -1950,6 +2308,7 @@ function renderLines(el, arr){
                   <button class="btn btn--mini btn--star" data-act="fav" type="button">${item.fav ? "★" : "☆"}</button>
                   <button class="btn btn--mini" data-act="copy" type="button">Copy</button>
                   <button class="btn btn--mini" data-act="send" type="button">Send to Buddy</button>
+                  <button class="btn btn--mini" data-act="coach" type="button">Send to Coach</button>
                   <button class="btn btn--mini" data-act="edit" type="button">Edit</button>
                   <button class="btn btn--mini" data-act="del" type="button">Delete</button>
                 </div>
@@ -2000,6 +2359,20 @@ function renderLines(el, arr){
           if(act === 'send'){
             setDraftPromptForce(String(item.golden||item.text||""));
             location.hash = 'buddy';
+          }
+          if(act === 'coach'){
+            const txt = String(item.golden||item.text||"");
+            if(!txt.trim()){
+              setStatus('Nothing to send.');
+              setTimeout(()=>setStatus(''), 900);
+              return;
+            }
+            addToCoachBoard({
+              title: String(item.title||'').trim() || (txt.split(/\n|\r/)[0]||'').slice(0,60),
+              text: txt
+            });
+            setStatus('Sent to Coach ✅');
+            setTimeout(()=>setStatus(''), 900);
           }
           if(act === 'edit'){
             openEditor(item);
