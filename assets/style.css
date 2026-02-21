@@ -94,7 +94,36 @@ a{color:inherit}button,a.navbtn{font:inherit}
 .output{width:100%;padding:10px 12px;border-radius:14px;border:1px solid rgba(0,0,0,.12);background:rgba(255,255,255,.95);resize:vertical;font-size:15px;line-height:1.45;}
 
 .panel__actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-.settings__row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0}.settings__status{margin-top:8px;font-size:12px;opacity:.75}
+.settings__row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0}
+
+/* Status banners (inline, 2x larger + readable) */
+.settings__status{
+  margin-top:10px;
+  display:inline-block;
+  max-width:100%;
+  font-size:clamp(16px, 1.6vw, 22px);
+  line-height:1.25;
+  padding:10px 12px;
+  border-radius:14px;
+  border:1px solid rgba(0,0,0,.12);
+  background:rgba(255,255,255,.70);
+  color:rgba(0,0,0,.78);
+  word-break:break-word;
+}
+.settings__status:empty{display:none}
+
+/* Dark themes: keep status readable */
+body[data-theme="retro"] .settings__status,
+body[data-theme="terminal"] .settings__status{
+  border-color:rgba(255,255,255,.18);
+  background:rgba(0,0,0,.28);
+  color:rgba(240,240,255,.92);
+}
+body[data-theme="glitter"] .settings__status{
+  background:rgba(255,255,255,.82);
+  border-color:rgba(11,36,48,.12);
+  color:rgba(11,36,48,.85);
+}
 .fold{border:1px solid rgba(0,0,0,.10);border-radius:14px;padding:8px 10px;background:rgba(255,255,255,.85);margin:10px 0}
 .fold__sum{cursor:pointer;font-weight:700}
 .fold__body{display:grid;gap:8px;margin-top:10px}.fold__body label{display:flex;gap:8px;align-items:center}
