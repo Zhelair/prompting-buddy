@@ -24,6 +24,7 @@ function colorForKey(key){
   const year = document.getElementById("year");
   const footerSupport = document.getElementById("footerSupport");
   const brandName = document.getElementById("brandName");
+  const guideBtn = document.getElementById("guideBtn");
   const unlockBtn = document.getElementById("unlockBtn");
   const pillPrompts = document.getElementById("pillPrompts");
   const pillCoach = document.getElementById("pillCoach");
@@ -45,7 +46,9 @@ function colorForKey(key){
     theme: "pb_theme",
     variant: (t)=>`pb_theme_variant_${t}`,
     libSelProject: "pb_lib_sel_project_v1",
-    libSelSection: "pb_lib_sel_section_v1"
+    libSelSection: "pb_lib_sel_section_v1",
+    onboarded: "pb_onboarded_v1",
+    guideTab: "pb_guide_tab_v1"
   };
 
   // Tiny localStorage helpers (defensive, because we never want a bad JSON to brick the app).
@@ -72,6 +75,195 @@ function colorForKey(key){
   }
   function setCoachHidden(v){
     try{ localStorage.setItem(LS_LAST.coachHidden, v ? '1' : '0'); }catch{}
+  }
+
+  // --- Guide / onboarding (friendly helper)
+  const GUIDE = {
+    buddy: {
+      title: "Buddy (Prompt Check)",
+      lines: [
+        "Paste your prompt, pick a lens, and run Prompt Check.",
+        "Auditor is strict, Thinker is balanced, Creator is more playful.",
+        "Golden Prompt is the final cleaned version - copy it into ChatGPT / Claude / Midjourney / etc.",
+        "Results can be saved to Vault so your best prompts are never lost."
+      ]
+    },
+    coach: {
+      title: "Coach (Batch review)",
+      lines: [
+        "Add up to 5 prompts (from Library or paste manually).",
+        "Run Coach to get recurring issues, fixes, and a reusable meta-prompt.",
+        "Hide collapses the whole Coach result area for a clean page.",
+        "Coach slots are saved locally - they stay after refresh."
+      ]
+    },
+    library: {
+      title: "Library (Your prompt toolbox)",
+      lines: [
+        "Store prompts and find them fast.",
+        "Send to Buddy reviews a prompt before you use it.",
+        "Edit titles and notes to keep prompts reusable.",
+        "Export/Import moves your library between browsers."
+      ]
+    },
+    vault: {
+      title: "Vault (Saved Buddy results)",
+      lines: [
+        "Vault stores your Buddy results, including the Golden Prompt.",
+        "Use it as your best-of shelf.",
+        "You can send items back to Buddy or into Coach slots."
+      ]
+    },
+    tips: {
+      title: "Tips",
+      lines: [
+        "Short best practices you can apply in seconds.",
+        "Perfect when your prompt is close, but not quite there."
+      ]
+    },
+    about: {
+      title: "About",
+      lines: [
+        "A quick overview of what Prompting Buddy is (and isn't).",
+        "Support link and project info."
+      ]
+    }
+  };
+
+  const ONBOARDING_SLIDES = [
+    {
+      title: "Step 1 - Unlock + run Buddy",
+      body: "Hit Unlock (top right), paste your passphrase, then go to Buddy. Paste a prompt, pick a lens, and run Prompt Check. You'll get a Golden Prompt you can reuse anywhere."
+    },
+    {
+      title: "Step 2 - Save + organize",
+      body: "Buddy results can be saved to Vault, and your own prompts live in Library. Think of Vault as your best-of and Library as your prompt toolbox."
+    },
+    {
+      title: "Step 3 - Coach for pattern fixes",
+      body: "Coach reviews up to 5 prompts at once and finds recurring issues. It also gives you a reusable meta-prompt you can plug into future work."
+    }
+  ];
+
+  let currentRoute = 'buddy';
+
+  function openGuide(opts){
+    const route = String((opts && opts.route) || currentRoute || 'buddy');
+    const initialTab = String((opts && opts.tab) || getLS(LS.guideTab, 'quick') || 'quick');
+    let tab = (initialTab === 'page') ? 'page' : 'quick';
+    let step = 0;
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'pbmodal__backdrop';
+    backdrop.innerHTML = `
+      <div class="pbmodal pbmodal--guide" role="dialog" aria-modal="true">
+        <div class="pbmodal__hd">
+          <strong>Guide</strong>
+          <button class="btn btn--mini" data-act="close" type="button">Close</button>
+        </div>
+        <div class="pbmodal__bd">
+          <div class="guide__tabs">
+            <button class="guide__tab" data-tab="quick" type="button">Quick start</button>
+            <button class="guide__tab" data-tab="page" type="button">This page</button>
+          </div>
+
+          <div class="guide__panel" data-panel="quick">
+            <div class="guide__slide">
+              <div class="guide__title" id="gStepTitle"></div>
+              <div class="guide__text" id="gStepBody"></div>
+            </div>
+            <div class="guide__dots" id="gDots" aria-label="Steps"></div>
+            <div class="guide__nav">
+              <button class="btn" id="gPrev" type="button">Back</button>
+              <button class="btn btn--primary" id="gNext" type="button">Next</button>
+            </div>
+          </div>
+
+          <div class="guide__panel" data-panel="page">
+            <div class="guide__title" id="gPageTitle"></div>
+            <ul class="guide__list" id="gPageList"></ul>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(backdrop);
+
+    const close = ()=>{
+      // If the user saw the onboarding once, don't nag on every load.
+      try{ if(!getLS(LS.onboarded, false)) setLS(LS.onboarded, true); }catch{}
+      try{ backdrop.remove(); }catch{}
+    };
+    backdrop.querySelector('[data-act="close"]')?.addEventListener('click', close);
+    backdrop.addEventListener('click', (e)=>{ if(e.target===backdrop) close(); });
+
+    const tabBtns = Array.from(backdrop.querySelectorAll('.guide__tab'));
+    const panels = Array.from(backdrop.querySelectorAll('.guide__panel'));
+    const gStepTitle = backdrop.querySelector('#gStepTitle');
+    const gStepBody = backdrop.querySelector('#gStepBody');
+    const gDots = backdrop.querySelector('#gDots');
+    const gPrev = backdrop.querySelector('#gPrev');
+    const gNext = backdrop.querySelector('#gNext');
+    const gPageTitle = backdrop.querySelector('#gPageTitle');
+    const gPageList = backdrop.querySelector('#gPageList');
+
+    function renderTabs(){
+      tabBtns.forEach(b=>b.classList.toggle('is-active', b.getAttribute('data-tab')===tab));
+      panels.forEach(p=>p.style.display = (p.getAttribute('data-panel')===tab) ? '' : 'none');
+      setLS(LS.guideTab, tab);
+    }
+
+    function renderQuick(){
+      const s = ONBOARDING_SLIDES[step] || ONBOARDING_SLIDES[0];
+      if(gStepTitle) gStepTitle.textContent = String(s.title||'');
+      if(gStepBody) gStepBody.textContent = String(s.body||'');
+      if(gDots){
+        gDots.innerHTML = ONBOARDING_SLIDES.map((_,i)=>`<button class="guide__dot ${i===step?'is-active':''}" data-step="${i}" type="button" aria-label="Step ${i+1}"></button>`).join('');
+        gDots.querySelectorAll('[data-step]').forEach(b=>b.addEventListener('click', ()=>{ step = Number(b.getAttribute('data-step')||0) || 0; renderQuick(); }));
+      }
+      if(gPrev) gPrev.disabled = step<=0;
+      if(gNext){
+        const last = step >= (ONBOARDING_SLIDES.length-1);
+        gNext.textContent = last ? 'Done' : 'Next';
+      }
+    }
+
+    function renderPage(){
+      const info = GUIDE[route] || GUIDE.buddy;
+      if(gPageTitle) gPageTitle.textContent = info.title || 'This page';
+      if(gPageList){
+        gPageList.innerHTML = (info.lines||[]).map(x=>`<li>${escapeHtml(String(x||''))}</li>`).join('');
+      }
+    }
+
+    tabBtns.forEach(b=>b.addEventListener('click', ()=>{
+      tab = String(b.getAttribute('data-tab')||'quick');
+      renderTabs();
+      if(tab==='quick') renderQuick();
+      else renderPage();
+    }));
+
+    gPrev?.addEventListener('click', ()=>{ step = Math.max(0, step-1); renderQuick(); });
+    gNext?.addEventListener('click', ()=>{
+      const last = step >= (ONBOARDING_SLIDES.length-1);
+      if(last){
+        setLS(LS.onboarded, true);
+        close();
+      } else {
+        step = Math.min(ONBOARDING_SLIDES.length-1, step+1);
+        renderQuick();
+      }
+    });
+
+    renderTabs();
+    if(tab==='quick') renderQuick();
+    else renderPage();
+    return { close };
+  }
+
+  function maybeShowOnboarding(){
+    const done = !!getLS(LS.onboarded, false);
+    if(done) return;
+    setTimeout(()=>{ try{ openGuide({ tab:'quick', route: currentRoute }); }catch{} }, 250);
   }
 
   function loadLastCoach(){
@@ -394,6 +586,7 @@ function colorForKey(key){
 
   function render(route){
     closeAllModals();
+    currentRoute = String(route||'buddy') || 'buddy';
     setActiveNav(route);
     app.innerHTML = "";
     if(route === "vault") {
@@ -502,6 +695,10 @@ function colorForKey(key){
       return;
     }
     openUnlock();
+  });
+
+  guideBtn?.addEventListener('click', ()=>{
+    try{ openGuide({ route: currentRoute, tab: 'page' }); } catch {}
   });
 
   // --- Buddy
@@ -2541,6 +2738,9 @@ function renderLines(el, arr){
     document.querySelectorAll('.modal_backdrop').forEach(n=>{
       try{ n.remove(); }catch{}
     });
+    document.querySelectorAll('.pbmodal__backdrop').forEach(n=>{
+      try{ n.remove(); }catch{}
+    });
   }
 
   function openPromptCheckModal(norm){
@@ -2773,6 +2973,7 @@ function renderLines(el, arr){
     if(r === 'extension') r = 'buddy';
     render(r);
     refreshStatus();
+    maybeShowOnboarding();
   }
 
   window.addEventListener('hashchange', boot);

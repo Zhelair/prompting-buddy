@@ -1164,6 +1164,29 @@ body[data-theme] .pbmodal{background:rgba(255,255,255,.92)}
 .pbmodal__bd{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
 .pbmodal__ft{padding:14px 16px;border-top:1px solid rgba(0,0,0,.12);display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
 
+/* Guide / onboarding */
+.pbmodal--guide{max-width:640px}
+.guide__tabs{display:flex;gap:8px;align-items:center;justify-content:flex-start;margin-bottom:6px}
+.guide__tab{border:1px solid rgba(0,0,0,.14);background:rgba(255,255,255,.7);border-radius:999px;padding:8px 12px;font-weight:700;cursor:pointer}
+.guide__tab.is-active{border-color:rgba(0,0,0,.25);background:rgba(0,0,0,.06)}
+.guide__panel{display:flex;flex-direction:column;gap:10px}
+.guide__slide{border:1px solid rgba(0,0,0,.12);border-radius:14px;padding:12px 12px;background:rgba(255,255,255,.55)}
+.guide__title{font-weight:800;font-size:16px}
+.guide__text{color:rgba(18,19,22,.8);line-height:1.45}
+.guide__dots{display:flex;gap:8px;justify-content:center}
+.guide__dot{width:10px;height:10px;border-radius:999px;border:1px solid rgba(0,0,0,.18);background:rgba(0,0,0,.08);cursor:pointer}
+.guide__dot.is-active{background:rgba(0,0,0,.38)}
+.guide__nav{display:flex;justify-content:space-between;gap:10px}
+.guide__list{margin:0;padding-left:18px;color:rgba(18,19,22,.85)}
+.guide__list li{margin:6px 0}
+
+body[data-theme="terminal"] .guide__tab,
+body[data-theme="terminal"] .guide__slide{background:rgba(0,0,0,.25);border-color:rgba(255,255,255,.14)}
+body[data-theme="terminal"] .guide__tab{color:rgba(255,255,255,.92)}
+body[data-theme="terminal"] .guide__tab.is-active{background:rgba(255,255,255,.12)}
+body[data-theme="terminal"] .guide__text,
+body[data-theme="terminal"] .guide__list{color:rgba(255,255,255,.84)}
+
 
 /* =========================================================
    Theme readability patches (modals, selects, backgrounds)
