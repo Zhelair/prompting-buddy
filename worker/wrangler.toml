@@ -2,21 +2,37 @@ name = "prompting-buddy-house"
 main = "src/index.js"
 compatibility_date = "2025-01-01"
 
-# Optional: set your allowed GitHub Pages origin(s) here, or override via env var.
+# ─── Public vars (safe to commit) ────────────────────────────────────────────
 [vars]
-DEFAULT_ORIGIN = "https://zhelair.github.io"
-TIMEZONE = "Europe/Sofia"
-DAILY_PROMPT_LIMIT = "30"
-DAILY_COACH_LIMIT = "5"
-PROMPT_MAX_CHARS = "5000"
-COACH_MAX_CHARS = "8000"
-TOKEN_TTL_DAYS = "60"
+DEFAULT_ORIGIN    = "https://zhelair.github.io"
+TIMEZONE          = "Europe/Sofia"
+PROMPT_MAX_CHARS  = "5000"
+COACH_MAX_CHARS   = "8000"
+TOKEN_TTL_DAYS    = "60"
+EMAIL_FROM        = "buddy@yourdomain.com"
 
+# ─── Secrets (set via: wrangler secret put SECRET_NAME) ──────────────────────
+# Run these once in your terminal:
+#
+#   wrangler secret put DEEPSEEK_API_KEY
+#   wrangler secret put TOKEN_SECRET          ← 32+ random chars
+#   wrangler secret put RESEND_API_KEY        ← from resend.com
+#   wrangler secret put ADMIN_PASSPHRASES     ← your personal codes, comma-separated
+#   wrangler secret put WEBHOOK_SECRET        ← shared secret for payment webhooks
+#   wrangler secret put ADMIN_SECRET          ← for /admin/grant endpoint
+
+# ─── Durable Objects (daily usage counters — unchanged) ──────────────────────
 [[durable_objects.bindings]]
-name = "LIMITS"
+name       = "LIMITS"
 class_name = "LimitsDO"
 
-
 [[migrations]]
-tag = "v1"
+tag               = "v1"
 new_sqlite_classes = ["LimitsDO"]
+
+# ─── KV Namespace (user records: email → passphrase → tier) ──────────────────
+# Create it once with: wrangler kv namespace create USERS
+# Then paste the id below.
+[[kv_namespaces]]
+binding = "USERS"
+id      = "a5a480233ce54ed3b27e01805b8716b3"
